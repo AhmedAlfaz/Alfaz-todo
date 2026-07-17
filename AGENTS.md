@@ -43,3 +43,23 @@ Static single-page PWA: **Alfaz todo** — Islamic tasks, prayer reminders, and 
 - **Dark mode.** Always add `dark:` variants alongside light-mode Tailwind classes. Missing dark variants are a common visual bug.
 - **i18n completeness.** If you add a user-visible string, add both `en` and `ar` entries in the `i18n` object and set the correct `data-i18n` / `data-i18n-placeholder` attribute.
 - **No external dependencies.** Don't add npm packages, build tools, or server-side code. Everything must work as plain HTML served from a file or static host.
+
+## GitHub Workflow
+
+- **OpenCode pushes code** to GitHub after each completed task or phase
+- **CEO approves** before each push — never push without reviewing changes first
+- Commit messages describe what changed and why
+- Keep GitHub in sync with local at all times — avoid drift between local and remote
+- After pushing, verify the live site still works: `https://ahmedalfaz.github.io/Alfaz-todo/`
+
+## File Boundaries
+
+| File | Allowed | Ask First | Never |
+|------|---------|-----------|-------|
+| `index.html` | Edit with task scope | Major structural changes | Rewrite entire file |
+| `sw.js` | Edit with task scope | Change caching strategy | Remove offline support |
+| `manifest.json` | Edit with task scope | Change display mode | Remove icons |
+| `SKILL.md` | Append lessons | Change core rules | Delete sections 1-5 |
+| `AGENTS.md` | Update with project changes | Major rewrites | — |
+| `project-draft.md` | Add ideas, update status | — | — |
+| `2/index2.html` | **NEVER** touch | — | Unless explicitly asked |
