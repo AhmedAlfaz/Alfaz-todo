@@ -1,0 +1,537 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2563EB">
+  <meta name="description" content="Islamic tasks, prayer reminders, and Qibla direction">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alfaz todo">
+  <title>Alfaz todo - Islamic Tasks & Reminders</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="ALFA LOGO icon.jpg" type="image/jpeg">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { primary: '#2563EB', secondary: '#1E40AF' } } }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .nav-item.active { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }
+    .nav-item.active i { color: #2563EB; }
+    .dark .nav-item.active { background-color: #1E3A5F; color: #93C5FD; }
+    .dark .nav-item.active i { color: #93C5FD; }
+    .prayer-card { transition: all 0.3s ease; }
+    .prayer-card:hover { transform: translateY(-3px); }
+    .view-section { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 5px rgba(37, 99, 235, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(37, 99, 235, 0.6); }
+    }
+    .next-prayer { animation: pulseGlow 2s infinite; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; }
+      .sidebar.open { transform: translateX(0); }
+      .mobile-overlay { display: none; }
+      .mobile-overlay.active { display: block; }
+    }
+    .toast {
+      animation: slideIn 0.5s ease, slideOut 0.5s ease 4.5s;
+      animation-fill-mode: forwards;
+    }
+    @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100px); opacity: 0; } }
+  </style>
+</head>
+
+<body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800 transition-all duration-300">
+
+  <!-- Mobile Menu Button -->
+  <button onclick="toggleSidebar()" class="md:hidden fixed top-4 left-4 z-[60] bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition">
+    <i class="fas fa-bars" id="menu-icon"></i>
+  </button>
+
+  <!-- Mobile Overlay -->
+  <div id="mobile-overlay" class="mobile-overlay fixed inset-0 bg-black bg-opacity-50 z-40" onclick="toggleSidebar()"></div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-[70] space-y-2"></div>
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-800 border-e border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 md:translate-x-0">
+    
+    <!-- Logo -->
+    <div class="p-4 flex items-center space-x-3 mb-2 border-b border-gray-200 dark:border-gray-700 pb-4">
+      <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-lg shadow-md">A</div>
+      <div>
+        <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400">Alfaz todo</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" id="live-clock">00:00:00</p>
+      </div>
+    </div>
+
+    <!-- Language & Dark Mode -->
+    <div class="px-4 mb-3 space-y-2">
+      <select id="lang-select" onchange="changeLanguage(this.value)" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-blue-500 text-gray-700 dark:text-gray-200 shadow-sm cursor-pointer">
+        <option value="en">🇬🇧 English</option>
+        <option value="ar">🇸🇦 العربية</option>
+      </select>
+      <button onclick="toggleDarkMode()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 py-2.5 px-3 rounded-lg text-sm font-medium transition text-gray-700 dark:text-gray-200">
+        <i class="fas fa-moon" id="dark-mode-icon"></i>
+        <span id="dark-mode-label">Dark Mode</span>
+      </button>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-2 space-y-1">
+      <button onclick="switchView('tasks-view', this)" class="nav-item active w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-sun text-amber-400 w-5 text-center"></i>
+        <span data-i18n="myDay">My Day</span>
+      </button>
+      <button onclick="switchView('prayers-view', this)" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-mosque text-green-500 w-5 text-center"></i>
+        <span data-i18n="prayerReminders">Prayer Reminders</span>
+      </button>
+      <button onclick="switchView('qibla-view', this)" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-kaaba text-purple-500 w-5 text-center"></i>
+        <span data-i18n="qiblaNavigator">Qibla Navigator</span>
+      </button>
+    </nav>
+
+    <!-- Notification Button -->
+    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+      <button onclick="requestNotificationPermission()" id="notif-btn" class="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-bell"></i>
+        <span data-i18n="enableNotif">Enable Notifications</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="flex-1 bg-gray-50 dark:bg-gray-900 p-4 md:p-8 overflow-y-auto transition-colors">
+
+    <!-- ===== 1. MY DAY / TASKS ===== -->
+    <div id="tasks-view" class="view-section max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="myDay">My Day</h2>
+        <span class="text-4xl">☀️</span>
+      </div>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-6" id="date-display">Date</p>
+
+      <!-- Add Task -->
+      <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 flex items-center p-4 hover:shadow-md transition">
+        <i class="fas fa-plus text-blue-500 me-3 text-lg"></i>
+        <input type="text" id="task-input" onkeypress="addTask(event)" data-i18n-placeholder="addTaskPlaceholder" placeholder="Add a task (Press Enter to save)" class="bg-transparent border-none focus:outline-none w-full text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-white">
+      </div>
+
+      <!-- Task Stats -->
+      <div id="task-stats" class="flex items-center space-x-4 mb-3 text-sm text-gray-500 dark:text-gray-400 px-1"></div>
+
+      <!-- Task List -->
+      <div id="task-list" class="flex-1 overflow-y-auto space-y-1"></div>
+    </div>
+
+    <!-- ===== 2. PRAYER TIMES ===== -->
+    <div id="prayers-view" class="view-section hidden max-w-4xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="prayerReminders">Prayer Reminders</h2>
+        <span class="text-4xl">🕌</span>
+      </div>
+      <p id="location-status" class="text-gray-500 dark:text-gray-400 text-sm mb-6">
+        <i class="fas fa-location-dot"></i> <span data-i18n="fetchingLoc">Fetching location...</span>
+      </p>
+
+      <!-- Azan Settings -->
+      <div class="bg-white dark:bg-gray-800 p-5 rounded-xl mb-8 flex flex-col md:flex-row items-center justify-between border border-gray-200 dark:border-gray-700 shadow-sm gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+            <i class="fas fa-volume-up text-blue-600 dark:text-blue-400 text-lg"></i>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200" data-i18n="selectAzan">Select Azan Sound</label>
+            <select id="azan-select" class="mt-1 block w-48 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:border-blue-500 dark:text-gray-200 cursor-pointer">
+              <option value="0" data-i18n="makkah">Makkah</option>
+              <option value="1" data-i18n="madinah">Madinah</option>
+              <option value="2" data-i18n="alaqsa">Al-Aqsa</option>
+              <option value="3" data-i18n="egypt">Egypt</option>
+              <option value="4" data-i18n="turkey">Turkey</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="testAzan()" class="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
+            <i class="fas fa-play me-2"></i> <span data-i18n="testAudio">Test Audio</span>
+          </button>
+          <button onclick="stopAzan()" class="bg-red-500 text-white hover:bg-red-600 px-4 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
+            <i class="fas fa-stop"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Prayer Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="prayer-cards">
+        <!-- Loading skeletons -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 text-center animate-pulse"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto mb-2"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 text-center animate-pulse"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto mb-2"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 text-center animate-pulse"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto mb-2"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 text-center animate-pulse"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto mb-2"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 text-center animate-pulse"><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto mb-2"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></div>
+      </div>
+
+      <!-- Next Prayer Countdown -->
+      <div id="next-prayer-info" class="mt-8 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-5 text-center">
+        <p class="text-sm text-blue-600 dark:text-blue-400 font-medium" id="next-prayer-text">
+          <i class="fas fa-clock me-1"></i> Loading prayer times...
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== 3. QIBLA NAVIGATOR ===== -->
+    <div id="qibla-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col items-center pt-14 md:pt-10">
+      <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 text-center w-full" data-i18n="qiblaDir">Qibla Direction</h2>
+      <p class="text-gray-500 dark:text-gray-400 text-center w-full mb-8" id="qibla-info" data-i18n="calculating">Calculating coordinates...</p>
+
+      <!-- Compass -->
+      <div class="relative w-72 h-72 border-[8px] border-gray-200 dark:border-gray-600 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-gray-800" dir="ltr">
+        <div class="absolute top-3 text-red-500 font-bold text-sm">N</div>
+        <div class="absolute bottom-3 text-gray-400 font-bold text-sm">S</div>
+        <div class="absolute right-3 text-gray-400 font-bold text-sm">E</div>
+        <div class="absolute left-3 text-gray-400 font-bold text-sm">W</div>
+        <div class="absolute top-7 right-9 text-gray-300 dark:text-gray-600 text-xs">45°</div>
+        <div class="absolute bottom-7 right-9 text-gray-300 dark:text-gray-600 text-xs">135°</div>
+        <div class="absolute bottom-7 left-9 text-gray-300 dark:text-gray-600 text-xs">225°</div>
+        <div class="absolute top-7 left-9 text-gray-300 dark:text-gray-600 text-xs">315°</div>
+
+        <!-- Needle -->
+        <div id="compass-needle" class="absolute w-1 h-32 origin-bottom transition-transform duration-700 ease-out" style="transform: rotate(0deg); bottom: 50%;">
+          <div class="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[28px] border-l-transparent border-r-transparent border-b-green-600 absolute -top-6 -left-[9px] drop-shadow-md"></div>
+          <div class="w-1.5 h-full bg-gradient-to-b from-green-600 to-green-400 rounded-full mx-auto"></div>
+        </div>
+        <div class="w-6 h-6 bg-gray-800 dark:bg-white rounded-full z-10 absolute border-4 border-white dark:border-gray-800 shadow-md"></div>
+      </div>
+
+      <!-- Angle Display -->
+      <div class="mt-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl px-8 py-4 text-center">
+        <p class="text-xs text-green-600 dark:text-green-400 mb-1">Qibla Bearing</p>
+        <span class="text-3xl font-bold text-green-700 dark:text-green-400" id="qibla-angle-text">--°</span>
+      </div>
+
+      <button onclick="requestDeviceOrientation()" class="mt-8 bg-gray-800 dark:bg-gray-700 text-white px-6 py-3 rounded-xl shadow-md hover:bg-gray-900 dark:hover:bg-gray-600 transition flex items-center">
+        <i class="fas fa-sync-alt me-2"></i> <span data-i18n="calibrateCompass">Calibrate Compass (Mobile)</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- ==================== JAVASCRIPT ==================== -->
+  <script>
+    // ===== i18n =====
+    const i18n = {
+      en: {
+        myDay: "My Day", prayerReminders: "Prayer Reminders", qiblaNavigator: "Qibla Navigator",
+        addTaskPlaceholder: "Add a task (Press Enter to save)", fetchingLoc: "Fetching location...",
+        locLocked: "Location locked", locDenied: "Location denied. Using Mecca.",
+        selectAzan: "Select Azan Sound", makkah: "Makkah", madinah: "Madinah", alaqsa: "Al-Aqsa",
+        egypt: "Egypt", turkey: "Turkey", testAudio: "Test Audio", qiblaDir: "Qibla Direction",
+        calculating: "Calculating coordinates...",
+        qiblaResult: "The Qibla is <strong>{angle}°</strong> from True North.",
+        calibrateCompass: "Calibrate Compass (Mobile)",
+        prayerAlert: "🕌 Time for {prayer} prayer!",
+        enableNotif: "Enable Notifications", notifEnabled: "Notifications Enabled ✓",
+        noTasks: "No tasks yet. Add one above! ☀️",
+        tasksTotal: "{total} tasks", tasksDone: "{done} completed"
+      },
+      ar: {
+        myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
+        addTaskPlaceholder: "أضف مهمة (اضغط Enter للحفظ)", fetchingLoc: "جاري تحديد الموقع...",
+        locLocked: "تم تحديد الموقع", locDenied: "تم رفض الموقع. سيتم استخدام مكة.",
+        selectAzan: "اختر صوت الأذان", makkah: "مكة المكرمة", madinah: "المدينة المنورة",
+        alaqsa: "المسجد الأقصى", egypt: "مصر", turkey: "تركيا", testAudio: "اختبار الصوت",
+        qiblaDir: "اتجاه القبلة", calculating: "جاري حساب الإحداثيات...",
+        qiblaResult: "اتجاه القبلة هو <strong>{angle}°</strong> من الشمال الحقيقي.",
+        calibrateCompass: "معايرة البوصلة (الهاتف فقط)",
+        prayerAlert: "🕌 حان الآن موعد أذان {prayer}!",
+        enableNotif: "تفعيل الإشعارات", notifEnabled: "الإشعارات مفعلة ✓",
+        noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",
+        tasksTotal: "{total} مهام", tasksDone: "{done} مكتملة"
+      }
+    };
+
+    // ===== STATE =====
+    let tasks = JSON.parse(localStorage.getItem('alfatore_tasks')) || [];
+    let currentLang = localStorage.getItem('alfatore_lang') || 'en';
+    let userLat = null, userLng = null, qiblaAngle = 0, prayerTimings = {}, currentAudio = null, sidebarOpen = false;
+
+    const prayerNamesAr = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
+
+    const azanSources = [
+      'https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3',
+      'https://cdn.islamic.network/quran/audio/128/ar.abdulbasit/001.mp3',
+      'https://cdn.islamic.network/quran/audio/128/ar.minshawi/001.mp3',
+      'https://cdn.islamic.network/quran/audio/128/ar.husary/001.mp3',
+      'https://cdn.islamic.network/quran/audio/128/ar.parhizkar/001.mp3'
+    ];
+
+    // ===== INIT =====
+    window.addEventListener('load', () => {
+      document.getElementById('lang-select').value = currentLang;
+      applyLanguage(currentLang);
+      renderTasks();
+      initClock();
+      initGeolocation();
+      loadDarkMode();
+      updateNotifButton();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    });
+
+    // ===== SIDEBAR (MOBILE) =====
+    function toggleSidebar() {
+      sidebarOpen = !sidebarOpen;
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('mobile-overlay');
+      const ic = document.getElementById('menu-icon');
+      if (sidebarOpen) { sb.classList.add('open'); ov.classList.add('active'); ic.className = 'fas fa-times'; }
+      else { sb.classList.remove('open'); ov.classList.remove('active'); ic.className = 'fas fa-bars'; }
+    }
+
+    // ===== DARK MODE =====
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('alfatore_darkmode', document.documentElement.classList.contains('dark'));
+      updateDarkModeButton();
+    }
+    function updateDarkModeButton() {
+      const isDark = document.documentElement.classList.contains('dark');
+      document.getElementById('dark-mode-icon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+      document.getElementById('dark-mode-label').textContent = isDark
+        ? (currentLang === 'ar' ? 'الوضع الفاتح' : 'Light Mode')
+        : (currentLang === 'ar' ? 'الوضع المظلم' : 'Dark Mode');
+    }
+    function loadDarkMode() {
+      if (localStorage.getItem('alfatore_darkmode') === 'true') document.documentElement.classList.add('dark');
+      updateDarkModeButton();
+    }
+
+    // ===== NOTIFICATIONS =====
+    function requestNotificationPermission() {
+      if ('Notification' in window) {
+        Notification.requestPermission().then(p => { updateNotifButton(); if (p === 'granted') showToast('✅ Notifications enabled!', 'success'); });
+      } else { showToast('❌ Notifications not supported', 'error'); }
+    }
+    function updateNotifButton() {
+      const btn = document.getElementById('notif-btn');
+      if ('Notification' in window && Notification.permission === 'granted') {
+        btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${i18n[currentLang].notifEnabled}</span>`;
+        btn.className = 'w-full flex items-center justify-center space-x-2 bg-gray-400 text-white py-2.5 px-3 rounded-lg text-sm font-medium cursor-default';
+        btn.disabled = true;
+      }
+    }
+    function showBrowserNotification(title, body) {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, { body, requireInteraction: true, tag: 'alfaz-prayer', icon: '/ALFA LOGO icon.jpg' });
+        });
+      } else if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, requireInteraction: true, tag: 'alfaz-prayer' });
+      }
+    }
+
+    // ===== TOAST =====
+    function showToast(message, type = 'info') {
+      const colors = { success:'bg-green-500', error:'bg-red-500', info:'bg-blue-500', prayer:'bg-emerald-600' };
+      const t = document.createElement('div');
+      t.className = `toast ${colors[type]} text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium flex items-center space-x-2 min-w-[280px]`;
+      t.innerHTML = `<span>${message}</span>`;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => t.remove(), 5500);
+    }
+
+    // ===== LANGUAGE =====
+    function changeLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('alfatore_lang', lang);
+      applyLanguage(lang);
+      renderTasks(); updateDarkModeButton(); updateNotifButton();
+      if (userLat) calculateQibla(userLat, userLng);
+      if (Object.keys(prayerTimings).length > 0) { renderPrayerCards(); updateNextPrayer(); }
+    }
+    function applyLanguage(lang) {
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.getAttribute('data-i18n'); if (i18n[lang][k]) el.innerHTML = i18n[lang][k]; });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { const k = el.getAttribute('data-i18n-placeholder'); if (i18n[lang][k]) el.placeholder = i18n[lang][k]; });
+      document.getElementById('date-display').innerText = new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday:'long', month:'long', day:'numeric' });
+    }
+
+    // ===== NAVIGATION =====
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      document.getElementById(viewId).classList.remove('hidden');
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      if (sidebarOpen) toggleSidebar();
+    }
+
+    // ===== TASKS =====
+    function renderTasks() {
+      const list = document.getElementById('task-list');
+      const stats = document.getElementById('task-stats');
+      list.innerHTML = '';
+      const total = tasks.length, done = tasks.filter(t => t.done).length;
+      stats.innerHTML = total > 0 ? `
+        <span><i class="fas fa-list-check me-1"></i>${i18n[currentLang].tasksTotal.replace('{total}', total)}</span>
+        <span class="text-green-500"><i class="fas fa-check me-1"></i>${i18n[currentLang].tasksDone.replace('{done}', done)}</span>
+        ${done > 0 ? `<button onclick="clearCompleted()" class="text-red-400 hover:text-red-600 transition text-xs"><i class="fas fa-broom me-1"></i>Clear</button>` : ''}
+      ` : '';
+      if (!total) { list.innerHTML = `<div class="text-center py-16"><i class="fas fa-clipboard-list text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noTasks}</p></div>`; return; }
+      tasks.forEach((t, i) => {
+        list.innerHTML += `
+          <div class="flex items-center py-3 px-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl group transition hover:shadow-md mb-2">
+            <input type="checkbox" ${t.done ? 'checked' : ''} onclick="toggleTask(${i})" class="w-5 h-5 rounded-full border-gray-300 dark:border-gray-600 cursor-pointer accent-blue-600">
+            <span class="ms-4 flex-1 ${t.done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200 font-medium'}">${t.text}</span>
+            <button onclick="deleteTask(${i})" class="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-lg"><i class="fas fa-trash-can"></i></button>
+          </div>`;
+      });
+    }
+    function addTask(e) {
+      if (e.key === 'Enter') {
+        const inp = document.getElementById('task-input');
+        if (inp.value.trim()) { tasks.unshift({ text: inp.value.trim(), done: false }); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); inp.value = ''; renderTasks(); showToast('✅ Task added!', 'success'); }
+      }
+    }
+    function toggleTask(i) { tasks[i].done = !tasks[i].done; localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); renderTasks(); }
+    function deleteTask(i) { tasks.splice(i, 1); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); renderTasks(); }
+    function clearCompleted() { tasks = tasks.filter(t => !t.done); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); renderTasks(); showToast('🧹 Cleared!', 'info'); }
+
+    // ===== GEOLOCATION & PRAYER TIMES =====
+    function initGeolocation() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; document.getElementById('location-status').innerHTML = `<i class="fas fa-check-circle text-green-500"></i> ${i18n[currentLang].locLocked}: ${userLat.toFixed(2)}, ${userLng.toFixed(2)}`; fetchPrayerTimes(userLat, userLng); calculateQibla(userLat, userLng); },
+        () => { document.getElementById('location-status').innerHTML = `<i class="fas fa-exclamation-triangle text-amber-500"></i> ${i18n[currentLang].locDenied}`; fetchPrayerTimes(21.4225, 39.8262); }
+      );
+    }
+    function fetchPrayerTimes(lat, lng) {
+      const d = new Date(), ds = `${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`;
+      const cacheKey = `alfatore_prayers_${ds}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        prayerTimings = JSON.parse(cached);
+        renderPrayerCards(); updateNextPrayer();
+      }
+      fetch(`https://api.aladhan.com/v1/timings/${ds}?latitude=${lat}&longitude=${lng}&method=5`)
+        .then(r => r.json()).then(data => {
+          prayerTimings = { Fajr: data.data.timings.Fajr, Dhuhr: data.data.timings.Dhuhr, Asr: data.data.timings.Asr, Maghrib: data.data.timings.Maghrib, Isha: data.data.timings.Isha };
+          localStorage.setItem(cacheKey, JSON.stringify(prayerTimings));
+          renderPrayerCards(); updateNextPrayer();
+        }).catch(() => { if (!cached) showToast('❌ Failed to load prayer times', 'error'); });
+    }
+
+    function renderPrayerCards() {
+      const c = document.getElementById('prayer-cards');
+      c.innerHTML = '';
+      const icons = { Fajr:'fa-cloud-moon', Dhuhr:'fa-sun', Asr:'fa-cloud-sun', Maghrib:'fa-cloud-sun-rain', Isha:'fa-moon' };
+      const grads = { Fajr:'from-indigo-500 to-purple-600', Dhuhr:'from-yellow-400 to-orange-500', Asr:'from-orange-400 to-red-500', Maghrib:'from-pink-500 to-rose-600', Isha:'from-blue-800 to-indigo-900' };
+      const now = new Date(), curMins = now.getHours()*60 + now.getMinutes();
+      let nextP = null;
+
+      for (let [name, time] of Object.entries(prayerTimings)) {
+        let [h, m] = time.split(':').map(Number);
+        let pMins = h*60 + m;
+        if (!nextP && pMins > curMins) nextP = name;
+        let ampm = h >= 12 ? (currentLang==='ar'?'م':'PM') : (currentLang==='ar'?'ص':'AM');
+        let h12 = h%12||12, dn = currentLang==='ar'?prayerNamesAr[name]:name;
+        let isNext = nextP===name, isPast = pMins<=curMins;
+
+        c.innerHTML += `
+          <div class="prayer-card ${isNext?'next-prayer ring-2 ring-blue-400':''} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm text-center flex flex-col items-center justify-center hover:shadow-lg transition relative ${isPast&&!isNext?'opacity-50':''}">
+            ${isNext?'<span class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow">Next</span>':''}
+            ${isPast&&!isNext?'<span class="absolute top-2 right-2 text-green-500"><i class="fas fa-check-circle"></i></span>':''}
+            <div class="w-12 h-12 bg-gradient-to-br ${grads[name]} rounded-full flex items-center justify-center mb-3 text-white shadow-md">
+              <i class="fas ${icons[name]} text-lg"></i>
+            </div>
+            <h4 class="font-bold text-gray-700 dark:text-gray-200 text-sm">${dn}</h4>
+            <p class="text-xl font-bold text-gray-800 dark:text-white mt-1" dir="ltr">${h12}:${String(m).padStart(2,'0')} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">${ampm}</span></p>
+          </div>`;
+      }
+    }
+
+    function updateNextPrayer() {
+      const now = new Date(), curMins = now.getHours()*60+now.getMinutes(), el = document.getElementById('next-prayer-text');
+      for (let [name, time] of Object.entries(prayerTimings)) {
+        let [h, m] = time.split(':').map(Number), pMins = h*60+m;
+        if (pMins > curMins) {
+          let diff = pMins-curMins, hrs = Math.floor(diff/60), mins = diff%60;
+          let dn = currentLang==='ar'?prayerNamesAr[name]:name;
+          el.innerHTML = `<i class="fas fa-clock me-1"></i> Next: <strong>${dn}</strong> in ${hrs>0?hrs+'h ':''}${mins}m`;
+          return;
+        }
+      }
+      el.innerHTML = `<i class="fas fa-moon me-1"></i> All prayers completed today. Alhamdulillah! 🤲`;
+    }
+
+    // ===== QIBLA =====
+    function calculateQibla(lat, lng) {
+      const mLat=21.422487*(Math.PI/180), mLng=39.826206*(Math.PI/180), uLat=lat*(Math.PI/180), uLng=lng*(Math.PI/180);
+      const y=Math.sin(mLng-uLng), x=Math.cos(uLat)*Math.tan(mLat)-Math.sin(uLat)*Math.cos(mLng-uLng);
+      qiblaAngle = (Math.atan2(y,x)*(180/Math.PI)+360)%360;
+      document.getElementById('qibla-info').innerHTML = i18n[currentLang].qiblaResult.replace('{angle}', qiblaAngle.toFixed(1));
+      document.getElementById('compass-needle').style.transform = `rotate(${qiblaAngle}deg)`;
+      document.getElementById('qibla-angle-text').textContent = `${qiblaAngle.toFixed(1)}°`;
+    }
+
+    // ===== CLOCK & ALARM =====
+    function initClock() {
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString(currentLang==='ar'?'ar-EG':'en-US');
+        let hhmm = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+        if (now.getSeconds()===0) {
+          for (let p in prayerTimings) { if (prayerTimings[p]===hhmm) triggerAzan(p); }
+          if (Object.keys(prayerTimings).length>0) updateNextPrayer();
+        }
+      }, 1000);
+    }
+
+    function triggerAzan(prayerName) {
+      let pN = currentLang==='ar'?prayerNamesAr[prayerName]:prayerName;
+      let msg = i18n[currentLang].prayerAlert.replace('{prayer}', pN);
+      showBrowserNotification('🕌 Alfaz todo', msg);
+      showToast(msg, 'prayer');
+      playSelectedAzan();
+    }
+
+    function playSelectedAzan() {
+      if (currentAudio) currentAudio.pause();
+      currentAudio = new Audio(azanSources[document.getElementById('azan-select').value]);
+      currentAudio.play().catch(() => showToast('⚠️ Tap to enable audio', 'error'));
+    }
+    function testAzan() { playSelectedAzan(); }
+    function stopAzan() { if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; showToast('⏹ Audio stopped', 'info'); } }
+
+    function requestDeviceOrientation() {
+      if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function') {
+        DeviceOrientationEvent.requestPermission().then(p => { if (p==='granted') { window.addEventListener('deviceorientation', handleOrientation); showToast('🧭 Compass calibrated!','success'); } }).catch(console.error);
+      } else if (typeof DeviceOrientationEvent!=='undefined') { window.addEventListener('deviceorientation', handleOrientation); showToast('🧭 Compass active!','success'); }
+      else { showToast('❌ Compass not available','error'); }
+    }
+    function handleOrientation(e) { if (e.alpha!==null) document.getElementById('compass-needle').style.transform = `rotate(${qiblaAngle-e.alpha}deg)`; }
+  </script>
+</body>
+</html>
