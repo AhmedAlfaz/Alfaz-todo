@@ -44,10 +44,10 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
     .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    .mobile-overlay { display: none; }
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; }
       .sidebar.open { transform: translateX(0); }
-      .mobile-overlay { display: none; }
       .mobile-overlay.active { display: block; }
     }
     .toast {
