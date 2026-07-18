@@ -22,6 +22,7 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     body {
@@ -61,6 +62,65 @@
 </head>
 
 <body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800 transition-all duration-300">
+
+  <!-- ==================== AUTH SCREEN ==================== -->
+  <div id="auth-screen" class="hidden fixed inset-0 bg-gray-50 dark:bg-gray-900 z-[80] flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-2xl shadow-lg mx-auto mb-4">A</div>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Alfaz todo</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-2" data-i18n="authTagline">Islamic tasks, prayer reminders, and more</p>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6" data-i18n="loginTitle">Sign In</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="email">Email</label>
+            <input type="email" id="login-email" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="you@example.com">
+          </div>
+          <div>
+            <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="password">Password</label>
+            <input type="password" id="login-password" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="••••••••">
+          </div>
+          <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition shadow-md flex items-center justify-center">
+            <i class="fas fa-sign-in-alt me-2"></i> <span data-i18n="signIn">Sign In</span>
+          </button>
+        </div>
+        <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+          <span data-i18n="noAccount">Don't have an account?</span>
+          <button onclick="showSignup()" class="text-blue-600 dark:text-blue-400 font-medium hover:underline" data-i18n="signUp">Sign Up</button>
+        </p>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="signup-form" class="hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6" data-i18n="signupTitle">Create Account</h2>
+        <div class="space-y-4">
+          <div>
+            <label for="signup-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="displayName">Display Name</label>
+            <input type="text" id="signup-name" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="Ahmed">
+          </div>
+          <div>
+            <label for="signup-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="email">Email</label>
+            <input type="email" id="signup-email" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="you@example.com">
+          </div>
+          <div>
+            <label for="signup-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="password">Password</label>
+            <input type="password" id="signup-password" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="Min 6 characters">
+          </div>
+          <button onclick="handleSignup()" id="signup-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition shadow-md flex items-center justify-center">
+            <i class="fas fa-user-plus me-2"></i> <span data-i18n="createAccount">Create Account</span>
+          </button>
+        </div>
+        <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+          <span data-i18n="hasAccount">Already have an account?</span>
+          <button onclick="showLogin()" class="text-blue-600 dark:text-blue-400 font-medium hover:underline" data-i18n="signIn">Sign In</button>
+        </p>
+      </div>
+    </div>
+  </div>
 
   <!-- Mobile Menu Button -->
   <button onclick="toggleSidebar()" class="md:hidden fixed top-4 left-4 z-[60] bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition">
@@ -114,6 +174,10 @@
         <i class="fas fa-kaaba text-purple-500 w-5 text-center"></i>
         <span data-i18n="qiblaNavigator">Qibla Navigator</span>
       </button>
+      <button onclick="switchView('groups-view', this); loadGroups();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-users text-cyan-500 w-5 text-center"></i>
+        <span data-i18n="groups">Groups</span>
+      </button>
     </nav>
 
     <!-- Notification Button -->
@@ -121,6 +185,21 @@
       <button onclick="requestNotificationPermission()" id="notif-btn" class="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-bell"></i>
         <span data-i18n="enableNotif">Enable Notifications</span>
+      </button>
+    </div>
+
+    <!-- User Info -->
+    <div id="user-section" class="hidden px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center space-x-3 mb-3">
+        <div id="user-avatar" class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">?</div>
+        <div class="flex-1 min-w-0">
+          <p id="user-display-name" class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">User</p>
+          <p id="user-email" class="text-xs text-gray-400 dark:text-gray-500 truncate">email</p>
+        </div>
+      </div>
+      <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 py-2 px-3 rounded-lg text-sm font-medium transition text-gray-700 dark:text-gray-200">
+        <i class="fas fa-sign-out-alt"></i>
+        <span data-i18n="signOut">Sign Out</span>
       </button>
     </div>
   </aside>
@@ -239,6 +318,35 @@
       </button>
     </div>
 
+    <!-- ===== 4. GROUPS ===== -->
+    <div id="groups-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="groups">Groups</h2>
+        <span class="text-4xl">👥</span>
+      </div>
+
+      <!-- Create / Join Group -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-3" data-i18n="createGroup">Create a Group</h3>
+          <input type="text" id="group-name-input" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:border-blue-500 mb-2" data-i18n-placeholder="groupNamePlaceholder" placeholder="Group name">
+          <button onclick="createGroup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition">
+            <i class="fas fa-plus me-1"></i> <span data-i18n="create">Create</span>
+          </button>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-3" data-i18n="joinGroup">Join a Group</h3>
+          <input type="text" id="invite-code-input" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:border-blue-500 mb-2 font-mono" data-i18n-placeholder="inviteCodePlaceholder" placeholder="Invite code">
+          <button onclick="joinGroup()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition">
+            <i class="fas fa-sign-in-alt me-1"></i> <span data-i18n="join">Join</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Group List -->
+      <div id="group-list" class="space-y-3"></div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -258,7 +366,20 @@
         enableNotif: "Enable Notifications", notifEnabled: "Notifications Enabled ✓",
         noTasks: "No tasks yet. Add one above! ☀️",
         tasksTotal: "{total} tasks", tasksDone: "{done} completed",
-        darkMode: "Dark Mode", lightMode: "Light Mode"
+        darkMode: "Dark Mode", lightMode: "Light Mode",
+        authTagline: "Islamic tasks, prayer reminders, and more",
+        loginTitle: "Sign In", signupTitle: "Create Account",
+        email: "Email", password: "Password", displayName: "Display Name",
+        signIn: "Sign In", signUp: "Sign Up", createAccount: "Create Account",
+        noAccount: "Don't have an account?", hasAccount: "Already have an account?",
+        signOut: "Sign Out", signedInAs: "Signed in as {name}",
+        authError: "Authentication error. Please try again.",
+        accountCreated: "Account created! Check your email to verify.",
+        groups: "Groups", createGroup: "Create a Group", joinGroup: "Join a Group",
+        groupNamePlaceholder: "Group name", inviteCodePlaceholder: "Invite code",
+        create: "Create", join: "Join", groupCreated: "Group created! Share the invite code:",
+        joinedGroup: "Joined group!", members: "Members", inviteCode: "Invite Code",
+        noGroups: "No groups yet. Create or join one above!", copyCode: "Copied!"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -273,7 +394,20 @@
         enableNotif: "تفعيل الإشعارات", notifEnabled: "الإشعارات مفعلة ✓",
         noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",
         tasksTotal: "{total} مهام", tasksDone: "{done} مكتملة",
-        darkMode: "الوضع المظلم", lightMode: "الوضع الفاتح"
+        darkMode: "الوضع المظلم", lightMode: "الوضع الفاتح",
+        authTagline: "مهام إسلامية، تذكيرات صلاة، والمزيد",
+        loginTitle: "تسجيل الدخول", signupTitle: "إنشاء حساب",
+        email: "البريد الإلكتروني", password: "كلمة المرور", displayName: "الاسم",
+        signIn: "تسجيل الدخول", signUp: "إنشاء حساب", createAccount: "إنشاء حساب",
+        noAccount: "ليس لديك حساب؟", hasAccount: "لديك حساب بالفعل؟",
+        signOut: "تسجيل الخروج", signedInAs: "مسجل الدخول كـ {name}",
+        authError: "خطأ في المصادقة. يرجى المحاولة مرة أخرى.",
+        accountCreated: "تم إنشاء الحساب! تحقق من بريدك الإلكتروني للتأكيد.",
+        groups: "المجموعات", createGroup: "إنشاء مجموعة", joinGroup: "الانضمام لمجموعة",
+        groupNamePlaceholder: "اسم المجموعة", inviteCodePlaceholder: "كود الدعوة",
+        create: "إنشاء", join: "انضم", groupCreated: "تم إنشاء المجموعة! شارك كود الدعوة:",
+        joinedGroup: "تم الانضمام للمجموعة!", members: "الأعضاء", inviteCode: "كود الدعوة",
+        noGroups: "لا توجد مجموعات بعد. أنشئ أو انضم واحدة!", copyCode: "تم النسخ!"
       }
     };
 
@@ -281,6 +415,167 @@
     let tasks = []; try { tasks = JSON.parse(localStorage.getItem('alfatore_tasks')) || []; } catch(e) {}
     let currentLang = localStorage.getItem('alfatore_lang') || 'en';
     let userLat = null, userLng = null, qiblaAngle = 0, prayerTimings = {}, currentAudio = null, sidebarOpen = false;
+
+    // ===== SUPABASE =====
+    const SUPABASE_URL = 'https://fxceebqojhfupsmadswl.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_lJ79GPgoaRIZPz941Ceyjg_Y6wDnqjt';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = null;
+
+    async function checkSession() {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) { currentUser = session.user; showApp(); loadUserTasks(); } else { showAuth(); }
+    }
+    function showAuth() {
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('sidebar').classList.add('hidden');
+      document.getElementById('mobile-overlay').classList.add('hidden');
+      document.querySelector('main').classList.add('hidden');
+    }
+    function showApp() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('sidebar').classList.remove('hidden');
+      document.querySelector('main').classList.remove('hidden');
+      updateUserUI();
+    }
+    function updateUserUI() {
+      if (!currentUser) return;
+      const name = currentUser.user_metadata?.display_name || currentUser.email?.split('@')[0] || 'User';
+      const initial = name.charAt(0).toUpperCase();
+      document.getElementById('user-avatar').textContent = initial;
+      document.getElementById('user-display-name').textContent = name;
+      document.getElementById('user-email').textContent = currentUser.email;
+      document.getElementById('user-section').classList.remove('hidden');
+    }
+    function showLogin() {
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('signup-form').classList.add('hidden');
+    }
+    function showSignup() {
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('signup-form').classList.remove('hidden');
+    }
+    async function handleLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!email || !password) { showToast('⚠️ Please fill all fields', 'error'); return; }
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Signing in...';
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i> <span data-i18n="signIn">Sign In</span>';
+      if (error) { showToast('❌ ' + (error.message || i18n[currentLang].authError), 'error'); return; }
+      currentUser = data.user; showApp(); loadUserTasks();
+    }
+    async function handleSignup() {
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      if (!name || !email || !password) { showToast('⚠️ Please fill all fields', 'error'); return; }
+      const btn = document.getElementById('signup-btn');
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Creating...';
+      const { data, error } = await db.auth.signUp({ email, password, options: { data: { display_name: name } } });
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus me-2"></i> <span data-i18n="createAccount">Create Account</span>';
+      if (error) { showToast('❌ ' + (error.message || i18n[currentLang].authError), 'error'); return; }
+      showToast('✅ ' + i18n[currentLang].accountCreated, 'success');
+      showLogin();
+    }
+    async function handleLogout() {
+      await db.auth.signOut();
+      currentUser = null; tasks = []; localStorage.removeItem('alfatore_tasks');
+      renderTasks(); showAuth();
+    }
+
+    // ===== TASK SYNC =====
+    async function loadUserTasks() {
+      if (!currentUser) return;
+      try {
+        const { data, error } = await db.from('tasks').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          tasks = data.map(t => ({ id: t.id, text: t.title, done: t.done }));
+          localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+          renderTasks();
+        }
+      } catch(e) {}
+    }
+    async function syncTask(task, action) {
+      if (!currentUser) return;
+      try {
+        if (action === 'insert') {
+          const { data, error } = await db.from('tasks').insert({ user_id: currentUser.id, title: task.text, done: task.done }).select().single();
+          if (!error && data) task.id = data.id;
+        } else if (action === 'update') {
+          await db.from('tasks').update({ title: task.text, done: task.done }).eq('id', task.id);
+        } else if (action === 'delete') {
+          await db.from('tasks').delete().eq('id', task.id);
+        }
+      } catch(e) {}
+    }
+
+    // ===== GROUPS =====
+    function generateInviteCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return code;
+    }
+    async function createGroup() {
+      if (!currentUser) return;
+      const name = document.getElementById('group-name-input').value.trim();
+      if (!name) { showToast('⚠️ Enter a group name', 'error'); return; }
+      try {
+        const code = generateInviteCode();
+        const { data, error } = await db.from('groups').insert({ name, invite_code: code, created_by: currentUser.id }).select().single();
+        if (error) throw error;
+        await db.from('group_members').insert({ group_id: data.id, user_id: currentUser.id, role: 'admin' });
+        document.getElementById('group-name-input').value = '';
+        showToast('✅ ' + i18n[currentLang].groupCreated + ' ' + code, 'success');
+        loadGroups();
+      } catch(e) { showToast('❌ Error creating group', 'error'); }
+    }
+    async function joinGroup() {
+      if (!currentUser) return;
+      const code = document.getElementById('invite-code-input').value.trim().toUpperCase();
+      if (!code) { showToast('⚠️ Enter an invite code', 'error'); return; }
+      try {
+        const { data: group, error: findErr } = await db.from('groups').select('*').eq('invite_code', code).single();
+        if (findErr || !group) { showToast('❌ Group not found', 'error'); return; }
+        const { error: memErr } = await db.from('group_members').insert({ group_id: group.id, user_id: currentUser.id, role: 'member' });
+        if (memErr) { showToast('❌ Already in this group', 'error'); return; }
+        document.getElementById('invite-code-input').value = '';
+        showToast('✅ ' + i18n[currentLang].joinedGroup, 'success');
+        loadGroups();
+      } catch(e) { showToast('❌ Error joining group', 'error'); }
+    }
+    async function loadGroups() {
+      if (!currentUser) return;
+      try {
+        const { data: memberships } = await db.from('group_members').select('group_id').eq('user_id', currentUser.id);
+        if (!memberships || memberships.length === 0) {
+          document.getElementById('group-list').innerHTML = `<div class="text-center py-12"><i class="fas fa-users text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noGroups}</p></div>`;
+          return;
+        }
+        const groupIds = memberships.map(m => m.group_id);
+        const { data: groups } = await db.from('groups').select('*').in('id', groupIds);
+        const list = document.getElementById('group-list');
+        list.innerHTML = '';
+        for (const g of (groups || [])) {
+          const { count } = await db.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
+          list.innerHTML += `
+            <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 dark:text-white text-lg">${g.name}</h4>
+                <span class="text-sm text-gray-400 dark:text-gray-500">${count || 0} ${i18n[currentLang].members}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400">${i18n[currentLang].inviteCode}:</span>
+                <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-blue-600 dark:text-blue-400">${g.invite_code}</code>
+                <button onclick="navigator.clipboard.writeText('${g.invite_code}');showToast('✅ '+i18n[currentLang].copyCode,'success')" class="text-gray-400 hover:text-blue-500 transition text-sm"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>`;
+        }
+      } catch(e) {}
+    }
 
     const prayerNamesAr = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
 
@@ -304,6 +599,7 @@
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
       }
+      checkSession();
     });
 
     // ===== SIDEBAR (MOBILE) =====
@@ -416,12 +712,34 @@
     function addTask(e) {
       if (e.key === 'Enter') {
         const inp = document.getElementById('task-input');
-        if (inp.value.trim()) { tasks.unshift({ text: inp.value.trim(), done: false }); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); inp.value = ''; renderTasks(); showToast('✅ Task added!', 'success'); }
+        if (inp.value.trim()) {
+          const task = { text: inp.value.trim(), done: false };
+          tasks.unshift(task); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+          syncTask(task, 'insert');
+          inp.value = ''; renderTasks(); showToast('✅ Task added!', 'success');
+        }
       }
     }
-    function toggleTask(i) { tasks[i].done = !tasks[i].done; localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); renderTasks(); }
-    function deleteTask(i) { tasks.splice(i, 1); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); renderTasks(); }
-    function clearCompleted() { tasks = tasks.filter(t => !t.done); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); renderTasks(); showToast('🧹 Cleared!', 'info'); }
+    function toggleTask(i) {
+      tasks[i].done = !tasks[i].done;
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      syncTask(tasks[i], 'update');
+      renderTasks();
+    }
+    function deleteTask(i) {
+      const task = tasks[i];
+      tasks.splice(i, 1);
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      if (task.id) syncTask(task, 'delete');
+      renderTasks();
+    }
+    function clearCompleted() {
+      const deleted = tasks.filter(t => t.done);
+      tasks = tasks.filter(t => !t.done);
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      deleted.forEach(t => { if (t.id) syncTask(t, 'delete'); });
+      renderTasks(); showToast('🧹 Cleared!', 'info');
+    }
 
     // ===== GEOLOCATION & PRAYER TIMES =====
     function initGeolocation() {

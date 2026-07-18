@@ -73,8 +73,32 @@ Stop immediately and discuss with me when:
 - [2026-07-17] Lesson: Offline-first is critical. Even with a cloud backend (Supabase), the app must work without internet for cached/personal data. Always design for offline reading, online writing.
 - [2026-07-17] Lesson: Be patient. Don't rush to build until CEO has fully explained and clarified. Let them finish thinking before jumping to code.
 - [2026-07-18] Lesson: Don't suggest refactoring tools/libraries early in a project. "Dev-only" warnings are noted, not blockers. Focus on features, not premature optimization.
+- [2026-07-18] Lesson: Supabase free tier hard limits: 500 MB database, 1 GB storage, 5 GB bandwidth, 50K MAU, 200 realtime peak connections. Project pauses after 1 week inactivity. Max 2 free projects. No automatic backups. Schema must be designed around 500 MB — every row counts.
+- [2026-07-18] Lesson: For a first real project, minimalize according to current knowledge level and database limitations. Don't overbuild. Start small, learn by building, validate with limited real users, then grow.
+- [2026-07-18] Lesson: Target specific user groups with features they genuinely need daily. This manages limited resources effectively and delivers quality over quantity.
+- [2026-07-18] Lesson: Supabase requires email confirmation by default. New users cannot log in until they click the verification email. For testing, disable it in Authentication → Providers → Email → Confirm email. Re-enable for production.
 
-## 7. Project Context
+## 7. Infrastructure Constraints (Supabase Free Tier)
+
+- Database: 500 MB — schema must be minimal, no wasted columns
+- File storage: 1 GB — limit images/attachments
+- Bandwidth: 5 GB/month — minimize API calls, cache aggressively
+- MAU: 50,000 — generous for now
+- Realtime: 200 peak connections — chat limited to 200 concurrent
+- Inactivity: project pauses after 1 week — need keepalive
+- Max 2 free projects — don't waste on experiments
+- No automatic backups — we handle our own
+
+## 8. Growth Strategy
+
+- Start minimal: match app to current skills + free DB limits
+- Learn by building: each phase teaches something new
+- Validate with real users: small group first, features they actually need daily
+- Grow organically: infrastructure scales when project proves itself
+- Long-term vision: paid databases, global model, investment-grade product
+- Don't build for "everyone" — build for specific people with specific daily needs
+
+## 9. Project Context
 
 - **App name:** Alfaz todo
 - Full project details, stack, conventions, file boundaries → see `AGENTS.md`

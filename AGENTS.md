@@ -16,6 +16,7 @@ Static single-page PWA: **Alfaz todo** — Islamic tasks, prayer reminders, and 
 
 - **Tailwind CSS** via CDN (`cdn.tailwindcss.com`) with inline config — no local Tailwind install
 - **Font Awesome 6.4** via CDN for icons
+- **Supabase JS SDK** via CDN for auth, database, realtime, storage
 - **Aladhan API** (`api.aladhan.com`) for prayer times — requires internet
 - **localStorage** for tasks, language, dark mode, and prayer time caching
 - No framework, no npm, no build step
@@ -63,3 +64,11 @@ Static single-page PWA: **Alfaz todo** — Islamic tasks, prayer reminders, and 
 | `AGENTS.md` | Update with project changes | Major rewrites | — |
 | `project-draft.md` | Add ideas, update status | — | — |
 | `2/index2.html` | **NEVER** touch | — | Unless explicitly asked |
+
+## Data Constraints (Supabase Free Tier)
+
+- Max 500 MB database — every row must earn its place
+- Max 1 GB file storage — text-only chat for v1, limit images
+- Max 5 GB bandwidth/month — cache aggressively, sync deltas only
+- No automatic backups — snapshot localStorage + Supabase regularly
+- Project pauses after 1 week inactivity — need keepalive
