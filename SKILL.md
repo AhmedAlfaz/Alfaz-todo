@@ -70,6 +70,9 @@ Stop immediately and discuss with me when:
 - [2026-07-17] Lesson: setInterval with seconds===0 check misses notifications if tab is backgrounded (browser throttles timers). Need a more robust approach for time-critical events.
 - [2026-07-17] Lesson: Don't jump to execute. Wait for the CEO to finish explaining and clarifying orders first. Ask "Ready to proceed?" before creating or editing anything. Giving time to talk saves rework.
 - [2026-07-17] Lesson: When CEO shares a vision or brainstorm, save it in a dedicated draft file (project-draft.md) before it gets lost in conversation. These thoughts shape the roadmap.
+- [2026-07-17] Lesson: Offline-first is critical. Even with a cloud backend (Supabase), the app must work without internet for cached/personal data. Always design for offline reading, online writing.
+- [2026-07-17] Lesson: Be patient. Don't rush to build until CEO has fully explained and clarified. Let them finish thinking before jumping to code.
+- [2026-07-18] Lesson: Don't suggest refactoring tools/libraries early in a project. "Dev-only" warnings are noted, not blockers. Focus on features, not premature optimization.
 
 ## 7. Project Context
 

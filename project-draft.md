@@ -54,10 +54,40 @@
 - [ ] Voice notes
 
 ## Technical Direction
-- Supabase for backend (auth + database + realtime + storage)
-- CDN-only frontend (no build system)
-- PWA installable on mobile
-- Encrypted data at rest
+- **Backend:** Supabase (auth + database + realtime + storage)
+- **Frontend:** CDN-only, no build system (Tailwind, Font Awesome, Supabase JS SDK)
+- **PWA:** installable on mobile, works offline after first load
+- **Data:** Encrypted at rest (Supabase handles this)
+- **Hosting:** GitHub Pages (frontend) + Supabase Cloud (backend)
+
+## Offline Strategy
+
+> **Offline-first reading, online-first writing.** App always works offline for cached data. Writes sync when connection is available.
+
+### Works Offline (no internet needed)
+- Personal tasks (localStorage)
+- Prayer times (cached after first load)
+- Qibla compass (pure math)
+- App navigation and UI (service worker)
+- Dark mode / language preferences
+
+### Needs Internet (syncs when connected)
+- Shared group tasks → Supabase, cached in localStorage
+- Announcements → Supabase, cached in localStorage
+- Chat messages → Supabase, cached in localStorage
+- Login/signup → must be online to authenticate
+
+### Offline UX
+- Show "You're offline" banner when no connection
+- Changes saved locally, auto-sync when back online
+- Last-write-wins for conflicts (simplest for v1)
+
+## Decisions Log
+
+- [2026-07-17] Supabase confirmed as backend (over Hostinger — easier, faster, scales better)
+- [2026-07-17] Cloud-first with offline caching (over local-only — app needs internet for team features)
+- [2026-07-17] Working as CEO + PM pair — SKILL.md + AGENTS.md govern workflow
+- [2026-07-17] Offline-first reading, online-first writing — app works without internet for cached data
 
 ## Competitive Landscape
 - Todoist, Microsoft To-Do, Google Tasks — personal only, no team features
@@ -73,3 +103,6 @@
 - How do we balance features vs. simplicity?
 - What's the go-to-market strategy for a community tool?
 - Free forever, or freemium?
+- Auth methods: Google only, or also email/password and phone?
+- Group invite system: invite codes, links, or QR codes?
+- How to handle data conflicts when two people edit offline?
