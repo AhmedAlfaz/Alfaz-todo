@@ -30,8 +30,8 @@
 ## Core Feature Ideas (unsorted, evolving)
 
 ### Must Have (v1 candidates)
-- [ ] User accounts + authentication
-- [ ] Cloud sync (tasks across devices)
+- [x] User accounts + authentication ✓
+- [x] Cloud sync (tasks across devices) ✓
 - [ ] Groups / organizations
 - [ ] Shared task lists
 - [ ] Announcements
@@ -46,19 +46,19 @@
 - [ ] Admin dashboard
 - [ ] Role-based permissions
 - [ ] Audit logs
-- [ ] Multi-language support beyond EN/AR
+- [x] Multi-language support beyond EN/AR ✓
 - [ ] Premium features / monetization
 
 ### Dream Features (future)
 - [ ] Custom branding for organizations
 - [ ] API for third-party integrations
 - [ ] Mobile app (native)
-- [ ] Voice notes
+- [x] Voice notes (researched — Web Speech API viable)
 
 ## Technical Direction
-- **Backend:** Supabase (auth + database + realtime + storage)
-- **Frontend:** CDN-only, no build system (Tailwind, Font Awesome, Supabase JS SDK)
-- **PWA:** installable on mobile, works offline after first load
+- **Backend:** Supabase (auth + database + realtime + storage) ✓
+- **Frontend:** CDN-only, no build system (Tailwind, Font Awesome, Supabase JS SDK) ✓
+- **PWA:** installable on mobile, works offline after first load ✓
 - **Data:** Encrypted at rest (Supabase handles this)
 - **Hosting:** GitHub Pages (frontend) + Supabase Cloud (backend)
 
@@ -67,17 +67,17 @@
 > **Offline-first reading, online-first writing.** App always works offline for cached data. Writes sync when connection is available.
 
 ### Works Offline (no internet needed)
-- Personal tasks (localStorage)
-- Prayer times (cached after first load)
-- Qibla compass (pure math)
-- App navigation and UI (service worker)
-- Dark mode / language preferences
+- Personal tasks (localStorage) ✓
+- Prayer times (cached after first load) ✓
+- Qibla compass (pure math) ✓
+- App navigation and UI (service worker) ✓
+- Dark mode / language preferences ✓
 
 ### Needs Internet (syncs when connected)
 - Shared group tasks → Supabase, cached in localStorage
 - Announcements → Supabase, cached in localStorage
 - Chat messages → Supabase, cached in localStorage
-- Login/signup → must be online to authenticate
+- Login/signup → must be online to authenticate ✓
 
 ### Offline UX
 - Show "You're offline" banner when no connection
@@ -93,6 +93,13 @@
 - [2026-07-18] Minimalize first — match project to current knowledge + database limits
 - [2026-07-18] Target specific user groups with features they genuinely need daily
 - [2026-07-18] Start small, learn by building, validate with limited real users, then grow
+- [2026-07-18] Azan audio fixed — replaced broken CDN links with real Azan MP3s from Kiwifu/adhan-mp3, stored locally
+- [2026-07-18] Supabase key format corrected — was using invalid `sb_publishable_...` format, now using correct JWT
+- [2026-07-19] Phase 0 complete — all bugs fixed, auth working, cloud sync verified
+- [2026-07-19] Phase 1 complete — Supabase auth + cloud tasks working end-to-end
+- [2026-07-19] TickTick research complete — 8 key features identified for inspiration
+- [2026-07-19] Voice input researched — Web Speech API viable on Chrome/Edge/Android, limited on iOS
+- [2026-07-19] Alert options researched — Notification API + Service Worker viable for reminders
 
 ## Supabase Free Tier Constraints
 
@@ -109,27 +116,40 @@
 
 ## Development Phases
 
-### Phase 0 (Current) — Fix Bugs + Learn
-- Fix all existing bugs (7 fixed, azan audio pending)
-- Learn Supabase basics
-- Define first user group
+### Phase 0 (COMPLETE ✓) — Fix Bugs + Learn
+- Fix all existing bugs (7 fixed, azan audio FIXED ✓)
+- Learn Supabase basics ✓
+- Define first user group ✓
 
-### Phase 1 — Foundation
-- Supabase project setup
-- Auth (email + password)
-- Database schema (users, tasks)
-- Basic cloud sync (personal tasks)
+### Phase 1 (COMPLETE ✓) — Foundation
+- Supabase project setup ✓
+- Auth (email + password) ✓
+- Database schema (users, tasks) ✓
+- Basic cloud sync (personal tasks) ✓
 
-### Phase 2 — Team Features
+### Phase 2 (IN PROGRESS) — Personal Productivity
+**Goal:** Make the personal experience excellent before adding team features
+
+- [ ] Task structure upgrade (due dates, priorities, status)
+- [ ] Smart lists (Today, Upcoming, Overdue, High Priority)
+- [ ] Recurring tasks (daily, weekly, monthly)
+- [ ] Voice input (Web Speech API)
+- [ ] Natural language parsing (auto-detect dates/times)
+- [ ] Reminders & alerts (browser notifications)
+
+**Timeline:** ~6 weeks
+**Status:** Research complete, planning in progress
+
+### Phase 3 — Team Features
 - Groups / organizations
 - Shared task lists
 - Announcements
 
-### Phase 3 — Communication
+### Phase 4 — Communication
 - Chat (text-only for v1)
 - Real-time updates
 
-### Phase 4+ — Scale
+### Phase 5+ — Scale
 - Paid database when needed
 - Advanced features
 - Global expansion

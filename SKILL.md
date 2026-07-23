@@ -77,6 +77,8 @@ Stop immediately and discuss with me when:
 - [2026-07-18] Lesson: For a first real project, minimalize according to current knowledge level and database limitations. Don't overbuild. Start small, learn by building, validate with limited real users, then grow.
 - [2026-07-18] Lesson: Target specific user groups with features they genuinely need daily. This manages limited resources effectively and delivers quality over quantity.
 - [2026-07-18] Lesson: Supabase requires email confirmation by default. New users cannot log in until they click the verification email. For testing, disable it in Authentication → Providers → Email → Confirm email. Re-enable for production.
+- [2026-07-23] Lesson: Fixed azan audio bug — replaced broken CDN links (which pointed to Quran recitations) with verified local MP3 files from Kiwifu/adhan-mp3 GitHub repo. Local files are more reliable, work offline, and avoid external dependency issues.
+- [2026-07-23] Lesson: NEVER reference variables that don't exist in the codebase. `prayerSoundsEnabled` was used without being declared, causing a ReferenceError that silently killed the entire reminder function. Before writing code, verify every variable/function actually exists. Test each feature end-to-end before calling it "done."
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 

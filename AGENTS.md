@@ -34,7 +34,7 @@ Static single-page PWA: **Alfaz todo** — Islamic tasks, prayer reminders, and 
 - Open `index.html` directly in a browser to preview — no dev server needed
 - CDN dependencies mean changes require internet to render correctly
 - Prayer times use calculation method 5 (Umm al-Qura) — don't change without reason
-- Azan audio sources are CDN-hosted Quran recitations from `cdn.islamic.network`
+- Azan audio files are local MP3s in `audio/` folder (makkah, madinah, alaqsa, egypt, turkey)
 
 ## Agent Rules
 

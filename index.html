@@ -58,6 +58,20 @@
     }
     @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100px); opacity: 0; } }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .smart-tab.active { background-color: #DBEAFE; color: #1D4ED8; border-color: #93C5FD; font-weight: 600; }
+    .dark .smart-tab.active { background-color: rgba(30, 58, 138, 0.5); color: #93C5FD; border-color: #1E40AF; }
+    .priority-btn.active-low { background-color: #F3F4F6; color: #6B7280; border-color: #D1D5DB; }
+    .priority-btn.active-med { background-color: #FEF3C7; color: #D97706; border-color: #FCD34D; }
+    .priority-btn.active-high { background-color: #FEE2E2; color: #DC2626; border-color: #FCA5A5; }
+    .dark .priority-btn.active-low { background-color: #374151; color: #9CA3AF; border-color: #4B5563; }
+    .dark .priority-btn.active-med { background-color: rgba(217, 119, 6, 0.15); color: #FBBF24; border-color: #92400E; }
+    .dark .priority-btn.active-high { background-color: rgba(220, 38, 38, 0.15); color: #F87171; border-color: #991B1B; }
+    .wkday.active { background-color: #2563EB; color: white; }
+    .dark .wkday.active { background-color: #1D4ED8; color: white; }
+    .recurrence-opt.active { background-color: #DBEAFE; color: #1D4ED8; font-weight: 600; }
+    .dark .recurrence-opt.active { background-color: rgba(30, 58, 138, 0.5); color: #93C5FD; }
   </style>
 </head>
 
@@ -210,15 +224,98 @@
     <!-- ===== 1. MY DAY / TASKS ===== -->
     <div id="tasks-view" class="view-section max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-1">
-        <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="myDay">My Day</h2>
-        <span class="text-4xl">☀️</span>
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white" id="tasks-heading" data-i18n="myDay">My Day</h2>
+        <span class="text-4xl" id="tasks-emoji">☀️</span>
       </div>
-      <p class="text-gray-500 dark:text-gray-400 text-sm mb-6" id="date-display">Date</p>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-4" id="date-display">Date</p>
+
+      <!-- Smart List Tabs -->
+      <div class="flex space-x-2 mb-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1" id="smart-list-tabs">
+        <button onclick="switchSmartList('today')" data-smart="today"
+          class="smart-tab active whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition flex items-center gap-1.5">
+          <i class="fas fa-sun text-amber-400"></i>
+          <span data-i18n="myDay">My Day</span>
+        </button>
+        <button onclick="switchSmartList('upcoming')" data-smart="upcoming"
+          class="smart-tab whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 transition flex items-center gap-1.5">
+          <i class="fas fa-calendar-week text-blue-400"></i>
+          <span data-i18n="upcoming">Upcoming</span>
+        </button>
+        <button onclick="switchSmartList('overdue')" data-smart="overdue"
+          class="smart-tab whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 transition flex items-center gap-1.5">
+          <i class="fas fa-exclamation-circle text-red-400"></i>
+          <span data-i18n="overdue">Overdue</span>
+        </button>
+        <button onclick="switchSmartList('high')" data-smart="high"
+          class="smart-tab whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 transition flex items-center gap-1.5">
+          <i class="fas fa-flag text-red-500"></i>
+          <span data-i18n="highPriority">High Priority</span>
+        </button>
+        <button onclick="switchSmartList('all')" data-smart="all"
+          class="smart-tab whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 transition flex items-center gap-1.5">
+          <i class="fas fa-list text-gray-400"></i>
+          <span data-i18n="allTasks">All Tasks</span>
+        </button>
+      </div>
 
       <!-- Add Task -->
-      <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 flex items-center p-4 hover:shadow-md transition">
-        <i class="fas fa-plus text-blue-500 me-3 text-lg"></i>
-        <input type="text" id="task-input" onkeydown="addTask(event)" data-i18n-placeholder="addTaskPlaceholder" placeholder="Add a task (Press Enter to save)" class="bg-transparent border-none focus:outline-none w-full text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-white">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 p-4 hover:shadow-md transition">
+        <div class="flex items-center">
+          <i class="fas fa-plus text-blue-500 me-3 text-lg"></i>
+          <input type="text" id="task-input" onkeydown="addTask(event)" data-i18n-placeholder="addTaskPlaceholder" placeholder="Add a task (Press Enter to save)" class="bg-transparent border-none focus:outline-none w-full text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-white pe-10">
+          <button id="mic-btn" onclick="toggleVoiceInput()" title="Voice input" class="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition p-1 rounded-lg flex-shrink-0">
+            <i class="fas fa-microphone text-lg" id="mic-icon"></i>
+          </button>
+        </div>
+        <!-- Task options row -->
+        <div class="flex items-center gap-2 mt-2 flex-wrap">
+          <input type="date" id="task-due-date" class="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
+          <input type="time" id="task-due-time" class="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500">
+          <select id="task-reminder" class="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-gray-700 dark:text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer">
+            <option value="" data-i18n="noReminder">No reminder</option>
+            <option value="0">At time</option>
+            <option value="5">5 min before</option>
+            <option value="10">10 min before</option>
+            <option value="15">15 min before</option>
+            <option value="30">30 min before</option>
+            <option value="60">1 hour before</option>
+            <option value="120">2 hours before</option>
+            <option value="1440">1 day before</option>
+          </select>
+          <div class="flex items-center gap-1">
+            <button onclick="setPriority(0)" id="prio-0" class="priority-btn px-2 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600" data-i18n="priorityLow">Low</button>
+            <button onclick="setPriority(1)" id="prio-1" class="priority-btn px-2 py-0.5 rounded-full text-xs font-medium border bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 active-med" data-i18n="priorityMed">Med</button>
+            <button onclick="setPriority(2)" id="prio-2" class="priority-btn px-2 py-0.5 rounded-full text-xs font-medium border bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600" data-i18n="priorityHigh">High</button>
+          </div>
+          <button onclick="toggleRecurrencePicker()" id="recurrence-btn" class="text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900 dark:hover:text-blue-400 transition flex items-center gap-1">
+            <i class="fas fa-repeat"></i>
+            <span data-i18n="noRepeat">No repeat</span>
+          </button>
+          <button onclick="clearTaskInputs()" class="text-xs px-2 py-1 rounded-lg text-gray-400 hover:text-red-500 transition" title="Clear">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <!-- Recurrence Picker (hidden by default) -->
+        <div id="recurrence-picker" class="hidden mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <div class="flex flex-wrap gap-2 mb-2">
+            <button onclick="setRecurrence('daily')" class="recurrence-opt text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition" data-i18n="daily">Daily</button>
+            <button onclick="setRecurrence('weekly')" class="recurrence-opt text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition" data-i18n="weekly">Weekly</button>
+            <button onclick="setRecurrence('monthly')" class="recurrence-opt text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition" data-i18n="monthly">Monthly</button>
+          </div>
+          <div id="recurrence-weekdays" class="hidden flex gap-1 mb-2">
+            <button onclick="toggleWeekday(0)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">S</button>
+            <button onclick="toggleWeekday(1)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">M</button>
+            <button onclick="toggleWeekday(2)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">T</button>
+            <button onclick="toggleWeekday(3)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">W</button>
+            <button onclick="toggleWeekday(4)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">T</button>
+            <button onclick="toggleWeekday(5)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">F</button>
+            <button onclick="toggleWeekday(6)" class="wkday w-8 h-8 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">S</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-gray-500 dark:text-gray-400" data-i18n="endRepeat">End:</label>
+            <input type="date" id="recurrence-end-date" class="text-xs border rounded-lg px-2 py-1 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-700 dark:text-gray-200 focus:outline-none">
+          </div>
+        </div>
       </div>
 
       <!-- Task Stats -->
@@ -252,6 +349,14 @@
               <option value="2" data-i18n="alaqsa">Al-Aqsa</option>
               <option value="3" data-i18n="egypt">Egypt</option>
               <option value="4" data-i18n="turkey">Turkey</option>
+              <option value="5">Mishary Alafasy</option>
+              <option value="6">Alafasy (Alt)</option>
+              <option value="7">Ahmad Al-Nafees</option>
+              <option value="8">Hafiz Ozcan (Turkey)</option>
+              <option value="9">Alafasy (Dubai)</option>
+              <option value="10">Mansour Al-Zahrani</option>
+              <option value="11">Al-Aqsa (Mujir)</option>
+              <option value="12">Madinah Haram</option>
             </select>
           </div>
         </div>
@@ -289,22 +394,29 @@
       <p class="text-gray-500 dark:text-gray-400 text-center w-full mb-8" id="qibla-info" data-i18n="calculating">Calculating coordinates...</p>
 
       <!-- Compass -->
-      <div class="relative w-72 h-72 border-[8px] border-gray-200 dark:border-gray-600 rounded-full flex items-center justify-center shadow-2xl bg-white dark:bg-gray-800" dir="ltr">
-        <div class="absolute top-3 text-red-500 font-bold text-sm">N</div>
-        <div class="absolute bottom-3 text-gray-400 font-bold text-sm">S</div>
-        <div class="absolute right-3 text-gray-400 font-bold text-sm">E</div>
-        <div class="absolute left-3 text-gray-400 font-bold text-sm">W</div>
-        <div class="absolute top-7 right-9 text-gray-300 dark:text-gray-600 text-xs">45°</div>
-        <div class="absolute bottom-7 right-9 text-gray-300 dark:text-gray-600 text-xs">135°</div>
-        <div class="absolute bottom-7 left-9 text-gray-300 dark:text-gray-600 text-xs">225°</div>
-        <div class="absolute top-7 left-9 text-gray-300 dark:text-gray-600 text-xs">315°</div>
-
-        <!-- Needle -->
-        <div id="compass-needle" class="absolute w-1 h-32 origin-bottom transition-transform duration-700 ease-out" style="transform: rotate(0deg); bottom: 50%;">
-          <div class="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[28px] border-l-transparent border-r-transparent border-b-green-600 absolute -top-6 -left-[9px] drop-shadow-md"></div>
-          <div class="w-1.5 h-full bg-gradient-to-b from-green-600 to-green-400 rounded-full mx-auto"></div>
+      <div class="relative w-72 h-72" dir="ltr">
+        <!-- Outer ring -->
+        <div class="absolute inset-0 rounded-full border-[8px] border-gray-200 dark:border-gray-600 shadow-2xl bg-white dark:bg-gray-800 pointer-events-none"></div>
+        <!-- Fixed Qibla indicator (top) -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+          <div class="w-0 h-0 border-l-[8px] border-r-[8px] border-t-[14px] border-l-transparent border-r-transparent border-t-green-600 drop-shadow-md"></div>
         </div>
-        <div class="w-6 h-6 bg-gray-800 dark:bg-white rounded-full z-10 absolute border-4 border-white dark:border-gray-800 shadow-md"></div>
+        <!-- Fixed "you are here" dot -->
+        <div class="w-6 h-6 bg-gray-800 dark:bg-white rounded-full z-30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-4 border-white dark:border-gray-800 shadow-md pointer-events-none"></div>
+        <!-- Rotating dial -->
+        <div id="compass-dial" class="absolute inset-2 rounded-full transition-transform duration-300 ease-out" style="transform: rotate(0deg);">
+          <div class="absolute top-2 left-1/2 -translate-x-1/2 text-red-500 font-bold text-sm">N</div>
+          <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-gray-400 font-bold text-sm">S</div>
+          <div class="absolute top-1/2 right-1 -translate-y-1/2 text-gray-400 font-bold text-sm">E</div>
+          <div class="absolute top-1/2 left-1 -translate-y-1/2 text-gray-400 font-bold text-sm">W</div>
+          <!-- Tick marks -->
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-gray-300 dark:bg-gray-500"></div>
+          <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-gray-300 dark:bg-gray-500"></div>
+          <div class="absolute top-1/2 right-0 -translate-y-1/2 w-3 h-0.5 bg-gray-300 dark:bg-gray-500"></div>
+          <div class="absolute top-1/2 left-0 -translate-y-1/2 w-3 h-0.5 bg-gray-300 dark:bg-gray-500"></div>
+          <!-- Qibla marker (positioned by JS) -->
+          <div id="qibla-marker" class="absolute top-1/2 left-1/2 w-0 h-0 z-10 hidden"></div>
+        </div>
       </div>
 
       <!-- Angle Display -->
@@ -379,7 +491,19 @@
         groupNamePlaceholder: "Group name", inviteCodePlaceholder: "Invite code",
         create: "Create", join: "Join", groupCreated: "Group created! Share the invite code:",
         joinedGroup: "Joined group!", members: "Members", inviteCode: "Invite Code",
-        noGroups: "No groups yet. Create or join one above!", copyCode: "Copied!"
+        noGroups: "No groups yet. Create or join one above!", copyCode: "Copied!",
+        upcoming: "Upcoming", overdue: "Overdue", highPriority: "High Priority", allTasks: "All Tasks",
+        noDueDate: "No due date", noTasksToday: "Nothing due today. Enjoy your day!",
+        noUpcomingTasks: "No upcoming tasks in the next 7 days.", noOverdueTasks: "No overdue tasks. MashaAllah!",
+        noHighPriority: "No high-priority tasks.", completed: "Completed",
+        priorityLow: "Low", priorityMed: "Med", priorityHigh: "High",
+        noRepeat: "No repeat", daily: "Daily", weekly: "Weekly", monthly: "Monthly",
+        endRepeat: "End:", repeatIcon: "Repeats {type}",
+        noTasksAll: "No tasks yet. Add one above!",
+        voiceListening: "Listening...", voiceNotSupported: "Voice input not supported in this browser",
+        voiceError: "Microphone access denied", voiceNoSpeech: "No speech detected",
+        noReminder: "No reminder", reminderAtTime: "At time", reminderBefore: "min before",
+        taskReminder: "⏰ Reminder: {task}", taskDueNow: "⏰ {task} is due now!"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -407,7 +531,19 @@
         groupNamePlaceholder: "اسم المجموعة", inviteCodePlaceholder: "كود الدعوة",
         create: "إنشاء", join: "انضم", groupCreated: "تم إنشاء المجموعة! شارك كود الدعوة:",
         joinedGroup: "تم الانضمام للمجموعة!", members: "الأعضاء", inviteCode: "كود الدعوة",
-        noGroups: "لا توجد مجموعات بعد. أنشئ أو انضم واحدة!", copyCode: "تم النسخ!"
+        noGroups: "لا توجد مجموعات بعد. أنشئ أو انضم واحدة!", copyCode: "تم النسخ!",
+        upcoming: "قادمة", overdue: "متأخرة", highPriority: "أولوية عالية", allTasks: "كل المهام",
+        noDueDate: "بدون موعد", noTasksToday: "لا توجد مهام اليوم. استمتع بيومك!",
+        noUpcomingTasks: "لا توجد مهام قادمة خلال 7 أيام.", noOverdueTasks: "لا توجد مهام متأخرة. ماشاء الله!",
+        noHighPriority: "لا توجد مهام ذات أولوية عالية.", completed: "مكتملة",
+        priorityLow: "منخفضة", priorityMed: "متوسطة", priorityHigh: "عالية",
+        noRepeat: "بدون تكرار", daily: "يومياً", weekly: "أسبوعياً", monthly: "شهرياً",
+        endRepeat: "انتهاء:", repeatIcon: "يتكرر {type}",
+        noTasksAll: "لا توجد مهام بعد. أضف واحدة!",
+        voiceListening: "جاري الاستماع...", voiceNotSupported: "الإدخال الصوتي غير مدعوم في هذا المتصفح",
+        voiceError: "تم رفض الوصول إلى الميكروفون", voiceNoSpeech: "لم يتم اكتشاف صوت",
+        noReminder: "بدون تذكير", reminderAtTime: "عند الموعد", reminderBefore: "دقيقة قبل",
+        taskReminder: "⏰ تذكير: {task}", taskDueNow: "⏰ حان موعد {task}!"
       }
     };
 
@@ -415,10 +551,13 @@
     let tasks = []; try { tasks = JSON.parse(localStorage.getItem('alfatore_tasks')) || []; } catch(e) {}
     let currentLang = localStorage.getItem('alfatore_lang') || 'en';
     let userLat = null, userLng = null, qiblaAngle = 0, prayerTimings = {}, currentAudio = null, sidebarOpen = false;
+    let activeSmartList = localStorage.getItem('alfatore_smartlist') || 'today';
+    let selectedPriority = 1;
+    let pendingRecurrence = { type: null, weekdays: [], endDate: null };
 
     // ===== SUPABASE =====
     const SUPABASE_URL = 'https://fxceebqojhfupsmadswl.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_lJ79GPgoaRIZPz941Ceyjg_Y6wDnqjt';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4Y2VlYnFvamhmdXBzbWFkc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxOTMwNzgsImV4cCI6MjA5OTc2OTA3OH0.Rnp2ByI9FM8hrX0KqlftIvcpax8jFrI_dQcG3cq6io8';
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let currentUser = null;
 
@@ -482,7 +621,7 @@
     async function handleLogout() {
       await db.auth.signOut();
       currentUser = null; tasks = []; localStorage.removeItem('alfatore_tasks');
-      renderTasks(); showAuth();
+      renderActiveSmartList(); showAuth();
     }
 
     // ===== TASK SYNC =====
@@ -492,9 +631,24 @@
         const { data, error } = await db.from('tasks').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
         if (error) throw error;
         if (data && data.length > 0) {
-          tasks = data.map(t => ({ id: t.id, text: t.title, done: t.done }));
+          tasks = data.map(t => ({
+            id: t.id,
+            text: t.title,
+            done: t.done,
+            due_date: t.due_date || null,
+            due_time: t.due_time || null,
+            priority: t.priority ?? 1,
+            status: t.status || (t.done ? 'done' : 'pending'),
+            recurrence_type: t.recurrence_type || null,
+            recurrence_interval: t.recurrence_interval || 1,
+            recurrence_weekdays: t.recurrence_weekdays || [],
+            recurrence_end: t.recurrence_end || null,
+            recurrence_done_at: t.recurrence_done_at || null,
+            reminder_minutes: t.reminder_minutes ?? null,
+            reminder_fired: t.reminder_fired || false
+          }));
           localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-          renderTasks();
+          renderActiveSmartList();
         }
       } catch(e) {}
     }
@@ -502,10 +656,35 @@
       if (!currentUser) return;
       try {
         if (action === 'insert') {
-          const { data, error } = await db.from('tasks').insert({ user_id: currentUser.id, title: task.text, done: task.done }).select().single();
+          const { data, error } = await db.from('tasks').insert({
+            user_id: currentUser.id,
+            title: task.text,
+            done: task.done,
+            due_date: task.due_date || null,
+            due_time: task.due_time || null,
+            priority: task.priority ?? 1,
+            status: task.status || 'pending',
+            recurrence_type: task.recurrence_type || null,
+            recurrence_interval: task.recurrence_interval || 1,
+            recurrence_weekdays: task.recurrence_weekdays || [],
+            recurrence_end: task.recurrence_end || null,
+            recurrence_done_at: task.recurrence_done_at || null,
+            reminder_minutes: task.reminder_minutes ?? null,
+            reminder_fired: task.reminder_fired || false
+          }).select().single();
           if (!error && data) task.id = data.id;
         } else if (action === 'update') {
-          await db.from('tasks').update({ title: task.text, done: task.done }).eq('id', task.id);
+          await db.from('tasks').update({
+            title: task.text,
+            done: task.done,
+            due_date: task.due_date || null,
+            due_time: task.due_time || null,
+            priority: task.priority ?? 1,
+            status: task.status || 'pending',
+            recurrence_done_at: task.recurrence_done_at || null,
+            reminder_minutes: task.reminder_minutes ?? null,
+            reminder_fired: task.reminder_fired || false
+          }).eq('id', task.id);
         } else if (action === 'delete') {
           await db.from('tasks').delete().eq('id', task.id);
         }
@@ -580,18 +759,329 @@
     const prayerNamesAr = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
 
     const azanSources = [
-      'https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3',
-      'https://cdn.islamic.network/quran/audio/128/ar.abdulbasit/001.mp3',
-      'https://cdn.islamic.network/quran/audio/128/ar.minshawi/001.mp3',
-      'https://cdn.islamic.network/quran/audio/128/ar.husary/001.mp3',
-      'https://cdn.islamic.network/quran/audio/128/ar.parhizkar/001.mp3'
+      'audio/makkah.mp3',
+      'audio/madinah.mp3',
+      'audio/alaqsa.mp3',
+      'audio/egypt.mp3',
+      'audio/turkey.mp3',
+      'audio/azan-alafasy.mp3',
+      'audio/azan-alafasy-alt.mp3',
+      'audio/azan-ahmad-nafees.mp3',
+      'audio/azan-hafiz-ozcan.mp3',
+      'audio/azan-alafasy-dubai.mp3',
+      'audio/azan-mansour-zahrani.mp3',
+      'audio/azan-al-aqsa-mujir.mp3',
+      'audio/azan-madinah-haram.mp3'
     ];
+
+    // ===== MIGRATION =====
+    function migrateTaskSchema() {
+      const VER_KEY = 'alfaz_schema_ver';
+      const CURRENT_VER = 3;
+      const stored = parseInt(localStorage.getItem(VER_KEY) || '0', 10);
+      if (stored >= CURRENT_VER) return;
+      if (stored < 3) {
+        try {
+          const raw = localStorage.getItem('alfatore_tasks');
+          if (raw) {
+            let t = JSON.parse(raw);
+            t = t.map(x => ({
+              id: x.id, text: x.text, done: !!x.done,
+              due_date: x.due_date || null, due_time: x.due_time || null,
+              priority: x.priority ?? 1,
+              status: x.status || (x.done ? 'done' : 'pending'),
+              recurrence_type: x.recurrence_type || null, recurrence_interval: x.recurrence_interval || 1,
+              recurrence_weekdays: x.recurrence_weekdays || [], recurrence_end: x.recurrence_end || null,
+              recurrence_done_at: x.recurrence_done_at || null,
+              reminder_minutes: x.reminder_minutes ?? null, reminder_fired: x.reminder_fired || false
+            }));
+            localStorage.setItem('alfatore_tasks', JSON.stringify(t));
+          }
+          localStorage.setItem(VER_KEY, String(CURRENT_VER));
+        } catch(e) { localStorage.setItem(VER_KEY, String(CURRENT_VER)); }
+      }
+    }
+
+    // ===== HELPERS =====
+    function getTodayString() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function formatDate(d) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+    function formatShortDate(iso) {
+      const d = new Date(iso+'T00:00:00');
+      return d.toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US', { month:'short', day:'numeric' });
+    }
+    function formatDisplayDate(iso) {
+      const d = new Date(iso+'T00:00:00');
+      return d.toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US', { weekday:'long', month:'short', day:'numeric' });
+    }
+    function escapeHtml(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+    // ===== SMART LISTS =====
+    function getTodayTasks() {
+      const today = getTodayString();
+      return tasks.filter(t => !t.done && t.status !== 'cancelled' && (t.due_date === today || t.due_date === null));
+    }
+    function getUpcomingTasks() {
+      const today = getTodayString();
+      const cutoff = formatDate(addDays(new Date(), 7));
+      return tasks.filter(t => !t.done && t.status !== 'cancelled' && t.due_date && t.due_date >= today && t.due_date <= cutoff)
+        .sort((a,b) => a.due_date.localeCompare(b.due_date));
+    }
+    function getOverdueTasks() {
+      const today = getTodayString();
+      return tasks.filter(t => !t.done && t.status !== 'cancelled' && t.due_date && t.due_date < today)
+        .sort((a,b) => a.due_date.localeCompare(b.due_date));
+    }
+    function getHighPriorityTasks() {
+      return tasks.filter(t => !t.done && t.status !== 'cancelled' && t.priority === 2)
+        .sort((a,b) => { if(a.due_date&&b.due_date) return a.due_date.localeCompare(b.due_date); if(a.due_date) return -1; if(b.due_date) return 1; return 0; });
+    }
+    function getAllTasks() {
+      return { active: tasks.filter(t => !t.done && t.status !== 'cancelled'), completed: tasks.filter(t => t.done || t.status === 'cancelled') };
+    }
+    function groupTasksByDate(filtered) {
+      const groups = {};
+      const today = getTodayString();
+      const tomorrow = formatDate(addDays(new Date(), 1));
+      filtered.forEach(t => {
+        let label;
+        if (t.due_date === today) label = i18n[currentLang].myDay || 'Today';
+        else if (t.due_date === tomorrow) label = i18n[currentLang].tomorrow || 'Tomorrow';
+        else label = formatDisplayDate(t.due_date);
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(t);
+      });
+      return groups;
+    }
+
+    function switchSmartList(name) {
+      activeSmartList = name;
+      localStorage.setItem('alfatore_smartlist', name);
+      document.querySelectorAll('.smart-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-smart') === name);
+      });
+      const emojis = { today:'☀️', upcoming:'📅', overdue:'⚠️', high:'🔥', all:'📋' };
+      const headings = { today:'myDay', upcoming:'upcoming', overdue:'overdue', high:'highPriority', all:'allTasks' };
+      document.getElementById('tasks-heading').textContent = i18n[currentLang][headings[name]];
+      document.getElementById('tasks-emoji').textContent = emojis[name];
+      renderActiveSmartList();
+    }
+
+    function renderActiveSmartList() {
+      switch(activeSmartList) {
+        case 'today': renderTodayView(); break;
+        case 'upcoming': renderUpcomingView(); break;
+        case 'overdue': renderOverdueView(); break;
+        case 'high': renderHighPriorityView(); break;
+        case 'all': renderAllTasksView(); break;
+        default: renderTodayView();
+      }
+      updateTabBadges();
+      updateStats();
+    }
+
+    function renderTaskRow(t) {
+      const idx = tasks.indexOf(t);
+      const isOverdue = t.due_date && t.due_date < getTodayString() && !t.done;
+      const prioColors = { 0:'', 1:'bg-yellow-400', 2:'bg-red-500' };
+      const prioLabels = { 0:'', 1:'bg-yellow-400', 2:'bg-red-500' };
+      const repeatBadge = t.recurrence_type ? `<i class="fas fa-repeat text-xs text-blue-400 dark:text-blue-500 me-1.5"></i>` : '';
+      const reminderBadge = (t.reminder_minutes !== null && t.reminder_minutes !== undefined && !t.reminder_fired) ? `<i class="fas fa-bell text-xs text-amber-400 dark:text-amber-500 me-1.5"></i>` : '';
+      const dueBadge = t.due_date ? `<span class="text-xs ${isOverdue?'text-red-500 dark:text-red-400 font-medium':'text-gray-400 dark:text-gray-500'} ms-2 whitespace-nowrap">${t.due_time ? t.due_time+' ' : ''}${formatShortDate(t.due_date)}</span>` : '';
+      const prioDot = t.priority > 0 ? `<span class="w-2 h-2 rounded-full ${prioColors[t.priority]} me-2 flex-shrink-0 inline-block align-middle"></span>` : '';
+      const borderClass = isOverdue ? 'border-red-200 dark:border-red-800/50' : 'border-gray-100 dark:border-gray-700';
+      return `
+        <div class="flex items-center py-3 px-4 bg-white dark:bg-gray-800 border ${borderClass} rounded-xl group transition hover:shadow-md mb-2">
+          <input type="checkbox" ${t.done?'checked':''} onclick="toggleTask(${idx})" class="w-5 h-5 rounded-full border-gray-300 dark:border-gray-600 cursor-pointer accent-blue-600">
+          <span class="ms-3 flex-1 min-w-0">
+            ${prioDot}<span class="${t.done?'line-through text-gray-400 dark:text-gray-500':'text-gray-700 dark:text-gray-200 font-medium'}">${reminderBadge}${repeatBadge}${escapeHtml(t.text)}</span>
+          </span>
+          ${dueBadge}
+          <button onclick="deleteTask(${idx})" class="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-lg ms-2 flex-shrink-0"><i class="fas fa-trash-can"></i></button>
+        </div>`;
+    }
+
+    function renderTodayView() {
+      const list = document.getElementById('task-list');
+      const todayStr = getTodayString();
+      const dueToday = tasks.filter(t => !t.done && t.status!=='cancelled' && t.due_date===todayStr);
+      const noDate = tasks.filter(t => !t.done && t.status!=='cancelled' && t.due_date===null);
+      let html = '';
+      dueToday.forEach(t => { html += renderTaskRow(t); });
+      if (noDate.length > 0 && dueToday.length > 0) {
+        html += `<div class="border-t border-gray-100 dark:border-gray-700 my-3 pt-3"><p class="text-xs text-gray-400 dark:text-gray-500 px-4 mb-2 font-medium uppercase tracking-wide">${i18n[currentLang].noDueDate}</p></div>`;
+      }
+      noDate.forEach(t => { html += renderTaskRow(t); });
+      if (!html) html = `<div class="text-center py-16"><i class="fas fa-clipboard-list text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noTasksToday}</p></div>`;
+      list.innerHTML = html;
+    }
+
+    function renderUpcomingView() {
+      const list = document.getElementById('task-list');
+      const upcoming = getUpcomingTasks();
+      const groups = groupTasksByDate(upcoming);
+      let html = '';
+      for (const [label, ts] of Object.entries(groups)) {
+        html += `<div class="px-4 pt-4 pb-1"><h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">${label}</h3></div>`;
+        ts.forEach(t => { html += renderTaskRow(t); });
+      }
+      if (!html) html = `<div class="text-center py-16"><i class="fas fa-calendar-check text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noUpcomingTasks}</p></div>`;
+      list.innerHTML = html;
+    }
+
+    function renderOverdueView() {
+      const list = document.getElementById('task-list');
+      const overdue = getOverdueTasks();
+      let html = '';
+      overdue.forEach(t => { html += renderTaskRow(t); });
+      if (!html) html = `<div class="text-center py-16"><i class="fas fa-check-circle text-5xl text-green-300 dark:text-green-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noOverdueTasks}</p></div>`;
+      list.innerHTML = html;
+    }
+
+    function renderHighPriorityView() {
+      const list = document.getElementById('task-list');
+      const high = getHighPriorityTasks();
+      let html = '';
+      high.forEach(t => { html += renderTaskRow(t); });
+      if (!html) html = `<div class="text-center py-16"><i class="fas fa-flag text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noHighPriority}</p></div>`;
+      list.innerHTML = html;
+    }
+
+    function renderAllTasksView() {
+      const list = document.getElementById('task-list');
+      const { active, completed } = getAllTasks();
+      let html = '';
+      active.forEach(t => { html += renderTaskRow(t); });
+      if (completed.length > 0) {
+        html += `<div class="border-t border-gray-100 dark:border-gray-700 my-3 pt-3"><p class="text-xs text-gray-400 dark:text-gray-500 px-4 mb-2 font-medium uppercase tracking-wide"><i class="fas fa-check me-1"></i>${i18n[currentLang].completed} (${completed.length})</p></div>`;
+        completed.forEach(t => { html += renderTaskRow(t); });
+      }
+      if (!html) html = `<div class="text-center py-16"><i class="fas fa-clipboard-list text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noTasksAll}</p></div>`;
+      list.innerHTML = html;
+    }
+
+    function updateTabBadges() {
+      const counts = { today:getTodayTasks().length, upcoming:getUpcomingTasks().length, overdue:getOverdueTasks().length, high:getHighPriorityTasks().length, all:tasks.filter(t=>!t.done&&t.status!=='cancelled').length };
+      document.querySelectorAll('.smart-tab[data-smart]').forEach(btn => {
+        const k = btn.getAttribute('data-smart');
+        const c = counts[k];
+        let badge = btn.querySelector('.tab-badge');
+        if (c > 0) {
+          if (!badge) { badge = document.createElement('span'); badge.className = 'tab-badge bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold'; btn.appendChild(badge); }
+          badge.textContent = c > 99 ? '99+' : c;
+        } else if (badge) badge.remove();
+      });
+    }
+    function updateStats() {
+      const stats = document.getElementById('task-stats');
+      const total = tasks.length, done = tasks.filter(t => t.done).length;
+      stats.innerHTML = total > 0 ? `
+        <span><i class="fas fa-list-check me-1"></i>${i18n[currentLang].tasksTotal.replace('{total}', total)}</span>
+        <span class="text-green-500"><i class="fas fa-check me-1"></i>${i18n[currentLang].tasksDone.replace('{done}', done)}</span>
+        ${done>0?`<button onclick="clearCompleted()" class="text-red-400 hover:text-red-600 transition text-xs"><i class="fas fa-broom me-1"></i>Clear</button>`:''}
+      ` : '';
+    }
+
+    // ===== PRIORITY UI =====
+    function setPriority(level) {
+      selectedPriority = level;
+      document.querySelectorAll('.priority-btn').forEach(btn => btn.className = btn.className.replace(/active-\w+/g, ''));
+      document.getElementById('prio-'+level).classList.add(['active-low','active-med','active-high'][level]);
+    }
+    setPriority(1);
+
+    // ===== RECURRENCE UI =====
+    function toggleRecurrencePicker() {
+      document.getElementById('recurrence-picker').classList.toggle('hidden');
+    }
+    function setRecurrence(type) {
+      pendingRecurrence.type = type;
+      pendingRecurrence.weekdays = [];
+      const labels = { daily:i18n[currentLang].daily, weekly:i18n[currentLang].weekly, monthly:i18n[currentLang].monthly };
+      document.getElementById('recurrence-btn').innerHTML = `<i class="fas fa-repeat"></i> ${labels[type]}`;
+      document.getElementById('recurrence-btn').classList.add('bg-blue-100','text-blue-600');
+      document.getElementById('recurrence-weekdays').classList.toggle('hidden', type !== 'weekly');
+      if (type === 'weekly') {
+        pendingRecurrence.weekdays = [new Date().getDay()];
+        document.querySelectorAll('.wkday').forEach((btn, i) => {
+          btn.classList.toggle('active', pendingRecurrence.weekdays.includes(i));
+        });
+      }
+    }
+    function toggleWeekday(day) {
+      const idx = pendingRecurrence.weekdays.indexOf(day);
+      if (idx > -1) pendingRecurrence.weekdays.splice(idx, 1); else pendingRecurrence.weekdays.push(day);
+      document.querySelectorAll('.wkday').forEach((btn, i) => { btn.classList.toggle('active', pendingRecurrence.weekdays.includes(i)); });
+    }
+    function clearTaskInputs() {
+      document.getElementById('task-input').value = '';
+      document.getElementById('task-due-date').value = '';
+      document.getElementById('task-due-time').value = '';
+      document.getElementById('task-reminder').value = '';
+      setPriority(1);
+      pendingRecurrence = { type: null, weekdays: [], endDate: null };
+      document.getElementById('recurrence-btn').innerHTML = `<i class="fas fa-repeat"></i> <span data-i18n="noRepeat">${i18n[currentLang].noRepeat}</span>`;
+      document.getElementById('recurrence-btn').classList.remove('bg-blue-100','text-blue-600');
+      document.getElementById('recurrence-picker').classList.add('hidden');
+      document.getElementById('recurrence-weekdays').classList.add('hidden');
+      document.getElementById('recurrence-end-date').value = '';
+    }
+
+    // ===== VOICE INPUT =====
+    let recognition = null;
+    let isRecording = false;
+    function initVoiceInput() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { const mb = document.getElementById('mic-btn'); if (mb) mb.style.display='none'; return; }
+      recognition = new SR();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = function(ev) {
+        const inp = document.getElementById('task-input');
+        let final = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const t = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) final += t;
+          else inp.value = t;
+        }
+        if (final) inp.value = final.trim();
+      };
+      recognition.onerror = function(ev) {
+        isRecording = false;
+        document.getElementById('mic-icon').className = 'fas fa-microphone text-lg';
+        if (ev.error === 'not-allowed') showToast('🎤 '+i18n[currentLang].voiceError, 'error');
+        else if (ev.error === 'no-speech') showToast('🎤 '+i18n[currentLang].voiceNoSpeech, 'info');
+      };
+      recognition.onend = function() {
+        isRecording = false;
+        document.getElementById('mic-icon').className = 'fas fa-microphone text-lg';
+      };
+    }
+    function toggleVoiceInput() {
+      if (!recognition) { showToast('🎤 '+i18n[currentLang].voiceNotSupported, 'error'); return; }
+      if (isRecording) { recognition.stop(); return; }
+      recognition.lang = currentLang === 'ar' ? 'ar-SA' : 'en-US';
+      try {
+        recognition.start();
+        isRecording = true;
+        document.getElementById('mic-icon').className = 'fas fa-microphone text-lg text-red-500';
+        showToast('🎤 '+i18n[currentLang].voiceListening, 'info');
+      } catch(e) {}
+    }
 
     // ===== INIT =====
     window.addEventListener('load', () => {
+      migrateTaskSchema();
       document.getElementById('lang-select').value = currentLang;
       applyLanguage(currentLang);
-      renderTasks();
+      initSmartList();
+      initVoiceInput();
       initClock();
       initGeolocation();
       loadDarkMode();
@@ -601,6 +1091,22 @@
       }
       checkSession();
     });
+
+    function initSmartList() {
+      const hash = window.location.hash.replace('#','');
+      const valid = ['today','upcoming','overdue','high','all'];
+      if (valid.includes(hash)) activeSmartList = hash;
+      else if (!valid.includes(activeSmartList)) activeSmartList = 'today';
+      localStorage.setItem('alfatore_smartlist', activeSmartList);
+      document.querySelectorAll('.smart-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-smart') === activeSmartList);
+      });
+      const emojis = { today:'☀️', upcoming:'📅', overdue:'⚠️', high:'🔥', all:'📋' };
+      const headings = { today:'myDay', upcoming:'upcoming', overdue:'overdue', high:'highPriority', all:'allTasks' };
+      document.getElementById('tasks-heading').textContent = i18n[currentLang][headings[activeSmartList]];
+      document.getElementById('tasks-emoji').textContent = emojis[activeSmartList];
+      renderActiveSmartList();
+    }
 
     // ===== SIDEBAR (MOBILE) =====
     function toggleSidebar() {
@@ -667,7 +1173,7 @@
       currentLang = lang;
       localStorage.setItem('alfatore_lang', lang);
       applyLanguage(lang);
-      renderTasks(); updateDarkModeButton(); updateNotifButton();
+      renderActiveSmartList(); updateDarkModeButton(); updateNotifButton();
       if (userLat) calculateQibla(userLat, userLng);
       if (Object.keys(prayerTimings).length > 0) { renderPrayerCards(); updateNextPrayer(); }
     }
@@ -686,59 +1192,87 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (btn) btn.classList.add('active');
       if (sidebarOpen) toggleSidebar();
+      if (viewId === 'qibla-view') initCompass();
     }
 
     // ===== TASKS =====
-    function renderTasks() {
-      const list = document.getElementById('task-list');
-      const stats = document.getElementById('task-stats');
-      list.innerHTML = '';
-      const total = tasks.length, done = tasks.filter(t => t.done).length;
-      stats.innerHTML = total > 0 ? `
-        <span><i class="fas fa-list-check me-1"></i>${i18n[currentLang].tasksTotal.replace('{total}', total)}</span>
-        <span class="text-green-500"><i class="fas fa-check me-1"></i>${i18n[currentLang].tasksDone.replace('{done}', done)}</span>
-        ${done > 0 ? `<button onclick="clearCompleted()" class="text-red-400 hover:text-red-600 transition text-xs"><i class="fas fa-broom me-1"></i>Clear</button>` : ''}
-      ` : '';
-      if (!total) { list.innerHTML = `<div class="text-center py-16"><i class="fas fa-clipboard-list text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noTasks}</p></div>`; return; }
-      tasks.forEach((t, i) => {
-        list.innerHTML += `
-          <div class="flex items-center py-3 px-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl group transition hover:shadow-md mb-2">
-            <input type="checkbox" ${t.done ? 'checked' : ''} onclick="toggleTask(${i})" class="w-5 h-5 rounded-full border-gray-300 dark:border-gray-600 cursor-pointer accent-blue-600">
-            <span class="ms-4 flex-1 ${t.done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200 font-medium'}">${t.text}</span>
-            <button onclick="deleteTask(${i})" class="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-lg"><i class="fas fa-trash-can"></i></button>
-          </div>`;
-      });
-    }
+    function renderTasks() { renderActiveSmartList(); }
     function addTask(e) {
       if (e.key === 'Enter') {
         const inp = document.getElementById('task-input');
         if (inp.value.trim()) {
-          const task = { text: inp.value.trim(), done: false };
+          const dueDate = document.getElementById('task-due-date').value || null;
+          const dueTime = document.getElementById('task-due-time').value || null;
+          const reminderVal = document.getElementById('task-reminder').value;
+          const task = {
+            text: inp.value.trim(), done: false,
+            due_date: dueDate, due_time: dueTime, priority: selectedPriority, status: 'pending',
+            recurrence_type: pendingRecurrence.type, recurrence_interval: 1,
+            recurrence_weekdays: pendingRecurrence.type === 'weekly' ? pendingRecurrence.weekdays : [],
+            recurrence_end: document.getElementById('recurrence-end-date').value || null,
+            recurrence_done_at: null,
+            reminder_minutes: reminderVal !== '' ? parseInt(reminderVal) : null,
+            reminder_fired: false
+          };
           tasks.unshift(task); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
           syncTask(task, 'insert');
-          inp.value = ''; renderTasks(); showToast('✅ Task added!', 'success');
+          clearTaskInputs();
+          renderActiveSmartList(); showToast('✅ Task added!', 'success');
         }
       }
     }
     function toggleTask(i) {
-      tasks[i].done = !tasks[i].done;
+      const t = tasks[i];
+      if (!t.done && t.recurrence_type) {
+        t.done = true; t.status = 'done'; t.recurrence_done_at = new Date().toISOString();
+        syncTask(t, 'update');
+        const next = calculateNextOccurrence(t);
+        if (next) {
+          const newTask = {
+            text: t.text, done: false, due_date: next, priority: t.priority, status: 'pending',
+            recurrence_type: t.recurrence_type, recurrence_interval: t.recurrence_interval,
+            recurrence_weekdays: t.recurrence_weekdays || [], recurrence_end: t.recurrence_end,
+            recurrence_done_at: null
+          };
+          tasks.unshift(newTask); syncTask(newTask, 'insert');
+        }
+      } else {
+        t.done = !t.done; t.status = t.done ? 'done' : 'pending';
+        if (!t.done) t.reminder_fired = false;
+        syncTask(t, 'update');
+      }
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      syncTask(tasks[i], 'update');
-      renderTasks();
+      renderActiveSmartList();
+    }
+    function calculateNextOccurrence(t) {
+      if (!t.recurrence_type) return null;
+      const d = new Date((t.due_date || getTodayString()) + 'T00:00:00');
+      const end = t.recurrence_end ? new Date(t.recurrence_end+'T23:59:59') : null;
+      switch(t.recurrence_type) {
+        case 'daily': d.setDate(d.getDate()+1); break;
+        case 'weekly': {
+          d.setDate(d.getDate()+1);
+          const wds = t.recurrence_weekdays || [];
+          for (let a=0; a<14; a++) { if (wds.includes(d.getDay())) break; d.setDate(d.getDate()+1); }
+          break;
+        }
+        case 'monthly': d.setMonth(d.getMonth()+1); break;
+      }
+      if (end && d > end) return null;
+      return formatDate(d);
     }
     function deleteTask(i) {
-      const task = tasks[i];
-      tasks.splice(i, 1);
+      const task = tasks[i]; tasks.splice(i, 1);
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
       if (task.id) syncTask(task, 'delete');
-      renderTasks();
+      renderActiveSmartList();
     }
     function clearCompleted() {
-      const deleted = tasks.filter(t => t.done);
-      tasks = tasks.filter(t => !t.done);
+      const deleted = tasks.filter(t => t.done || t.status === 'cancelled');
+      tasks = tasks.filter(t => !t.done && t.status !== 'cancelled');
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
       deleted.forEach(t => { if (t.id) syncTask(t, 'delete'); });
-      renderTasks(); showToast('🧹 Cleared!', 'info');
+      renderActiveSmartList(); showToast('🧹 Cleared!', 'info');
     }
 
     // ===== GEOLOCATION & PRAYER TIMES =====
@@ -814,8 +1348,13 @@
       const y=Math.sin(mLng-uLng), x=Math.cos(uLat)*Math.tan(mLat)-Math.sin(uLat)*Math.cos(mLng-uLng);
       qiblaAngle = (Math.atan2(y,x)*(180/Math.PI)+360)%360;
       document.getElementById('qibla-info').innerHTML = i18n[currentLang].qiblaResult.replace('{angle}', qiblaAngle.toFixed(1));
-      document.getElementById('compass-needle').style.transform = `rotate(${qiblaAngle}deg)`;
       document.getElementById('qibla-angle-text').textContent = `${qiblaAngle.toFixed(1)}°`;
+      const marker = document.getElementById('qibla-marker');
+      if (marker) {
+        marker.classList.remove('hidden');
+        marker.innerHTML = '<div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:16px solid #16a34a;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));"></div>';
+        marker.style.transform = `rotate(${qiblaAngle}deg) translateY(-110px)`;
+      }
     }
 
     // ===== CLOCK & ALARM =====
@@ -828,9 +1367,66 @@
         if (hhmm !== lastCheckedMinute) {
           lastCheckedMinute = hhmm;
           for (let p in prayerTimings) { if (prayerTimings[p]===hhmm) triggerAzan(p); }
+          checkTaskReminders(now);
           if (Object.keys(prayerTimings).length>0) updateNextPrayer();
         }
       }, 1000);
+    }
+
+    function playReminderAlarm() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const beep = (freq, start, dur, vol) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(vol, ctx.currentTime + start);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + start);
+          osc.stop(ctx.currentTime + start + dur);
+        };
+        for (let r = 0; r < 3; r++) {
+          const base = r * 0.7;
+          beep(880, base, 0.12, 0.5);
+          beep(880, base + 0.15, 0.12, 0.5);
+          beep(1100, base + 0.30, 0.12, 0.5);
+          beep(880, base + 0.45, 0.12, 0.5);
+        }
+      } catch(e) {}
+    }
+
+    function checkTaskReminders(now) {
+      const today = getTodayString();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      tasks.forEach(t => {
+        if (t.done || t.status === 'cancelled' || t.reminder_fired) return;
+        if (!t.due_date || !t.due_time || t.due_date !== today) return;
+        if (t.reminder_minutes === null || t.reminder_minutes === undefined) return;
+        const [h, m] = t.due_time.split(':').map(Number);
+        const dueMins = h * 60 + m;
+        const remindAt = dueMins - t.reminder_minutes;
+        if (nowMins >= remindAt && nowMins <= remindAt + 2) {
+          t.reminder_fired = true;
+          localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+          syncTask(t, 'update');
+          const msg = t.reminder_minutes === 0
+            ? i18n[currentLang].taskDueNow.replace('{task}', t.text)
+            : i18n[currentLang].taskReminder.replace('{task}', t.text);
+          showToast(msg, 'prayer');
+          showBrowserNotification('🔔 Alfaz todo', msg);
+          playReminderAlarm();
+        }
+      });
+    }
+
+    function testReminder() {
+      const msg = i18n[currentLang].taskReminder.replace('{task}', 'Test Reminder');
+      showToast(msg, 'prayer');
+      showBrowserNotification('🔔 Alfaz todo', msg);
+      playReminderAlarm();
     }
 
     setInterval(() => {
@@ -856,13 +1452,83 @@
     function testAzan() { playSelectedAzan(); }
     function stopAzan() { if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; showToast('⏹ Audio stopped', 'info'); } }
 
-    function requestDeviceOrientation() {
-      if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function') {
-        DeviceOrientationEvent.requestPermission().then(p => { if (p==='granted') { window.addEventListener('deviceorientation', handleOrientation); showToast('🧭 Compass calibrated!','success'); } }).catch(console.error);
-      } else if (typeof DeviceOrientationEvent!=='undefined') { window.addEventListener('deviceorientation', handleOrientation); showToast('🧭 Compass active!','success'); }
-      else { showToast('❌ Compass not available','error'); }
+    // ===== COMPASS =====
+    let compassHeading = 0, dragStartX = null, dragStartAngle = null, compassInitDone = false, compassSensorAbsolute = false;
+
+    function initCompass() {
+      const dial = document.getElementById('compass-dial');
+      if (!dial || compassInitDone) return;
+      compassInitDone = true;
+
+      dial.addEventListener('mousedown', dragStart);
+      dial.addEventListener('touchstart', dragStart, {passive:false});
+
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(p => {
+          if (p === 'granted') { window.addEventListener('deviceorientation', handleOrientation); console.log('Compass: iOS permission granted'); }
+        }).catch(() => {});
+      } else if ('ondeviceorientationabsolute' in window) {
+        compassSensorAbsolute = true;
+        window.addEventListener('deviceorientationabsolute', handleOrientation);
+        console.log('Compass: using deviceorientationabsolute (Chrome Android)');
+      } else if (typeof DeviceOrientationEvent !== 'undefined') {
+        window.addEventListener('deviceorientation', handleOrientation);
+        console.log('Compass: using deviceorientation (fallback)');
+      } else {
+        console.log('Compass: no sensor available, drag only');
+      }
     }
-    function handleOrientation(e) { if (e.alpha!==null) document.getElementById('compass-needle').style.transform = `rotate(${qiblaAngle-e.alpha}deg)`; }
+
+    function dragStart(e) {
+      e.preventDefault();
+      dragStartX = e.touches ? e.touches[0].clientX : e.clientX;
+      dragStartAngle = compassHeading;
+      document.addEventListener('mousemove', dragMove);
+      document.addEventListener('touchmove', dragMove, {passive:false});
+      document.addEventListener('mouseup', dragEnd);
+      document.addEventListener('touchend', dragEnd);
+    }
+    function dragMove(e) {
+      if (dragStartX === null) return;
+      e.preventDefault();
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      compassHeading = dragStartAngle + (x - dragStartX);
+      updateCompass();
+    }
+    function dragEnd() {
+      dragStartX = null;
+      document.removeEventListener('mousemove', dragMove);
+      document.removeEventListener('touchmove', dragMove);
+      document.removeEventListener('mouseup', dragEnd);
+      document.removeEventListener('touchend', dragEnd);
+    }
+
+    function requestDeviceOrientation() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(p => {
+          if (p === 'granted') { window.addEventListener('deviceorientation', handleOrientation); showToast('🧭 Compass active!','success'); }
+        }).catch(() => {});
+      }
+    }
+
+    function handleOrientation(e) {
+      let heading = null;
+      if (e.webkitCompassHeading !== undefined) {
+        heading = e.webkitCompassHeading;
+      } else if ((compassSensorAbsolute || e.absolute) && e.alpha !== null) {
+        heading = (360 - e.alpha) % 360;
+      }
+      console.log('Sensor:', 'abs=' + e.absolute, 'a=' + e.alpha, 'b=' + e.beta, 'g=' + e.gamma, 'wk=' + e.webkitCompassHeading, 'ch=' + e.compassHeading, 'hd=' + heading);
+      if (heading !== null) {
+        compassHeading = heading;
+        updateCompass();
+      }
+    }
+
+    function updateCompass() {
+      const dial = document.getElementById('compass-dial');
+      if (dial) dial.style.transform = `rotate(${compassHeading}deg)`;
+    }
   </script>
 </body>
 </html>
