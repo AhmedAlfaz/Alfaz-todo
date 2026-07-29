@@ -503,7 +503,8 @@
         voiceListening: "Listening...", voiceNotSupported: "Voice input not supported in this browser",
         voiceError: "Microphone access denied", voiceNoSpeech: "No speech detected",
         noReminder: "No reminder", reminderAtTime: "At time", reminderBefore: "min before",
-        taskReminder: "⏰ Reminder: {task}", taskDueNow: "⏰ {task} is due now!"
+        taskReminder: "⏰ Reminder: {task}", taskDueNow: "⏰ {task} is due now!",
+        nlParsed: "✅ Task added! ({date}{time})"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -543,7 +544,8 @@
         voiceListening: "جاري الاستماع...", voiceNotSupported: "الإدخال الصوتي غير مدعوم في هذا المتصفح",
         voiceError: "تم رفض الوصول إلى الميكروفون", voiceNoSpeech: "لم يتم اكتشاف صوت",
         noReminder: "بدون تذكير", reminderAtTime: "عند الموعد", reminderBefore: "دقيقة قبل",
-        taskReminder: "⏰ تذكير: {task}", taskDueNow: "⏰ حان موعد {task}!"
+        taskReminder: "⏰ تذكير: {task}", taskDueNow: "⏰ حان موعد {task}!",
+        nlParsed: "✅ تمت إضافة المهمة! ({date}{time})"
       }
     };
 
@@ -1197,15 +1199,109 @@
 
     // ===== TASKS =====
     function renderTasks() { renderActiveSmartList(); }
+    function parseNaturalLanguageDate(text) {
+      let cleanText = text;
+      let date = null;
+      let time = null;
+      const today = new Date();
+      const getFmt = (d) => d.toISOString().split("T")[0];
+      const wbStart = "(?:^|\\s)";
+      const wbEnd = "(?:$|\\s)";
+      
+      const time12Regex = new RegExp(`${wbStart}(?:at\\s+|الساعة\\s+)?([1-9]|1[0-2])(?::([0-5][0-9]))?\\s*(am|pm|صباحا|صباحاً|ص|مساء|مساءً|م)${wbEnd}`, "i");
+      const m12 = cleanText.match(time12Regex);
+      if (m12) {
+        let hr = parseInt(m12[1], 10);
+        const min = m12[2] || "00";
+        const mer = m12[3].toLowerCase();
+        const isPM = mer === "pm" || mer.startsWith("مساء") || mer === "م";
+        const isAM = mer === "am" || mer.startsWith("صباح") || mer === "ص";
+        if (isPM && hr < 12) hr += 12;
+        if (isAM && hr === 12) hr = 0;
+        time = `${String(hr).padStart(2,"0")}:${min}`;
+        cleanText = cleanText.replace(m12[0], " ");
+      } else {
+        const time24Regex = new RegExp(`${wbStart}(?:at\\s+|الساعة\\s+)?([0-1]?[0-9]|2[0-3]):([0-5][0-9])${wbEnd}`);
+        const m24 = cleanText.match(time24Regex);
+        if (m24) {
+          time = `${String(m24[1]).padStart(2,"0")}:${m24[2]}`;
+          cleanText = cleanText.replace(m24[0], " ");
+        } else if (new RegExp(`${wbStart}(at\\s+noon|noon|ظهرا|ظهراً|الظهر)${wbEnd}`, "i").test(cleanText)) {
+          time = "12:00";
+          cleanText = cleanText.replace(new RegExp(`${wbStart}(at\\s+noon|noon|ظهرا|ظهراً|الظهر)${wbEnd}`, "gi"), " ");
+        } else if (new RegExp(`${wbStart}(at\\s+midnight|midnight)${wbEnd}`, "i").test(cleanText)) {
+          time = "00:00";
+          cleanText = cleanText.replace(new RegExp(`${wbStart}(at\\s+midnight|midnight)${wbEnd}`, "gi"), " ");
+        } else if (new RegExp(`${wbStart}(tonight|الليلة)${wbEnd}`, "i").test(cleanText)) {
+          time = "20:00";
+          if (!date) date = getFmt(today);
+          cleanText = cleanText.replace(new RegExp(`${wbStart}(tonight|الليلة)${wbEnd}`, "gi"), " ");
+        }
+      }
+
+      if (new RegExp(`${wbStart}(today|اليوم)${wbEnd}`, "i").test(cleanText)) {
+        date = getFmt(today);
+        cleanText = cleanText.replace(new RegExp(`${wbStart}(today|اليوم)${wbEnd}`, "gi"), " ");
+      } else if (new RegExp(`${wbStart}(tomorrow|tmrw|غدا|غداً|بكرة|بكرا)${wbEnd}`, "i").test(cleanText)) {
+        const tmrw = new Date(today);
+        tmrw.setDate(today.getDate() + 1);
+        date = getFmt(tmrw);
+        cleanText = cleanText.replace(new RegExp(`${wbStart}(tomorrow|tmrw|غدا|غداً|بكرة|بكرا)${wbEnd}`, "gi"), " ");
+      } else if (new RegExp(`${wbStart}(next\\s+week|الأسبوع\\s+القادم|الاسبوع\\s+القادم)${wbEnd}`, "i").test(cleanText)) {
+        const nw = new Date(today);
+        nw.setDate(today.getDate() + 7);
+        date = getFmt(nw);
+        cleanText = cleanText.replace(new RegExp(`${wbStart}(next\\s+week|الأسبوع\\s+القادم|الاسبوع\\s+القادم)${wbEnd}`, "gi"), " ");
+      } else {
+        const weekdays = [
+          { names: ["sunday","الأحد","الاحد"], day: 0 },
+          { names: ["monday","الإثنين","الاثنين"], day: 1 },
+          { names: ["tuesday","الثلاثاء"], day: 2 },
+          { names: ["wednesday","الأربعاء","الاربعاء"], day: 3 },
+          { names: ["thursday","الخميس"], day: 4 },
+          { names: ["friday","الجمعة"], day: 5 },
+          { names: ["saturday","السبت"], day: 6 }
+        ];
+        for (const w of weekdays) {
+          const reg = new RegExp(`${wbStart}(?:on\\s+|يوم\\s+)?(${w.names.join("|")})${wbEnd}`, "i");
+          const mw = cleanText.match(reg);
+          if (mw) {
+            let diff = (w.day + 7 - today.getDay()) % 7;
+            if (diff === 0) diff = 7;
+            const d = new Date(today);
+            d.setDate(today.getDate() + diff);
+            date = getFmt(d);
+            cleanText = cleanText.replace(mw[0], " ");
+            break;
+          }
+        }
+      }
+
+      cleanText = cleanText.replace(/\s+/g, " ").trim();
+      return { cleanText, date, time };
+    }
+
     function addTask(e) {
       if (e.key === 'Enter') {
         const inp = document.getElementById('task-input');
         if (inp.value.trim()) {
-          const dueDate = document.getElementById('task-due-date').value || null;
-          const dueTime = document.getElementById('task-due-time').value || null;
+          let dueDate = document.getElementById('task-due-date').value || null;
+          let dueTime = document.getElementById('task-due-time').value || null;
           const reminderVal = document.getElementById('task-reminder').value;
+          let taskText = inp.value.trim();
+          let nlDate = null, nlTime = null;
+
+          if (!dueDate || !dueTime) {
+            const parsed = parseNaturalLanguageDate(taskText);
+            if (parsed.cleanText && (parsed.date || parsed.time)) {
+              taskText = parsed.cleanText;
+              if (!dueDate && parsed.date) { dueDate = parsed.date; nlDate = parsed.date; }
+              if (!dueTime && parsed.time) { dueTime = parsed.time; nlTime = parsed.time; }
+            }
+          }
+
           const task = {
-            text: inp.value.trim(), done: false,
+            text: taskText, done: false,
             due_date: dueDate, due_time: dueTime, priority: selectedPriority, status: 'pending',
             recurrence_type: pendingRecurrence.type, recurrence_interval: 1,
             recurrence_weekdays: pendingRecurrence.type === 'weekly' ? pendingRecurrence.weekdays : [],
@@ -1217,7 +1313,14 @@
           tasks.unshift(task); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
           syncTask(task, 'insert');
           clearTaskInputs();
-          renderActiveSmartList(); showToast('✅ Task added!', 'success');
+          let toastMsg = '✅ Task added!';
+          if (nlDate || nlTime) {
+            const dateStr = nlDate ? nlDate + ' ' : '';
+            const timeStr = nlTime ? nlTime : '';
+            const fmt = i18n[currentLang].nlParsed || "✅ Task added! ({date}{time})";
+            toastMsg = fmt.replace('{date}', dateStr).replace('{time}', timeStr).trim();
+          }
+          renderActiveSmartList(); showToast(toastMsg, 'success');
         }
       }
     }
@@ -1464,18 +1567,11 @@
       dial.addEventListener('touchstart', dragStart, {passive:false});
 
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission().then(p => {
-          if (p === 'granted') { window.addEventListener('deviceorientation', handleOrientation); console.log('Compass: iOS permission granted'); }
-        }).catch(() => {});
-      } else if ('ondeviceorientationabsolute' in window) {
-        compassSensorAbsolute = true;
-        window.addEventListener('deviceorientationabsolute', handleOrientation);
-        console.log('Compass: using deviceorientationabsolute (Chrome Android)');
-      } else if (typeof DeviceOrientationEvent !== 'undefined') {
-        window.addEventListener('deviceorientation', handleOrientation);
-        console.log('Compass: using deviceorientation (fallback)');
+        console.log('Compass: iOS permission required on button tap');
       } else {
-        console.log('Compass: no sensor available, drag only');
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        console.log('Compass: listening to deviceorientation / deviceorientationabsolute');
       }
     }
 
@@ -1506,20 +1602,28 @@
     function requestDeviceOrientation() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission().then(p => {
-          if (p === 'granted') { window.addEventListener('deviceorientation', handleOrientation); showToast('🧭 Compass active!','success'); }
-        }).catch(() => {});
+          if (p === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation, true);
+            showToast('🧭 Compass active!','success');
+          } else {
+            showToast('⚠️ Compass permission denied','error');
+          }
+        }).catch(() => showToast('⚠️ Compass permission denied','error'));
+      } else {
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        showToast('🧭 Compass active!','success');
       }
     }
 
     function handleOrientation(e) {
       let heading = null;
-      if (e.webkitCompassHeading !== undefined) {
+      if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
         heading = e.webkitCompassHeading;
-      } else if ((compassSensorAbsolute || e.absolute) && e.alpha !== null) {
+      } else if (e.alpha !== null && e.alpha !== undefined) {
         heading = (360 - e.alpha) % 360;
       }
-      console.log('Sensor:', 'abs=' + e.absolute, 'a=' + e.alpha, 'b=' + e.beta, 'g=' + e.gamma, 'wk=' + e.webkitCompassHeading, 'ch=' + e.compassHeading, 'hd=' + heading);
-      if (heading !== null) {
+      if (heading !== null && !isNaN(heading)) {
         compassHeading = heading;
         updateCompass();
       }

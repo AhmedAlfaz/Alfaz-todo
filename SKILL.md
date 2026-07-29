@@ -79,6 +79,7 @@ Stop immediately and discuss with me when:
 - [2026-07-18] Lesson: Supabase requires email confirmation by default. New users cannot log in until they click the verification email. For testing, disable it in Authentication → Providers → Email → Confirm email. Re-enable for production.
 - [2026-07-23] Lesson: Fixed azan audio bug — replaced broken CDN links (which pointed to Quran recitations) with verified local MP3 files from Kiwifu/adhan-mp3 GitHub repo. Local files are more reliable, work offline, and avoid external dependency issues.
 - [2026-07-23] Lesson: NEVER reference variables that don't exist in the codebase. `prayerSoundsEnabled` was used without being declared, causing a ReferenceError that silently killed the entire reminder function. Before writing code, verify every variable/function actually exists. Test each feature end-to-end before calling it "done."
+- [2026-07-29] Lesson: iOS Safari blocks DeviceOrientationEvent.requestPermission() unless called inside a direct user gesture (button tap). On Android Chrome/Samsung, e.absolute is often false/undefined even when e.alpha is valid. Always listen to both deviceorientation and deviceorientationabsolute, and only trigger requestPermission() inside a button tap handler.
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 
