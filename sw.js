@@ -1,5 +1,7 @@
-const CACHE_NAME = 'alfaz-todo-v3';
+const CACHE_NAME = 'alfaz-todo-v4';
 const STATIC_ASSETS = [
+  '/Alfaz-todo/',
+  '/Alfaz-todo/index.html',
   './',
   './index.html',
   './manifest.json',
@@ -73,7 +75,13 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => {
-      if (e.request.mode === 'navigate') return caches.match('./index.html').then(r => r || caches.match('./'));
+      if (e.request.mode === 'navigate') {
+        return caches.match(e.request)
+          .then(r => r || caches.match('/Alfaz-todo/index.html'))
+          .then(r => r || caches.match('/Alfaz-todo/'))
+          .then(r => r || caches.match('./index.html'))
+          .then(r => r || caches.match('./'));
+      }
     }))
   );
 });
