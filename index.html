@@ -259,13 +259,20 @@
       </div>
 
       <!-- Add Task -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 p-4 hover:shadow-md transition">
+      <div id="add-task-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 p-4 hover:shadow-md transition">
         <div class="flex items-center">
           <i class="fas fa-plus text-blue-500 me-3 text-lg"></i>
-          <input type="text" id="task-input" onkeydown="addTask(event)" data-i18n-placeholder="addTaskPlaceholder" placeholder="Add a task (Press Enter to save)" class="bg-transparent border-none focus:outline-none w-full text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-white pe-10">
-          <button id="mic-btn" onclick="toggleVoiceInput()" title="Voice input" class="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition p-1 rounded-lg flex-shrink-0">
+          <input type="text" id="task-input" onkeydown="addTask(event)" oninput="onTaskInputChanged(this.value)" data-i18n-placeholder="addTaskPlaceholder" placeholder="Add a task (Press Enter to save)" class="bg-transparent border-none focus:outline-none w-full text-base placeholder-gray-400 dark:placeholder-gray-500 dark:text-white pe-2">
+          <button id="mic-btn" onclick="toggleVoiceInput()" title="Voice input" class="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition p-1 rounded-lg flex-shrink-0 me-1">
             <i class="fas fa-microphone text-lg" id="mic-icon"></i>
           </button>
+          <button onclick="saveCurrentTask()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg text-sm transition flex-shrink-0 flex items-center shadow-sm">
+            <span data-i18n="addBtn">Add</span>
+          </button>
+        </div>
+        <!-- Live NLP Time Detector Badge (hidden by default) -->
+        <div id="nl-badge" class="hidden mt-2 text-xs bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">
+          <i class="fas fa-clock"></i> <span id="nl-badge-text"></span>
         </div>
         <!-- Task options row -->
         <div class="flex items-center gap-2 mt-2 flex-wrap">
@@ -459,6 +466,36 @@
       <div id="group-list" class="space-y-3"></div>
     </div>
 
+    <!-- ===== EDIT TASK MODAL ===== -->
+    <div id="edit-task-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4" data-i18n="editTask">Edit Task</h3>
+        <input type="text" id="edit-task-text" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-base focus:outline-none focus:border-blue-500 mb-3">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="dueDateLabel">Due Date</label>
+            <input type="date" id="edit-task-date" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="dueTimeLabel">Due Time</label>
+            <input type="time" id="edit-task-time" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="priorityLabel">Priority</label>
+          <div class="flex gap-2">
+            <button type="button" onclick="setEditPriority(0)" id="edit-prio-0" class="flex-1 py-1.5 rounded-lg text-xs font-medium border bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600" data-i18n="priorityLow">Low</button>
+            <button type="button" onclick="setEditPriority(1)" id="edit-prio-1" class="flex-1 py-1.5 rounded-lg text-xs font-medium border bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600" data-i18n="priorityMed">Med</button>
+            <button type="button" onclick="setEditPriority(2)" id="edit-prio-2" class="flex-1 py-1.5 rounded-lg text-xs font-medium border bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600" data-i18n="priorityHigh">High</button>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-i18n="cancel">Cancel</button>
+          <button type="button" onclick="saveEditedTask()" class="px-5 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition" data-i18n="save">Save</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -504,7 +541,10 @@
         voiceError: "Microphone access denied", voiceNoSpeech: "No speech detected",
         noReminder: "No reminder", reminderAtTime: "At time", reminderBefore: "min before",
         taskReminder: "⏰ Reminder: {task}", taskDueNow: "⏰ {task} is due now!",
-        nlParsed: "✅ Task added! ({date}{time})"
+        nlParsed: "✅ Task added! ({date}{time})",
+        addBtn: "Add", nlDetected: "Detected: {info}", editTask: "Edit Task",
+        dueDateLabel: "Due Date", dueTimeLabel: "Due Time", priorityLabel: "Priority",
+        cancel: "Cancel", save: "Save", taskUpdated: "✅ Task updated!"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -545,7 +585,10 @@
         voiceError: "تم رفض الوصول إلى الميكروفون", voiceNoSpeech: "لم يتم اكتشاف صوت",
         noReminder: "بدون تذكير", reminderAtTime: "عند الموعد", reminderBefore: "دقيقة قبل",
         taskReminder: "⏰ تذكير: {task}", taskDueNow: "⏰ حان موعد {task}!",
-        nlParsed: "✅ تمت إضافة المهمة! ({date}{time})"
+        nlParsed: "✅ تمت إضافة المهمة! ({date}{time})",
+        addBtn: "إضافة", nlDetected: "تم اكتشاف: {info}", editTask: "تعديل المهمة",
+        dueDateLabel: "تاريخ الاستحقاق", dueTimeLabel: "وقت الاستحقاق", priorityLabel: "الأولوية",
+        cancel: "إلغاء", save: "حفظ", taskUpdated: "✅ تم تحديث المهمة!"
       }
     };
 
@@ -904,7 +947,8 @@
             ${prioDot}<span class="${t.done?'line-through text-gray-400 dark:text-gray-500':'text-gray-700 dark:text-gray-200 font-medium'}">${reminderBadge}${repeatBadge}${escapeHtml(t.text)}</span>
           </span>
           ${dueBadge}
-          <button onclick="deleteTask(${idx})" class="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-lg ms-2 flex-shrink-0"><i class="fas fa-trash-can"></i></button>
+          <button onclick="openEditModal(${idx})" class="text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 opacity-70 group-hover:opacity-100 transition text-base ms-2 flex-shrink-0 p-1" title="Edit"><i class="fas fa-pen"></i></button>
+          <button onclick="deleteTask(${idx})" class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 opacity-70 group-hover:opacity-100 transition text-base ms-1 flex-shrink-0 p-1" title="Delete"><i class="fas fa-trash-can"></i></button>
         </div>`;
     }
 
@@ -1281,48 +1325,124 @@
       return { cleanText, date, time };
     }
 
-    function addTask(e) {
-      if (e.key === 'Enter') {
-        const inp = document.getElementById('task-input');
-        if (inp.value.trim()) {
-          let dueDate = document.getElementById('task-due-date').value || null;
-          let dueTime = document.getElementById('task-due-time').value || null;
-          const reminderVal = document.getElementById('task-reminder').value;
-          let taskText = inp.value.trim();
-          let nlDate = null, nlTime = null;
+    let editingTaskIndex = -1;
+    let editPriority = 1;
 
-          if (!dueDate || !dueTime) {
-            const parsed = parseNaturalLanguageDate(taskText);
-            if (parsed.cleanText && (parsed.date || parsed.time)) {
-              taskText = parsed.cleanText;
-              if (!dueDate && parsed.date) { dueDate = parsed.date; nlDate = parsed.date; }
-              if (!dueTime && parsed.time) { dueTime = parsed.time; nlTime = parsed.time; }
-            }
-          }
+    function onTaskInputChanged(val) {
+      const badge = document.getElementById('nl-badge');
+      const badgeText = document.getElementById('nl-badge-text');
+      if (!val || !val.trim()) {
+        if (badge) badge.classList.add('hidden');
+        return;
+      }
+      const parsed = parseNaturalLanguageDate(val);
+      if (parsed.date || parsed.time) {
+        let info = '';
+        if (parsed.date) info += parsed.date + ' ';
+        if (parsed.time) info += parsed.time;
+        const fmt = i18n[currentLang].nlDetected || "Detected: {info}";
+        badgeText.textContent = fmt.replace('{info}', info.trim());
+        if (badge) badge.classList.remove('hidden');
+      } else {
+        if (badge) badge.classList.add('hidden');
+      }
+    }
 
-          const task = {
-            text: taskText, done: false,
-            due_date: dueDate, due_time: dueTime, priority: selectedPriority, status: 'pending',
-            recurrence_type: pendingRecurrence.type, recurrence_interval: 1,
-            recurrence_weekdays: pendingRecurrence.type === 'weekly' ? pendingRecurrence.weekdays : [],
-            recurrence_end: document.getElementById('recurrence-end-date').value || null,
-            recurrence_done_at: null,
-            reminder_minutes: reminderVal !== '' ? parseInt(reminderVal) : null,
-            reminder_fired: false
-          };
-          tasks.unshift(task); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-          syncTask(task, 'insert');
-          clearTaskInputs();
-          let toastMsg = '✅ Task added!';
-          if (nlDate || nlTime) {
-            const dateStr = nlDate ? nlDate + ' ' : '';
-            const timeStr = nlTime ? nlTime : '';
-            const fmt = i18n[currentLang].nlParsed || "✅ Task added! ({date}{time})";
-            toastMsg = fmt.replace('{date}', dateStr).replace('{time}', timeStr).trim();
-          }
-          renderActiveSmartList(); showToast(toastMsg, 'success');
+    function saveCurrentTask() {
+      const inp = document.getElementById('task-input');
+      if (!inp || !inp.value.trim()) return;
+      let dueDate = document.getElementById('task-due-date').value || null;
+      let dueTime = document.getElementById('task-due-time').value || null;
+      const reminderVal = document.getElementById('task-reminder').value;
+      let taskText = inp.value.trim();
+      let nlDate = null, nlTime = null;
+
+      if (!dueDate || !dueTime) {
+        const parsed = parseNaturalLanguageDate(taskText);
+        if (parsed.cleanText && (parsed.date || parsed.time)) {
+          taskText = parsed.cleanText || taskText;
+          if (!dueDate && parsed.date) { dueDate = parsed.date; nlDate = parsed.date; }
+          if (!dueTime && parsed.time) { dueTime = parsed.time; nlTime = parsed.time; }
         }
       }
+
+      const task = {
+        text: taskText, done: false,
+        due_date: dueDate, due_time: dueTime, priority: selectedPriority, status: 'pending',
+        recurrence_type: pendingRecurrence.type, recurrence_interval: 1,
+        recurrence_weekdays: pendingRecurrence.type === 'weekly' ? pendingRecurrence.weekdays : [],
+        recurrence_end: document.getElementById('recurrence-end-date').value || null,
+        recurrence_done_at: null,
+        reminder_minutes: reminderVal !== '' ? parseInt(reminderVal) : null,
+        reminder_fired: false
+      };
+      tasks.unshift(task); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      syncTask(task, 'insert');
+      clearTaskInputs();
+      const badge = document.getElementById('nl-badge');
+      if (badge) badge.classList.add('hidden');
+      let toastMsg = '✅ Task added!';
+      if (nlDate || nlTime) {
+        const dateStr = nlDate ? nlDate + ' ' : '';
+        const timeStr = nlTime ? nlTime : '';
+        const fmt = i18n[currentLang].nlParsed || "✅ Task added! ({date}{time})";
+        toastMsg = fmt.replace('{date}', dateStr).replace('{time}', timeStr).trim();
+      }
+      renderActiveSmartList(); showToast(toastMsg, 'success');
+    }
+
+    function addTask(e) {
+      if (e.key === 'Enter') {
+        saveCurrentTask();
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      const container = document.getElementById('add-task-container');
+      const inp = document.getElementById('task-input');
+      if (container && inp && inp.value.trim() && !container.contains(e.target)) {
+        saveCurrentTask();
+      }
+    });
+
+    function openEditModal(idx) {
+      editingTaskIndex = idx;
+      const t = tasks[idx];
+      if (!t) return;
+      document.getElementById('edit-task-text').value = t.text || '';
+      document.getElementById('edit-task-date').value = t.due_date || '';
+      document.getElementById('edit-task-time').value = t.due_time || '';
+      setEditPriority(t.priority !== undefined ? t.priority : 1);
+      document.getElementById('edit-task-modal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+      editingTaskIndex = -1;
+      document.getElementById('edit-task-modal').classList.add('hidden');
+    }
+    function setEditPriority(p) {
+      editPriority = p;
+      for (let i=0; i<3; i++) {
+        const btn = document.getElementById('edit-prio-'+i);
+        if (btn) {
+          btn.classList.remove('active-low','active-med','active-high');
+          if (i === p) btn.classList.add(p === 0 ? 'active-low' : p === 1 ? 'active-med' : 'active-high');
+        }
+      }
+    }
+    function saveEditedTask() {
+      if (editingTaskIndex < 0 || !tasks[editingTaskIndex]) return;
+      const t = tasks[editingTaskIndex];
+      const newText = document.getElementById('edit-task-text').value.trim();
+      if (!newText) { showToast('⚠️ Task text required', 'error'); return; }
+      t.text = newText;
+      t.due_date = document.getElementById('edit-task-date').value || null;
+      t.due_time = document.getElementById('edit-task-time').value || null;
+      t.priority = editPriority;
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      syncTask(t, 'update');
+      closeEditModal();
+      renderActiveSmartList();
+      showToast(i18n[currentLang].taskUpdated || '✅ Task updated!', 'success');
     }
     function toggleTask(i) {
       const t = tasks[i];
@@ -1616,12 +1736,36 @@
       }
     }
 
+    let currentDisplayHeading = null;
+
+    function getTiltCompensatedHeading(alpha, beta, gamma) {
+      if (alpha === null || beta === null || gamma === null) return (360 - (alpha || 0)) % 360;
+      const degToRad = Math.PI / 180;
+      const _alpha = alpha * degToRad;
+      const _beta = beta * degToRad;
+      const _gamma = gamma * degToRad;
+      const cA = Math.cos(_alpha), sA = Math.sin(_alpha);
+      const cB = Math.cos(_beta), sB = Math.sin(_beta);
+      const cG = Math.cos(_gamma), sG = Math.sin(_gamma);
+      const rA = -cA * sG - sA * sB * cG;
+      const rB = -sA * sG + cA * sB * cG;
+      let heading = Math.atan2(rA, rB) * (180 / Math.PI);
+      if (heading < 0) heading += 360;
+      return heading % 360;
+    }
+
+    function smoothAngle(oldAngle, newAngle, factor = 0.2) {
+      if (oldAngle === null || isNaN(oldAngle)) return newAngle;
+      let diff = ((newAngle - oldAngle + 540) % 360) - 180;
+      return (oldAngle + diff * factor + 360) % 360;
+    }
+
     function handleOrientation(e) {
       let heading = null;
       if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
         heading = e.webkitCompassHeading;
       } else if (e.alpha !== null && e.alpha !== undefined) {
-        heading = (360 - e.alpha) % 360;
+        heading = getTiltCompensatedHeading(e.alpha, e.beta || 0, e.gamma || 0);
       }
       if (heading !== null && !isNaN(heading)) {
         compassHeading = heading;
@@ -1631,7 +1775,9 @@
 
     function updateCompass() {
       const dial = document.getElementById('compass-dial');
-      if (dial) dial.style.transform = `rotate(${compassHeading}deg)`;
+      if (!dial) return;
+      currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
+      dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
     }
   </script>
 </body>
