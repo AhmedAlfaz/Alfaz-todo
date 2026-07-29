@@ -1,23 +1,23 @@
-const CACHE_NAME = 'alfaz-todo-v2';
+const CACHE_NAME = 'alfaz-todo-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  './',
+  './index.html',
+  './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  '/audio/makkah.mp3',
-  '/audio/madinah.mp3',
-  '/audio/alaqsa.mp3',
-  '/audio/egypt.mp3',
-  '/audio/turkey.mp3',
-  '/audio/azan-alafasy.mp3',
-  '/audio/azan-alafasy-alt.mp3',
-  '/audio/azan-ahmad-nafees.mp3',
-  '/audio/azan-hafiz-ozcan.mp3',
-  '/audio/azan-alafasy-dubai.mp3',
-  '/audio/azan-mansour-zahrani.mp3',
-  '/audio/azan-al-aqsa-mujir.mp3',
-  '/audio/azan-madinah-haram.mp3'
+  './audio/makkah.mp3',
+  './audio/madinah.mp3',
+  './audio/alaqsa.mp3',
+  './audio/egypt.mp3',
+  './audio/turkey.mp3',
+  './audio/azan-alafasy.mp3',
+  './audio/azan-alafasy-alt.mp3',
+  './audio/azan-ahmad-nafees.mp3',
+  './audio/azan-hafiz-ozcan.mp3',
+  './audio/azan-alafasy-dubai.mp3',
+  './audio/azan-mansour-zahrani.mp3',
+  './audio/azan-al-aqsa-mujir.mp3',
+  './audio/azan-madinah-haram.mp3'
 ];
 const PRAYER_CACHE = 'alfaz-prayer-v1';
 const PRAYER_TTL = 24 * 60 * 60 * 1000;
@@ -73,7 +73,7 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => {
-      if (e.request.mode === 'navigate') return caches.match('/index.html');
+      if (e.request.mode === 'navigate') return caches.match('./index.html').then(r => r || caches.match('./'));
     }))
   );
 });
@@ -83,8 +83,8 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title || 'Alfaz todo', {
       body: data.body || '',
-      icon: '/ALFA LOGO icon.jpg',
-      badge: '/ALFA LOGO icon.jpg',
+      icon: './ALFA LOGO icon.jpg',
+      badge: './ALFA LOGO icon.jpg',
       tag: 'alfaz-prayer',
       requireInteraction: true
     })
@@ -93,5 +93,5 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.openWindow('/index.html'));
+  e.waitUntil(clients.openWindow('./'));
 });
