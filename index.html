@@ -188,6 +188,10 @@
         <i class="fas fa-kaaba text-purple-500 w-5 text-center"></i>
         <span data-i18n="qiblaNavigator">Qibla Navigator</span>
       </button>
+      <button onclick="switchView('library-view', this); renderLibrary('all');" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-book-quran text-emerald-500 w-5 text-center"></i>
+        <span data-i18n="library">Library</span>
+      </button>
       <button onclick="switchView('groups-view', this); loadGroups();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
         <i class="fas fa-users text-cyan-500 w-5 text-center"></i>
         <span data-i18n="groups">Groups</span>
@@ -437,6 +441,38 @@
       </button>
     </div>
 
+    <!-- ===== 3.5. LIBRARY ===== -->
+    <div id="library-view" class="view-section hidden max-w-4xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="library">Library</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" data-i18n="librarySubtitle">Authentic Adhkar, Duas & Spiritual Goals</p>
+        </div>
+        <button onclick="openCustomDuaModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition shadow-sm flex items-center gap-2">
+          <i class="fas fa-plus"></i> <span data-i18n="addCustomDua">New Dhikr / Dua</span>
+        </button>
+      </div>
+
+      <!-- Search & Category Filter Tabs -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl overflow-x-auto">
+          <button onclick="filterLibrary('all', this)" class="lib-tab active px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 transition whitespace-nowrap" data-i18n="libAll">All</button>
+          <button onclick="filterLibrary('morning', this)" class="lib-tab px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 transition whitespace-nowrap" data-i18n="libMorning">Morning</button>
+          <button onclick="filterLibrary('evening', this)" class="lib-tab px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 transition whitespace-nowrap" data-i18n="libEvening">Evening</button>
+          <button onclick="filterLibrary('duas', this)" class="lib-tab px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 transition whitespace-nowrap" data-i18n="libDuas">Duas</button>
+          <button onclick="filterLibrary('quran', this)" class="lib-tab px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 transition whitespace-nowrap" data-i18n="libQuran">Quran & Goals</button>
+          <button onclick="filterLibrary('custom', this)" class="lib-tab px-3.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 transition whitespace-nowrap" data-i18n="libCustom">My Custom</button>
+        </div>
+        <div class="relative min-w-[200px]">
+          <input type="text" id="lib-search" oninput="onLibrarySearch(this.value)" data-i18n-placeholder="searchLibrary" placeholder="Search library..." class="w-full pl-9 pr-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:outline-none focus:border-emerald-500">
+          <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+        </div>
+      </div>
+
+      <!-- Library Items Grid -->
+      <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12"></div>
+    </div>
+
     <!-- ===== 4. GROUPS ===== -->
     <div id="groups-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-6">
@@ -496,6 +532,44 @@
       </div>
     </div>
 
+    <!-- ===== CUSTOM DUA/DHIKR CREATOR MODAL ===== -->
+    <div id="custom-dua-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4" data-i18n="addCustomDuaTitle">Add Custom Dhikr / Dua</h3>
+        <div class="mb-3">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="duaTitleLabel">Title</label>
+          <input type="text" id="custom-dua-title" placeholder="e.g. Personal Morning Dua" class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="duaArabicLabel">Arabic Text (optional)</label>
+          <textarea id="custom-dua-arabic" rows="2" placeholder="النص العربي..." class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-base focus:outline-none focus:border-emerald-500 font-arabic dir-rtl" dir="rtl"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="duaTransLabel">Translation / Meaning</label>
+          <textarea id="custom-dua-trans" rows="2" placeholder="Meaning or transliteration..." class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:border-emerald-500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="categoryLabel">Category</label>
+            <select id="custom-dua-cat" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none">
+              <option value="morning" data-i18n="libMorning">Morning</option>
+              <option value="evening" data-i18n="libEvening">Evening</option>
+              <option value="duas" data-i18n="libDuas">Duas</option>
+              <option value="quran" data-i18n="libQuran">Quran & Goals</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="tapCountLabel">Target Tap Count</label>
+            <input type="number" id="custom-dua-count" min="1" max="1000" value="1" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none">
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <button type="button" onclick="closeCustomDuaModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-i18n="cancel">Cancel</button>
+          <button type="button" onclick="saveCustomDua()" class="px-5 py-2 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" data-i18n="save">Save</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -544,7 +618,16 @@
         nlParsed: "✅ Task added! ({date}{time})",
         addBtn: "Add", nlDetected: "Detected: {info}", editTask: "Edit Task",
         dueDateLabel: "Due Date", dueTimeLabel: "Due Time", priorityLabel: "Priority",
-        cancel: "Cancel", save: "Save", taskUpdated: "✅ Task updated!"
+        cancel: "Cancel", save: "Save", taskUpdated: "✅ Task updated!",
+        library: "Library", librarySubtitle: "Authentic Adhkar, Duas & Spiritual Goals",
+        addCustomDua: "New Dhikr / Dua", addCustomDuaTitle: "Add Custom Dhikr / Dua",
+        libAll: "All", libMorning: "Morning", libEvening: "Evening", libDuas: "Duas",
+        libQuran: "Quran & Goals", libCustom: "My Custom", searchLibrary: "Search library...",
+        duaTitleLabel: "Title", duaArabicLabel: "Arabic Text (optional)",
+        duaTransLabel: "Translation / Meaning", categoryLabel: "Category",
+        tapCountLabel: "Target Tap Count", addToMyDay: "Add to My Day",
+        addedToMyDay: "✅ Added to My Day!", customDuaSaved: "✅ Custom Dhikr saved!",
+        tapCountProgress: "{current} / {target}", completedBadge: "Completed ✓"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -588,7 +671,16 @@
         nlParsed: "✅ تمت إضافة المهمة! ({date}{time})",
         addBtn: "إضافة", nlDetected: "تم اكتشاف: {info}", editTask: "تعديل المهمة",
         dueDateLabel: "تاريخ الاستحقاق", dueTimeLabel: "وقت الاستحقاق", priorityLabel: "الأولوية",
-        cancel: "إلغاء", save: "حفظ", taskUpdated: "✅ تم تحديث المهمة!"
+        cancel: "إلغاء", save: "حفظ", taskUpdated: "✅ تم تحديث المهمة!",
+        library: "المكتبة", librarySubtitle: "أذكار وأدعية مأثورة وأهداف قرآنية",
+        addCustomDua: "ذكر / دعاء جديد", addCustomDuaTitle: "إضافة ذكر أو دعاء مخصص",
+        libAll: "الكل", libMorning: "الصباح", libEvening: "المساء", libDuas: "أدعية",
+        libQuran: "القرآن والعبادات", libCustom: "مخصص", searchLibrary: "ابحث في المكتبة...",
+        duaTitleLabel: "العنوان", duaArabicLabel: "النص العربي (اختياري)",
+        duaTransLabel: "الترجمة / المعنى", categoryLabel: "التصنيف",
+        tapCountLabel: "عدد التكرار", addToMyDay: "إضافة إلى يومي",
+        addedToMyDay: "✅ تمت الإضافة إلى يومي!", customDuaSaved: "✅ تم حفظ الذكر المخصص!",
+        tapCountProgress: "{current} / {target}", completedBadge: "مكتمل ✓"
       }
     };
 
@@ -938,6 +1030,11 @@
       const repeatBadge = t.recurrence_type ? `<i class="fas fa-repeat text-xs text-blue-400 dark:text-blue-500 me-1.5"></i>` : '';
       const reminderBadge = (t.reminder_minutes !== null && t.reminder_minutes !== undefined && !t.reminder_fired) ? `<i class="fas fa-bell text-xs text-amber-400 dark:text-amber-500 me-1.5"></i>` : '';
       const dueBadge = t.due_date ? `<span class="text-xs ${isOverdue?'text-red-500 dark:text-red-400 font-medium':'text-gray-400 dark:text-gray-500'} ms-2 whitespace-nowrap">${t.due_time ? t.due_time+' ' : ''}${formatShortDate(t.due_date)}</span>` : '';
+      const tapCounterBadge = (t.target_count > 1) ? `
+        <button onclick="incrementTaskTap(event, ${idx})" class="bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold ms-2 transition shadow-sm flex items-center gap-1" title="Tap to increment">
+          <i class="fas fa-hand-pointer text-[10px]"></i>
+          <span>${t.current_count || 0} / ${t.target_count}</span>
+        </button>` : '';
       const prioDot = t.priority > 0 ? `<span class="w-2 h-2 rounded-full ${prioColors[t.priority]} me-2 flex-shrink-0 inline-block align-middle"></span>` : '';
       const borderClass = isOverdue ? 'border-red-200 dark:border-red-800/50' : 'border-gray-100 dark:border-gray-700';
       return `
@@ -946,6 +1043,7 @@
           <span class="ms-3 flex-1 min-w-0">
             ${prioDot}<span class="${t.done?'line-through text-gray-400 dark:text-gray-500':'text-gray-700 dark:text-gray-200 font-medium'}">${reminderBadge}${repeatBadge}${escapeHtml(t.text)}</span>
           </span>
+          ${tapCounterBadge}
           ${dueBadge}
           <button onclick="openEditModal(${idx})" class="text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 opacity-70 group-hover:opacity-100 transition text-base ms-2 flex-shrink-0 p-1" title="Edit"><i class="fas fa-pen"></i></button>
           <button onclick="deleteTask(${idx})" class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 opacity-70 group-hover:opacity-100 transition text-base ms-1 flex-shrink-0 p-1" title="Delete"><i class="fas fa-trash-can"></i></button>
@@ -1674,6 +1772,311 @@
     }
     function testAzan() { playSelectedAzan(); }
     function stopAzan() { if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; showToast('⏹ Audio stopped', 'info'); } }
+
+    // ===== ISLAMIC LIBRARY (المكتبة) =====
+    const GOLDEN_CATALOG = [
+      {
+        id: 'm1', category: 'morning', count: 1,
+        title_en: 'Ayat al-Kursi (The Throne Verse)', title_ar: 'آية الكرسي',
+        arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ ...',
+        trans_en: 'Allah - there is no deity except Him, the Ever-Living, the Sustainer of all existence...',
+        trans_ar: 'قراءة آية الكرسي للحفظ والبركة في الصباح.'
+      },
+      {
+        id: 'm2', category: 'morning', count: 3,
+        title_en: 'Al-Ikhlas & Mu\'awwidhatayn (3x)', title_ar: 'سورة الإخلاص والمعوذتان (٣ مرات)',
+        arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
+        trans_en: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas 3 times each for protection.',
+        trans_ar: 'قراءة سورة الإخلاص والفلق والناس ثلاث مرات تكفيك من كل شيء.'
+      },
+      {
+        id: 'm3', category: 'morning', count: 1,
+        title_en: 'Sayyid al-Istighfar (Chief of Forgiveness)', title_ar: 'سيد الاستغفار',
+        arabic: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ...',
+        trans_en: 'O Allah, You are my Lord, none has the right to be worshipped except You...',
+        trans_ar: 'من قالها موقناً بها حين يصبح فمات من يومه دخل الجنة.'
+      },
+      {
+        id: 'm4', category: 'morning', count: 1,
+        title_en: 'Ya Hayyu Ya Qayyum', title_ar: 'يا حي يا قيوم',
+        arabic: 'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ، وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ',
+        trans_en: 'O Ever-Living, O Sustainer, in Your Mercy I seek relief; set right all my affairs...',
+        trans_ar: 'دعاء النبي ﷺ للاستغاثة برحمة الله وإصلاح الشأن كله.'
+      },
+      {
+        id: 'm5', category: 'morning', count: 3,
+        title_en: 'Bismillahil-ladhi la yadurru... (3x)', title_ar: 'بسم الله الذي لا يضر مع اسمه شيء (٣ مرات)',
+        arabic: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
+        trans_en: 'In the name of Allah with whose name nothing on earth or in heaven can cause harm... (3x)',
+        trans_ar: 'من قالها ثلاث مرات لم يضره شيء في ذلك اليوم.'
+      },
+      {
+        id: 'e1', category: 'evening', count: 1,
+        title_en: 'Evening Glorification & Sovereignty', title_ar: 'أمسينا وأمسى الملك لله',
+        arabic: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ لَا إِلَهَ إِلَّا اللَّهُ، وَحْدَهُ لَا شَرِيكَ لَهُ...',
+        trans_en: 'We have reached the evening and sovereignty belongs to Allah, and praise is to Allah...',
+        trans_ar: 'ذكر المساء للاعتراف بملك الله والحمد له.'
+      },
+      {
+        id: 'e2', category: 'evening', count: 3,
+        title_en: 'Evening Ikhlas & Mu\'awwidhatayn (3x)', title_ar: 'الإخلاص والمعوذتان في المساء (٣ مرات)',
+        arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
+        trans_en: 'Recite 3 times in the evening for protection against all harm.',
+        trans_ar: 'قراءة الإخلاص والمعوذتين ثلاث مرات للحفظ في المساء.'
+      },
+      {
+        id: 'e3', category: 'evening', count: 100,
+        title_en: 'SubhanAllahi wa bihamdihi (100x)', title_ar: 'سبحان الله وبحمده (١٠٠ مرة)',
+        arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
+        trans_en: 'Glory be to Allah and His is the praise (100 times). Sins forgiven even if like foam of the sea.',
+        trans_ar: 'من قالها مائة مرة حطت خطاياه وإن كانت مثل زبد البحر.'
+      },
+      {
+        id: 'e4', category: 'evening', count: 3,
+        title_en: 'A\'udhu bi kalimatillahi... (3x)', title_ar: 'أعوذ بكلمات الله التامات (٣ مرات)',
+        arabic: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ',
+        trans_en: 'I seek refuge in the perfect words of Allah from the evil of what He has created (3x).',
+        trans_ar: 'من قالها حين يمسي ثلاث مرات لم تضره حمة تلك الليلة.'
+      },
+      {
+        id: 'e5', category: 'evening', count: 1,
+        title_en: 'Allahumma bika amsayna', title_ar: 'اللهم بك أمسينا',
+        arabic: 'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ',
+        trans_en: 'O Allah, by You we enter the evening, by You we enter the morning, by You we live...',
+        trans_ar: 'تسليم المساء لله والاعتراف بالمصير إليه.'
+      },
+      {
+        id: 'd1', category: 'duas', count: 1,
+        title_en: 'Dua for Anxiety, Grief & Sorrow', title_ar: 'دعاء الهم والحزن',
+        arabic: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ',
+        trans_en: 'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness, miserliness and cowardice...',
+        trans_ar: 'دعاء عظيم لرفع الهم والكسل والديون.'
+      },
+      {
+        id: 'd2', category: 'duas', count: 1,
+        title_en: 'Dua for Guidance (Istikhara)', title_ar: 'دعاء الاستخارة وطلب التوفيق',
+        arabic: 'اللَّهُمَّ إِنِّي أَسْتَخِيرُكَ بِعِلْمِكَ، وَأَسْتَقْدِرُكَ بِقُدْرَتِكَ، وَأَسْأَلُكَ مِنْ فَضْلِكَ الْعَظِيمِ...',
+        trans_en: 'O Allah, I seek Your guidance by Your knowledge, and Your power by Your might...',
+        trans_ar: 'دعاء طلب الخيرة من الله في القرارات والأمور الهامة.'
+      },
+      {
+        id: 'd3', category: 'duas', count: 1,
+        title_en: 'Dua for Beneficial Knowledge & Work', title_ar: 'دعاء طلب العلم والرزق النافع',
+        arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلًا مُتَقَبَّلًا',
+        trans_en: 'O Allah, I ask You for beneficial knowledge, goodly provision, and acceptable deeds.',
+        trans_ar: 'دعاء نبوي مبارك يقال بعد صلاة الفجر وبداية العمل.'
+      },
+      {
+        id: 'd4', category: 'duas', count: 1,
+        title_en: 'Dua for Complete Protection', title_ar: 'دعاء الحفظ والتحصين',
+        arabic: 'اللَّهُمَّ احْفَظْنِي مِنْ بَيْنِ يَدَيَّ، وَمِنْ خَلْفِي، وَعَنْ يَمِينِي، وَعَنْ شِمَالِي، وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي',
+        trans_en: 'O Allah, protect me from in front of me, behind me, from my right and my left, and from above me...',
+        trans_ar: 'تحصين يومي للحفظ من جميع الجهات.'
+      },
+      {
+        id: 'd5', category: 'duas', count: 1,
+        title_en: 'Dua for Parents & Family', title_ar: 'دعاء للوالدين والأسرة',
+        arabic: 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا • رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا',
+        trans_en: 'My Lord, have mercy upon them as they brought me up when I was small...',
+        trans_ar: 'دعاء مأثور لبر الوالدين وصلاح الأسرة والذرية.'
+      },
+      {
+        id: 'q1', category: 'quran', count: 1,
+        title_en: 'Surah Al-Kahf (Friday Reminder)', title_ar: 'قراءة سورة الكهف (يوم الجمعة)',
+        arabic: 'سُورَةُ الْكَهْفِ • نُورٌ مَا بَيْنَ الْجُمُعَتَيْنِ',
+        trans_en: 'Recite Surah Al-Kahf on Friday for light between the two Fridays.',
+        trans_ar: 'من قرأ سورة الكهف يوم الجمعة أضاء له من النور ما بين الجمعتين.'
+      },
+      {
+        id: 'q2', category: 'quran', count: 1,
+        title_en: 'Surah Al-Mulk (Nightly Protection)', title_ar: 'قراءة سورة الملك (قبل النوم)',
+        arabic: 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
+        trans_en: 'Recite Surah Al-Mulk before sleeping as a shield and intercession.',
+        trans_ar: 'سورة الملك المنجية من عذاب القبر قراءتها كل ليلة.'
+      },
+      {
+        id: 'q3', category: 'quran', count: 4,
+        title_en: 'Daily Quran Page Goal (4 pages)', title_ar: 'ورد القرآن اليومي (٤ صفحات)',
+        arabic: 'وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا • خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
+        trans_en: 'Read 4 pages of Quran daily (equivalent to ~1 Juz per month).',
+        trans_ar: 'قراءة ٤ صفحات من القرآن الكريم يومياً للحفاظ على الورد.'
+      },
+      {
+        id: 'q4', category: 'quran', count: 2,
+        title_en: 'Duha Prayer (2 Rakaats Mid-Morning)', title_ar: 'صلاة الضحى (ركعتان)',
+        arabic: 'صَلَاةُ الْأَوَّابِينَ • صَدَقَةٌ عَنْ كُلِّ سُلَامَى',
+        trans_en: 'Perform 2 Rakaats of Duha prayer as charity for every joint in your body.',
+        trans_ar: 'صلاة الضحى صدقة يومية عن مفاصل الجسد ووصية النبي ﷺ.'
+      },
+      {
+        id: 'q5', category: 'quran', count: 1,
+        title_en: 'Witr Prayer (Nightly Worship)', title_ar: 'صلاة الوتر (ختام صلاة الليل)',
+        arabic: 'إِنَّ اللَّهَ وِتْرٌ يُحِبُّ الْوِتْرَ فَأَوْتِرُوا يَا أَهْلَ الْقُرْآنِ',
+        trans_en: 'Conclude your night prayers with Witr. Allah is One and loves the Witr.',
+        trans_ar: 'وصية النبي ﷺ بعدم النوم إلا على وتر.'
+      }
+    ];
+
+    let customLibraryItems = [];
+    try { customLibraryItems = JSON.parse(localStorage.getItem('alfaz_custom_lib')) || []; } catch(e) {}
+    let currentLibCategory = 'all';
+    let currentLibSearch = '';
+
+    function getCombinedLibrary() {
+      return [...GOLDEN_CATALOG, ...customLibraryItems];
+    }
+
+    function renderLibrary(category = currentLibCategory) {
+      currentLibCategory = category;
+      const list = document.getElementById('library-list');
+      if (!list) return;
+
+      document.querySelectorAll('.lib-tab').forEach(btn => {
+        const catAttr = btn.getAttribute('onclick');
+        btn.classList.toggle('active', catAttr && catAttr.includes(`'${category}'`));
+      });
+
+      const allItems = getCombinedLibrary();
+      const filtered = allItems.filter(item => {
+        const matchCat = category === 'all' ? true : category === 'custom' ? item.is_custom : item.category === category;
+        const q = currentLibSearch.trim().toLowerCase();
+        const matchSearch = !q ? true : (item.title_en?.toLowerCase().includes(q) || item.title_ar?.toLowerCase().includes(q) || item.arabic?.includes(q) || item.trans_en?.toLowerCase().includes(q) || item.trans_ar?.toLowerCase().includes(q));
+        return matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-book-open text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">No items found.</p></div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(item => {
+        const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
+        const trans = currentLang === 'ar' ? (item.trans_ar || item.trans_en) : (item.trans_en || item.trans_ar);
+        const arabicText = item.arabic ? `<p class="text-lg font-arabic text-gray-800 dark:text-gray-100 my-2.5 leading-relaxed dir-rtl" dir="rtl">${escapeHtml(item.arabic)}</p>` : '';
+        const badgeCount = item.count > 1 ? `<span class="inline-block bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-xs font-bold ms-2">${item.count}x</span>` : '';
+        const customBadge = item.is_custom ? `<span class="inline-block bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full text-xs font-bold ms-2">Custom</span>` : '';
+        const deleteCustomBtn = item.is_custom ? `<button onclick="deleteCustomDua('${item.id}')" class="text-gray-400 hover:text-red-500 transition p-1 text-sm" title="Delete"><i class="fas fa-trash-can"></i></button>` : '';
+
+        return `
+          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between">
+                <h4 class="font-bold text-gray-900 dark:text-white text-base">${escapeHtml(title)}${badgeCount}${customBadge}</h4>
+                ${deleteCustomBtn}
+              </div>
+              ${arabicText}
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-normal">${escapeHtml(trans || '')}</p>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <span class="text-xs text-gray-400 dark:text-gray-500 capitalize">${i18n[currentLang]['lib'+item.category.charAt(0).toUpperCase()+item.category.slice(1)] || item.category}</span>
+              <button onclick="addLibraryItemToMyDay('${item.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-medium transition shadow-sm flex items-center gap-1.5">
+                <i class="fas fa-plus"></i>
+                <span data-i18n="addToMyDay">${i18n[currentLang].addToMyDay}</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterLibrary(category, btn) {
+      renderLibrary(category);
+    }
+
+    function onLibrarySearch(q) {
+      currentLibSearch = q;
+      renderLibrary();
+    }
+
+    function addLibraryItemToMyDay(id) {
+      const allItems = getCombinedLibrary();
+      const item = allItems.find(x => x.id === id);
+      if (!item) return;
+
+      const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
+      const task = {
+        text: title,
+        done: false,
+        due_date: getTodayString(),
+        due_time: null,
+        priority: 1,
+        status: 'pending',
+        library_id: item.id,
+        target_count: item.count || 1,
+        current_count: 0,
+        recurrence_type: item.id === 'q1' ? 'weekly' : null,
+        recurrence_interval: 1,
+        recurrence_weekdays: item.id === 'q1' ? [5] : [],
+        recurrence_end: null,
+        recurrence_done_at: null,
+        reminder_minutes: null,
+        reminder_fired: false
+      };
+
+      tasks.unshift(task);
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      syncTask(task, 'insert');
+      showToast(i18n[currentLang].addedToMyDay || '✅ Added to My Day!', 'success');
+      renderActiveSmartList();
+    }
+
+    function openCustomDuaModal() {
+      document.getElementById('custom-dua-title').value = '';
+      document.getElementById('custom-dua-arabic').value = '';
+      document.getElementById('custom-dua-trans').value = '';
+      document.getElementById('custom-dua-count').value = '1';
+      document.getElementById('custom-dua-cat').value = 'morning';
+      document.getElementById('custom-dua-modal').classList.remove('hidden');
+    }
+    function closeCustomDuaModal() {
+      document.getElementById('custom-dua-modal').classList.add('hidden');
+    }
+    function saveCustomDua() {
+      const title = document.getElementById('custom-dua-title').value.trim();
+      if (!title) { showToast('⚠️ Title required', 'error'); return; }
+      const arabic = document.getElementById('custom-dua-arabic').value.trim();
+      const trans = document.getElementById('custom-dua-trans').value.trim();
+      const cat = document.getElementById('custom-dua-cat').value || 'morning';
+      const count = parseInt(document.getElementById('custom-dua-count').value) || 1;
+
+      const newItem = {
+        id: 'cust_' + Date.now(),
+        is_custom: true,
+        category: cat,
+        count: count,
+        title_en: title,
+        title_ar: title,
+        arabic: arabic,
+        trans_en: trans,
+        trans_ar: trans
+      };
+
+      customLibraryItems.unshift(newItem);
+      localStorage.setItem('alfaz_custom_lib', JSON.stringify(customLibraryItems));
+      closeCustomDuaModal();
+      renderLibrary('custom');
+      showToast(i18n[currentLang].customDuaSaved || '✅ Custom Dhikr saved!', 'success');
+    }
+    function deleteCustomDua(id) {
+      customLibraryItems = customLibraryItems.filter(x => x.id !== id);
+      localStorage.setItem('alfaz_custom_lib', JSON.stringify(customLibraryItems));
+      renderLibrary();
+    }
+
+    function incrementTaskTap(e, i) {
+      e.stopPropagation();
+      const t = tasks[i];
+      if (!t || t.done) return;
+      t.current_count = (t.current_count || 0) + 1;
+      if (t.current_count >= t.target_count) {
+        t.done = true;
+        t.status = 'done';
+        showToast(i18n[currentLang].completedBadge || 'Completed ✓', 'success');
+      }
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      syncTask(t, 'update');
+      renderActiveSmartList();
+    }
 
     // ===== COMPASS =====
     let compassHeading = 0, dragStartX = null, dragStartAngle = null, compassInitDone = false, compassSensorAbsolute = false;
