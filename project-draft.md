@@ -102,6 +102,7 @@
 - [2026-07-19] Alert options researched — Notification API + Service Worker viable for reminders
 - [2026-07-29] Phase 2 audit complete — 5 of 6 features built (smart lists, recurring tasks, voice input, reminders). Implementing natural language date/time parsing (EN/AR).
 - [2026-07-29] Phase 2 COMPLETE — Implemented offline-first natural language date & time parsing for both English and Arabic (RTL-aware, zero external dependencies).
+- [2026-07-29] Phase 2.5 defined — Approved 3-Pillar Islamic Library & Audio Architecture: Dedicated Library tab, Golden 20 catalog + Custom Duas Creator, Smart Habit Cards with Tap Counters, and 3-Tier Audio Engine with spoken Adhkar reminder tones.
 
 ## Supabase Free Tier Constraints
 
@@ -141,6 +142,20 @@
 
 **Timeline:** ~6 weeks
 **Status:** All 6 features built and tested (EN & AR)
+
+### Phase 2.5 (PLANNED) — Islamic Library & Audio Architecture
+**Goal:** Provide an authentic, offline-first Islamic Library (`المكتبة`) and 3-Tier Audio Engine connected to daily tasks and habits.
+
+- [ ] **Pillar 1: Dedicated Library Tab (`المكتبة`) & Catalog**
+  - "Golden 20" Essential Catalog (5 Morning Adhkar, 5 Evening Adhkar, 5 Daily Duas, 5 Quran/Worship Goals).
+  - **Custom Duas Creator:** Let users type and save personal Duas/Adhkar with custom tap counts, cached offline & synced via Supabase.
+- [ ] **Pillar 2: Smart Habit Cards & One-Tap Scheduling**
+  - **`➕ Add to My Day` button** on every Library item.
+  - Interactive **Smart Habit Cards** in My Day with built-in **Tap Counters (`0/33`, `0/3`)** and auto-recurring spiritual reminders.
+- [ ] **Pillar 3: 3-Tier Audio Engine & Spoken Reminder Tones**
+  - **Tier 1 (Prayer Azan):** Full Azan MP3s for the 5 daily prayers.
+  - **Tier 2 (Spoken Adhkar & Spiritual Habits):** Gentle spoken Adhkar audio tones (*Bismillah*, *Alhamdulillah*, *Salawat on Prophet ﷺ*, *Takbeer*, *SubhanAllah*) and calm spiritual chimes.
+  - **Tier 3 (Work & Personal Tasks):** Subtle, modern productivity chimes for regular tasks.
 
 ### Phase 3 — Team Features
 - Groups / organizations
