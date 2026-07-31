@@ -688,6 +688,15 @@
         <!-- Content Area -->
         <div id="quran-reader-content" class="flex-1 overflow-y-auto p-4 sm:p-8 font-arabic text-xl sm:text-2xl leading-loose text-gray-800 dark:text-gray-100 dir-rtl text-justify sm:text-center" dir="rtl"></div>
 
+        <!-- Quran Reader Task Completion Bar (hidden by default) -->
+        <div id="quran-reader-task-bar" class="hidden bg-emerald-600 text-white px-4 py-3 flex items-center justify-between gap-3 shadow-md flex-shrink-0">
+          <span class="text-sm font-bold" data-i18n="finishDhikrBtn">I Have Finished Reading — Complete Task</span>
+          <button onclick="finishQuranReaderTask()" class="bg-white text-emerald-800 hover:bg-emerald-50 font-extrabold px-4 py-2 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-check-circle text-emerald-600"></i>
+            <span data-i18n="completedBadge">Complete ✓</span>
+          </button>
+        </div>
+
         <!-- Bottom Navigation Bar (Previous/Next Surah) -->
         <div class="p-3 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
           <button onclick="prevSurahInReader()" id="prev-surah-btn" class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition disabled:opacity-40">
@@ -1518,6 +1527,40 @@
       document.getElementById('date-display').innerText = new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday:'long', month:'long', day:'numeric' });
     }
 
+    // ===== MOBILE BACK BUTTON (HTML5 HISTORY API) =====
+    function pushMobileHistoryState(tag) {
+      try {
+        if (window.location.hash !== "#" + tag) {
+          window.history.pushState({ view: tag }, "", "#" + tag);
+        }
+      } catch(e) {}
+    }
+
+    window.addEventListener('popstate', function(e) {
+      const qReader = document.getElementById('quran-reader-modal');
+      const dReader = document.getElementById('dhikr-reader-modal');
+      const kModal = document.getElementById('khatmah-modal');
+      const eModal = document.getElementById('edit-task-modal');
+      const cModal = document.getElementById('custom-dua-modal');
+
+      if (qReader && !qReader.classList.contains('hidden')) {
+        closeQuranReader();
+      } else if (dReader && !dReader.classList.contains('hidden')) {
+        closeDhikrReader();
+      } else if (kModal && !kModal.classList.contains('hidden')) {
+        closeKhatmahModal();
+      } else if (eModal && !eModal.classList.contains('hidden')) {
+        closeEditModal();
+      } else if (cModal && !cModal.classList.contains('hidden')) {
+        closeCustomDuaModal();
+      } else {
+        const todayView = document.getElementById('today-view');
+        if (todayView && todayView.classList.contains('hidden')) {
+          switchView('today-view');
+        }
+      }
+    });
+
     // ===== NAVIGATION =====
     function switchView(viewId, btn) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
@@ -1526,6 +1569,7 @@
       if (btn) btn.classList.add('active');
       if (sidebarOpen) toggleSidebar();
       if (viewId === 'qibla-view') initCompass();
+      if (viewId !== 'today-view') pushMobileHistoryState(viewId);
     }
 
     // ===== TASKS =====
@@ -1700,7 +1744,11 @@
       document.getElementById('edit-task-date').value = t.due_date || '';
       document.getElementById('edit-task-time').value = t.due_time || '';
       setEditPriority(t.priority !== undefined ? t.priority : 1);
-      document.getElementById('edit-task-modal').classList.remove('hidden');
+      const mod = document.getElementById('edit-task-modal');
+      if (mod) {
+        mod.classList.remove('hidden');
+        pushMobileHistoryState('edit-task-modal');
+      }
     }
     function closeEditModal() {
       editingTaskIndex = -1;
@@ -1967,50 +2015,50 @@
       {
         id: 'm1', category: 'morning', count: 1,
         title_en: 'Ayat al-Kursi (The Throne Verse)', title_ar: 'آية الكرسي',
-        arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ ...',
-        trans_en: 'Allah - there is no deity except Him, the Ever-Living, the Sustainer of all existence...',
+        arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
+        trans_en: 'Allah - there is no deity except Him, the Ever-Living, the Sustainer of all existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.',
         trans_ar: 'قراءة آية الكرسي للحفظ والبركة في الصباح.'
       },
       {
         id: 'm2', category: 'morning', count: 3,
         title_en: 'Al-Ikhlas & Mu\'awwidhatayn (3x)', title_ar: 'سورة الإخلاص والمعوذتان (٣ مرات)',
-        arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
-        trans_en: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas 3 times each for protection.',
+        arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ (1) اللَّهُ الصَّمَدُ (2) لَمْ يَلِدْ وَلَمْ يُولَدْ (3) وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ (4) • بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ (1) مِن شَرِّ مَا خَلَقَ (2) وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ (3) وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ (4) وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ (5) • بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ النَّاسِ (1) مَلِكِ النَّاسِ (2) إِلَٰهِ النَّاسِ (3) مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ (4) الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ (5) مِنَ الْجِنَّةِ وَالنَّاسِ (6)',
+        trans_en: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas 3 times each for protection against all harm.',
         trans_ar: 'قراءة سورة الإخلاص والفلق والناس ثلاث مرات تكفيك من كل شيء.'
       },
       {
         id: 'm3', category: 'morning', count: 1,
         title_en: 'Sayyid al-Istighfar (Chief of Forgiveness)', title_ar: 'سيد الاستغفار',
-        arabic: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ...',
-        trans_en: 'O Allah, You are my Lord, none has the right to be worshipped except You...',
+        arabic: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ لَكَ بِذَنْبِي فَاغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ',
+        trans_en: 'O Allah, You are my Lord, none has the right to be worshipped except You. You created me and I am Your servant, and I abide by Your covenant and promise as best I can. I seek refuge in You from the evil of what I have done. I acknowledge Your favor upon me and I acknowledge my sin, so forgive me, for none forgives sins except You.',
         trans_ar: 'من قالها موقناً بها حين يصبح فمات من يومه دخل الجنة.'
       },
       {
         id: 'm4', category: 'morning', count: 1,
         title_en: 'Ya Hayyu Ya Qayyum', title_ar: 'يا حي يا قيوم',
         arabic: 'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ، وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ',
-        trans_en: 'O Ever-Living, O Sustainer, in Your Mercy I seek relief; set right all my affairs...',
+        trans_en: 'O Ever-Living, O Sustainer, in Your Mercy I seek relief; set right all my affairs, and do not leave me to myself even for the blink of an eye.',
         trans_ar: 'دعاء النبي ﷺ للاستغاثة برحمة الله وإصلاح الشأن كله.'
       },
       {
         id: 'm5', category: 'morning', count: 3,
         title_en: 'Bismillahil-ladhi la yadurru... (3x)', title_ar: 'بسم الله الذي لا يضر مع اسمه شيء (٣ مرات)',
         arabic: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
-        trans_en: 'In the name of Allah with whose name nothing on earth or in heaven can cause harm... (3x)',
+        trans_en: 'In the name of Allah with whose name nothing on earth or in heaven can cause harm, and He is the All-Hearing, the All-Knowing (3 times).',
         trans_ar: 'من قالها ثلاث مرات لم يضره شيء في ذلك اليوم.'
       },
       {
         id: 'e1', category: 'evening', count: 1,
         title_en: 'Evening Glorification & Sovereignty', title_ar: 'أمسينا وأمسى الملك لله',
-        arabic: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ لَا إِلَهَ إِلَّا اللَّهُ، وَحْدَهُ لَا شَرِيكَ لَهُ...',
-        trans_en: 'We have reached the evening and sovereignty belongs to Allah, and praise is to Allah...',
-        trans_ar: 'ذكر المساء للاعتراف بملك الله والحمد له.'
+        arabic: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ لَا إِلَهَ إِلَّا اللَّهُ، وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذِهِ اللَّيْلَةِ وَخَيْرَ مَا بَعْدَهَا، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذِهِ اللَّيْلَةِ وَشَرِّ مَا بَعْدَهَا، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ',
+        trans_en: 'We have reached the evening and sovereignty belongs to Allah, and praise is to Allah. There is no deity except Allah alone, without partner. To Him belongs sovereignty and to Him belongs praise, and He is over all things omnipotent. My Lord, I ask You for the good of this night and the good of what follows it, and I seek refuge in You from the evil of this night and the evil of what follows it.',
+        trans_ar: 'ذكر المساء للاعتراف بملك الله والحمد له والتعوذ من الشرور.'
       },
       {
         id: 'e2', category: 'evening', count: 3,
         title_en: 'Evening Ikhlas & Mu\'awwidhatayn (3x)', title_ar: 'الإخلاص والمعوذتان في المساء (٣ مرات)',
-        arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
-        trans_en: 'Recite 3 times in the evening for protection against all harm.',
+        arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ (ثلاث مرات)',
+        trans_en: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas 3 times in the evening for protection against all harm.',
         trans_ar: 'قراءة الإخلاص والمعوذتين ثلاث مرات للحفظ في المساء.'
       },
       {
@@ -2024,28 +2072,28 @@
         id: 'e4', category: 'evening', count: 3,
         title_en: 'A\'udhu bi kalimatillahi... (3x)', title_ar: 'أعوذ بكلمات الله التامات (٣ مرات)',
         arabic: 'أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ',
-        trans_en: 'I seek refuge in the perfect words of Allah from the evil of what He has created (3x).',
+        trans_en: 'I seek refuge in the perfect words of Allah from the evil of what He has created (3 times).',
         trans_ar: 'من قالها حين يمسي ثلاث مرات لم تضره حمة تلك الليلة.'
       },
       {
         id: 'e5', category: 'evening', count: 1,
         title_en: 'Allahumma bika amsayna', title_ar: 'اللهم بك أمسينا',
         arabic: 'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ',
-        trans_en: 'O Allah, by You we enter the evening, by You we enter the morning, by You we live...',
+        trans_en: 'O Allah, by You we enter the evening, by You we enter the morning, by You we live, by You we die, and to You is the final return.',
         trans_ar: 'تسليم المساء لله والاعتراف بالمصير إليه.'
       },
       {
         id: 'd1', category: 'duas', count: 1,
         title_en: 'Dua for Anxiety, Grief & Sorrow', title_ar: 'دعاء الهم والحزن',
         arabic: 'اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ',
-        trans_en: 'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness, miserliness and cowardice...',
+        trans_en: 'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness, miserliness and cowardice, the burden of debts and being overpowered by men.',
         trans_ar: 'دعاء عظيم لرفع الهم والكسل والديون.'
       },
       {
         id: 'd2', category: 'duas', count: 1,
         title_en: 'Dua for Guidance (Istikhara)', title_ar: 'دعاء الاستخارة وطلب التوفيق',
-        arabic: 'اللَّهُمَّ إِنِّي أَسْتَخِيرُكَ بِعِلْمِكَ، وَأَسْتَقْدِرُكَ بِقُدْرَتِكَ، وَأَسْأَلُكَ مِنْ فَضْلِكَ الْعَظِيمِ...',
-        trans_en: 'O Allah, I seek Your guidance by Your knowledge, and Your power by Your might...',
+        arabic: 'اللَّهُمَّ إِنِّي أَسْتَخِيرُكَ بِعِلْمِكَ، وَأَسْتَقْدِرُكَ بِقُدْرَتِكَ، وَأَسْأَلُكَ مِنْ فَضْلِكَ الْعَظِيمِ، فَإِنَّكَ تَقْدِرُ وَلَا أَقْدِرُ، وَتَعْلَمُ وَلَا أَعْلَمُ، وَأَنْتَ عَلَّامُ الْغُيُوبِ، اللَّهُمَّ إِنْ كُنْتَ تَعْلَمُ أَنَّ هَذَا الْأَمْرَ خَيْرٌ لِي فِي دِينِي وَمَعَاشِي وَعَاقِبَةِ أَمْرِي فَاقْدُرْهُ لِي وَيَسِّرْهُ لِي ثُمَّ بَارِكْ لِي فِيهِ، وَإِنْ كُنْتَ تَعْلَمُ أَنَّ هَذَا الْأَمْرَ شَرٌّ لِي فِي دِينِي وَمَعَاشِي وَعَاقِبَةِ أَمْرِي فَاصْرِفْهُ عَنِّي وَاصْرِفْنِي عَنْهُ وَاقْدُرْ لِيَ الْخَيْرَ حَيْثُ كَانَ ثُمَّ أَرْضِنِي بِهِ',
+        trans_en: 'O Allah, I seek Your guidance by Your knowledge, and Your power by Your might, and I ask You of Your great bounty, for You have power and I have none, and You know and I do not know...',
         trans_ar: 'دعاء طلب الخيرة من الله في القرارات والأمور الهامة.'
       },
       {
@@ -2059,29 +2107,29 @@
         id: 'd4', category: 'duas', count: 1,
         title_en: 'Dua for Complete Protection', title_ar: 'دعاء الحفظ والتحصين',
         arabic: 'اللَّهُمَّ احْفَظْنِي مِنْ بَيْنِ يَدَيَّ، وَمِنْ خَلْفِي، وَعَنْ يَمِينِي، وَعَنْ شِمَالِي، وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي',
-        trans_en: 'O Allah, protect me from in front of me, behind me, from my right and my left, and from above me...',
+        trans_en: 'O Allah, protect me from in front of me, behind me, from my right and my left, and from above me, and I seek refuge in Your greatness from being unexpectedly harmed from beneath me.',
         trans_ar: 'تحصين يومي للحفظ من جميع الجهات.'
       },
       {
         id: 'd5', category: 'duas', count: 1,
         title_en: 'Dua for Parents & Family', title_ar: 'دعاء للوالدين والأسرة',
         arabic: 'رَّبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا • رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا',
-        trans_en: 'My Lord, have mercy upon them as they brought me up when I was small...',
+        trans_en: 'My Lord, have mercy upon them as they brought me up when I was small. Our Lord, grant us from among our wives and offspring comfort to our eyes and make us an example for the righteous.',
         trans_ar: 'دعاء مأثور لبر الوالدين وصلاح الأسرة والذرية.'
       },
       {
         id: 'q1', category: 'quran', count: 1,
         title_en: 'Surah Al-Kahf (Friday Reminder)', title_ar: 'قراءة سورة الكهف (يوم الجمعة)',
-        arabic: 'سُورَةُ الْكَهْفِ • نُورٌ مَا بَيْنَ الْجُمُعَتَيْنِ',
-        trans_en: 'Recite Surah Al-Kahf on Friday for light between the two Fridays.',
-        trans_ar: 'من قرأ سورة الكهف يوم الجمعة أضاء له من النور ما بين الجمعتين.'
+        arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَنزَلَ عَلَىٰ عَبْدِهِ الْكِتَابَ وَلَمْ يَجْعَل لَّهُ عِوَجًا ۜ (1) قَيِّمًا لِّيُنذِرَ بَأْسًا شَدِيدًا مِّن لَّدُنْهُ وَيُبَشِّرَ الْمُؤْمِنِينَ الَّذِينَ يَعْمَلُونَ الصَّالِحَاتِ أَنَّ لَهُمْ أَجْرًا حَسَنًا (2) ... قراءة سورة الكهف كاملة يوم الجمعة',
+        trans_en: 'Recite Surah Al-Kahf on Friday for light between the two Fridays. Tap Read & Complete to open Quran Reader at Surah 18.',
+        trans_ar: 'من قرأ سورة الكهف يوم الجمعة أضاء له من النور ما بين الجمعتين. اضغط قراءة لإتمام سورة الكهف.'
       },
       {
         id: 'q2', category: 'quran', count: 1,
         title_en: 'Surah Al-Mulk (Nightly Protection)', title_ar: 'قراءة سورة الملك (قبل النوم)',
-        arabic: 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ',
-        trans_en: 'Recite Surah Al-Mulk before sleeping as a shield and intercession.',
-        trans_ar: 'سورة الملك المنجية من عذاب القبر قراءتها كل ليلة.'
+        arabic: 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ (1) الَّذِي خَلَقَ الْمَوْتَ وَالْحَيَاةَ لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا ۚ وَهُوَ الْعَزِيزُ الْغَفُورُ (2) ... قراءة سورة الملك كاملة كل ليلة',
+        trans_en: 'Recite Surah Al-Mulk before sleeping as a shield and intercession. Tap Read & Complete to open Quran Reader at Surah 67.',
+        trans_ar: 'سورة الملك المنجية من عذاب القبر قراءتها كل ليلة. اضغط قراءة لإتمام سورة الملك.'
       },
       {
         id: 'q3', category: 'quran', count: 4,
@@ -2258,6 +2306,7 @@
 
     let activeDhikrTaskIndex = -1;
     let activeDhikrLibraryId = null;
+    let quranReaderTaskIndex = -1;
 
     function openDhikrReaderForTask(e, taskIdx) {
       if (e) e.stopPropagation();
@@ -2265,6 +2314,17 @@
       activeDhikrLibraryId = null;
       const t = tasks[taskIdx];
       if (!t) return;
+
+      if (t.library_id === 'q1') {
+        openQuranReaderForTask(18, taskIdx);
+        return;
+      } else if (t.library_id === 'q2') {
+        openQuranReaderForTask(67, taskIdx);
+        return;
+      } else if (t.library_id && t.library_id.startsWith('khatmah_')) {
+        openQuranReaderForTask(1, taskIdx);
+        return;
+      }
 
       const allItems = getCombinedLibrary();
       const libItem = t.library_id ? allItems.find(x => x.id === t.library_id) : null;
@@ -2274,6 +2334,27 @@
       const trans = libItem ? (currentLang === 'ar' ? libItem.trans_ar : libItem.trans_en) : '';
 
       showDhikrReaderModal(title, arabic, trans, true);
+    }
+
+    function openQuranReaderForTask(surahNum, taskIdx) {
+      quranReaderTaskIndex = taskIdx;
+      openQuranReader(surahNum);
+      const finishBtnBar = document.getElementById('quran-reader-task-bar');
+      if (finishBtnBar) finishBtnBar.classList.remove('hidden');
+    }
+
+    function finishQuranReaderTask() {
+      if (quranReaderTaskIndex >= 0 && tasks[quranReaderTaskIndex]) {
+        const t = tasks[quranReaderTaskIndex];
+        t.done = true;
+        t.status = 'done';
+        if (t.target_count > 0) t.current_count = t.target_count;
+        localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+        syncTask(t, 'update');
+        showToast(i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.', 'success');
+        renderActiveSmartList();
+      }
+      closeQuranReader();
     }
 
     function openDhikrReaderForLibrary(id) {
@@ -2306,7 +2387,10 @@
       }
 
       const modal = document.getElementById('dhikr-reader-modal');
-      if (modal) modal.classList.remove('hidden');
+      if (modal) {
+        modal.classList.remove('hidden');
+        pushMobileHistoryState('dhikr-reader');
+      }
     }
 
     function closeDhikrReader() {
@@ -2338,7 +2422,11 @@
       document.getElementById('custom-dua-trans').value = '';
       document.getElementById('custom-dua-count').value = '1';
       document.getElementById('custom-dua-cat').value = 'morning';
-      document.getElementById('custom-dua-modal').classList.remove('hidden');
+      const mod = document.getElementById('custom-dua-modal');
+      if (mod) {
+        mod.classList.remove('hidden');
+        pushMobileHistoryState('custom-dua-modal');
+      }
     }
     function closeCustomDuaModal() {
       document.getElementById('custom-dua-modal').classList.add('hidden');
@@ -2402,7 +2490,10 @@
     function openKhatmahModal() {
       selectRiwayah('hafs');
       const mod = document.getElementById('khatmah-modal');
-      if (mod) mod.classList.remove('hidden');
+      if (mod) {
+        mod.classList.remove('hidden');
+        pushMobileHistoryState('khatmah-modal');
+      }
     }
     function closeKhatmahModal() {
       const mod = document.getElementById('khatmah-modal');
@@ -2487,6 +2578,11 @@
       if (!modal) return;
       initSurahSelect();
       modal.classList.remove('hidden');
+      pushMobileHistoryState('quran-reader');
+      if (quranReaderTaskIndex < 0) {
+        const finishBar = document.getElementById('quran-reader-task-bar');
+        if (finishBar) finishBar.classList.add('hidden');
+      }
 
       updateBookmarkBar();
 
@@ -2504,8 +2600,11 @@
     }
 
     function closeQuranReader() {
+      quranReaderTaskIndex = -1;
       const modal = document.getElementById('quran-reader-modal');
       if (modal) modal.classList.add('hidden');
+      const finishBar = document.getElementById('quran-reader-task-bar');
+      if (finishBar) finishBar.classList.add('hidden');
     }
 
     function initSurahSelect() {
@@ -2566,7 +2665,7 @@
       const riwLabel = currentReaderRiwayah === 'hafs' ? 'رواية حفص عن عاصم' : currentReaderRiwayah === 'warsh' ? 'رواية ورش عن نافع' : 'رواية قالون عن نافع';
       const bismillah = num === 1 || num === 9 ? '' : `<div class="text-center font-arabic text-xl sm:text-2xl mb-6 text-emerald-700 dark:text-emerald-400">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
 
-      const cacheKey = `alfaz_quran_cache_${currentReaderRiwayah}_${num}`;
+      const cacheKey = `alfaz_quran_cache_ayah_${currentReaderRiwayah}_${num}`;
       let cached = null;
       try { cached = localStorage.getItem(cacheKey); } catch(e) {}
 
@@ -2579,19 +2678,7 @@
           ${bismillah}
           <div class="leading-loose text-justify sm:text-center">${cached}</div>
         `;
-        contentDiv.scrollTop = 0;
-        return;
-      }
-
-      if (currentReaderRiwayah === 'hafs' && OFFLINE_SURAHS[num]) {
-        contentDiv.innerHTML = `
-          <div class="text-center mb-6">
-            <h4 class="text-2xl sm:text-3xl font-bold font-arabic text-gray-900 dark:text-white">سُورَةُ ${surahName}</h4>
-            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">${riwLabel}</span>
-          </div>
-          <div class="leading-loose text-justify sm:text-center">${OFFLINE_SURAHS[num]}</div>
-        `;
-        contentDiv.scrollTop = 0;
+        setTimeout(highlightBookmarkedAyah, 100);
         return;
       }
 
@@ -2603,7 +2690,11 @@
         if (!res.ok) throw new Error('fetch error');
         const json = await res.json();
         const ayahs = json.data?.ayahs || [];
-        const textFormatted = ayahs.map(a => `${a.text} <span class="inline-block bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full px-2 py-0.5 text-xs ms-1 me-1 font-bold">(${a.numberInSurah})</span>`).join(' ');
+        const textFormatted = ayahs.map(a => `
+          <span id="ayah-span-${a.numberInSurah}" onclick="markQuranAyahBookmark(${num}, ${a.numberInSurah}, '${escapeHtml(a.text.slice(0, 35))}')" class="quran-ayah-span inline hover:bg-amber-100 dark:hover:bg-amber-900/40 cursor-pointer transition rounded px-1.5 py-0.5">
+            ${a.text} <span class="inline-block bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full px-2 py-0.5 text-xs ms-1 me-1 font-bold">(${a.numberInSurah})</span>
+          </span>
+        `).join(' ');
 
         try { localStorage.setItem(cacheKey, textFormatted); } catch(e) {}
 
@@ -2615,13 +2706,43 @@
           ${bismillah}
           <div class="leading-loose text-justify sm:text-center">${textFormatted}</div>
         `;
-        contentDiv.scrollTop = 0;
+        setTimeout(highlightBookmarkedAyah, 100);
       } catch(e) {
         contentDiv.innerHTML = `
           <div class="text-center py-12">
             <i class="fas fa-wifi text-4xl text-red-400 mb-3"></i>
             <p class="text-base text-gray-600 dark:text-gray-300 font-medium">Offline mode: Please connect to Wi-Fi once to download Surah ${surahName} (${riwLabel}).</p>
           </div>`;
+      }
+    }
+
+    function markQuranAyahBookmark(surah, ayahNum, snippet) {
+      const surahName = SURAH_NAMES_AR[surah - 1] || '1';
+      const bm = {
+        riwayah: currentReaderRiwayah,
+        surah: surah,
+        ayah: ayahNum,
+        snippet: snippet,
+        surahName: surahName,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('alfaz_quran_bookmark', JSON.stringify(bm));
+      updateBookmarkBar();
+      highlightBookmarkedAyah();
+      showToast((currentLang === 'ar' ? `🔖 تم حفظ علامة التوقف عند الآية (${ayahNum}) من سورة ${surahName}` : `🔖 Bookmark saved at Ayah ${ayahNum} of Surah ${surahName}`), 'success');
+    }
+
+    function highlightBookmarkedAyah() {
+      const bm = getQuranBookmark();
+      document.querySelectorAll('.quran-ayah-span').forEach(el => {
+        el.classList.remove('bg-amber-200','dark:bg-amber-800/70','border-b-2','border-amber-500','font-bold');
+      });
+      if (bm && bm.surah === currentReaderSurah && bm.ayah) {
+        const target = document.getElementById(`ayah-span-${bm.ayah}`);
+        if (target) {
+          target.classList.add('bg-amber-200','dark:bg-amber-800/70','border-b-2','border-amber-500','font-bold');
+          try { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+        }
       }
     }
 
@@ -2652,8 +2773,8 @@
       if (bar && txt) {
         if (bm && bm.surah) {
           const riwLabel = bm.riwayah === 'warsh' ? 'ورش' : bm.riwayah === 'qalun' ? 'قالون' : 'حفص';
-          const fmt = i18n[currentLang].resumeBookmarkBanner || "🔖 Resume: Surah {surah} ({riwayah})";
-          txt.textContent = fmt.replace('{surah}', `${bm.surah} (${bm.surahName})`).replace('{riwayah}', riwLabel);
+          const ayahLabel = bm.ayah ? ` (آية ${bm.ayah})` : '';
+          txt.textContent = (currentLang === 'ar' ? `🔖 إكمال القراءة: سورة ${bm.surahName}${ayahLabel} (${riwLabel})` : `🔖 Resume: Surah ${bm.surah} - Ayah ${bm.ayah || 1} (${riwLabel})`);
           bar.classList.remove('hidden');
         } else {
           bar.classList.add('hidden');

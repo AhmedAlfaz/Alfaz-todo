@@ -107,6 +107,7 @@
 - [2026-07-29] Phase 2.5 Quran Khatmah Complete — Added 3 Quran Riwayat (Hafs, Warsh, Qalun) and Khatmah setup modal with Classic/Custom plans (30-day, 60-day, 7-day, Custom) and choice of daily tracking (by 5 Prayers or by Page Count).
 - [2026-07-29] Phase 2.5 Quran Reader & Bookmark Complete — Built full 114-Surah Quran Reader inside Library with 3 Riwayat (Hafs, Warsh, Qalun), offline static caching, and persistent Bookmark/Resume banner (🔖 mark a pause to resume reading).
 - [2026-07-29] Phase 2.5 Dhikr Reader Complete — Built Full-Text Dhikr / Dua Reader Modal (📖 Read & Complete) for Library items and tasks, where clicking 'I Have Finished Reading' completes the task.
+- [2026-07-29] Mobile UX & Reader Polish Complete — Added Word/Ayah-level bookmarking in Quran Reader, 100% complete unabridged text for all Adhkar/Duas in catalog, Surah task completion button in Quran Reader, and HTML5 History API popstate handler so Android Back button closes modals without exiting the app.
 
 ## Supabase Free Tier Constraints
 
