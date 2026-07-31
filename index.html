@@ -701,6 +701,33 @@
       </div>
     </div>
 
+    <!-- ===== DHIKR / DUA FULL-TEXT READER MODAL ===== -->
+    <div id="dhikr-reader-modal" class="hidden fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col max-h-[85vh] overflow-hidden">
+        <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-hands-praying text-emerald-600 dark:text-emerald-400 text-xl"></i>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg" id="dhikr-reader-title">Dhikr Reader</h3>
+          </div>
+          <button onclick="closeDhikrReader()" class="text-gray-400 hover:text-red-500 transition p-1.5 text-lg" title="Close"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Full Arabic & Translation content -->
+        <div class="flex-1 overflow-y-auto py-6 my-2 text-center">
+          <div id="dhikr-reader-arabic" class="font-arabic text-2xl sm:text-3xl leading-loose text-gray-900 dark:text-gray-100 mb-6 dir-rtl" dir="rtl"></div>
+          <div id="dhikr-reader-trans" class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed max-w-md mx-auto"></div>
+        </div>
+
+        <!-- Action Button (Complete Task) -->
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <button onclick="finishDhikrReading()" id="dhikr-finish-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-base">
+            <i class="fas fa-check-circle text-lg"></i>
+            <span id="dhikr-finish-btn-text" data-i18n="finishDhikrBtn">I Have Finished Reading — Complete Task</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -768,7 +795,9 @@
         khatmahStarted: "✅ Quran Khatmah started!",
         khatmahBannerTitle: "Start Full Quran Khatmah",
         khatmahBannerSub: "Choose your Riwayah (Hafs, Warsh, Qalun) and daily pace",
-        startKhatmahCardBtn: "Start Khatmah"
+        startKhatmahCardBtn: "Start Khatmah",
+        readAndCompleteBtn: "Read & Complete", finishDhikrBtn: "I Have Finished Reading — Complete Task",
+        readBtn: "Read", dhikrCompletedToast: "✅ May Allah accept from you! Task completed."
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -831,7 +860,9 @@
         khatmahStarted: "✅ تم بدء ختمة القرآن الكريم!",
         khatmahBannerTitle: "بدء ختمة القرآن الكريم",
         khatmahBannerSub: "اختر روايتك (حفص، ورش، قالون) وخطة قراءتك اليومية",
-        startKhatmahCardBtn: "بدء الختمة"
+        startKhatmahCardBtn: "بدء الختمة",
+        readAndCompleteBtn: "قراءة وإتمام", finishDhikrBtn: "أتممت القراءة — إنجاز المهمة",
+        readBtn: "قراءة", dhikrCompletedToast: "✅ تقبل الله طاعتكم! تم إنجاز المهمة."
       }
     };
 
@@ -1181,6 +1212,12 @@
       const repeatBadge = t.recurrence_type ? `<i class="fas fa-repeat text-xs text-blue-400 dark:text-blue-500 me-1.5"></i>` : '';
       const reminderBadge = (t.reminder_minutes !== null && t.reminder_minutes !== undefined && !t.reminder_fired) ? `<i class="fas fa-bell text-xs text-amber-400 dark:text-amber-500 me-1.5"></i>` : '';
       const dueBadge = t.due_date ? `<span class="text-xs ${isOverdue?'text-red-500 dark:text-red-400 font-medium':'text-gray-400 dark:text-gray-500'} ms-2 whitespace-nowrap">${t.due_time ? t.due_time+' ' : ''}${formatShortDate(t.due_date)}</span>` : '';
+      const isLibraryTask = t.library_id && !t.library_id.startsWith('khatmah_');
+      const readDhikrBtn = (isLibraryTask && !t.done) ? `
+        <button onclick="openDhikrReaderForTask(event, ${idx})" class="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded-lg text-xs font-semibold ms-2 transition flex items-center gap-1 shadow-sm" title="Read Dhikr / Dua">
+          <i class="fas fa-book-open"></i>
+          <span>${i18n[currentLang].readAndCompleteBtn || 'Read & Complete'}</span>
+        </button>` : '';
       const tapCounterBadge = (t.target_count > 1) ? `
         <button onclick="incrementTaskTap(event, ${idx})" class="bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold ms-2 transition shadow-sm flex items-center gap-1" title="Tap to increment">
           <i class="fas fa-hand-pointer text-[10px]"></i>
@@ -1194,6 +1231,7 @@
           <span class="ms-3 flex-1 min-w-0">
             ${prioDot}<span class="${t.done?'line-through text-gray-400 dark:text-gray-500':'text-gray-700 dark:text-gray-200 font-medium'}">${reminderBadge}${repeatBadge}${escapeHtml(t.text)}</span>
           </span>
+          ${readDhikrBtn}
           ${tapCounterBadge}
           ${dueBadge}
           <button onclick="openEditModal(${idx})" class="text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 opacity-70 group-hover:opacity-100 transition text-base ms-2 flex-shrink-0 p-1" title="Edit"><i class="fas fa-pen"></i></button>
@@ -2161,10 +2199,16 @@
             </div>
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <span class="text-xs text-gray-400 dark:text-gray-500 capitalize">${i18n[currentLang]['lib'+item.category.charAt(0).toUpperCase()+item.category.slice(1)] || item.category}</span>
-              <button onclick="addLibraryItemToMyDay('${item.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-medium transition shadow-sm flex items-center gap-1.5">
-                <i class="fas fa-plus"></i>
-                <span data-i18n="addToMyDay">${i18n[currentLang].addToMyDay}</span>
-              </button>
+              <div class="flex items-center gap-2">
+                <button onclick="openDhikrReaderForLibrary('${item.id}')" class="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-sm flex items-center gap-1">
+                  <i class="fas fa-book-open"></i>
+                  <span>${i18n[currentLang].readBtn || 'Read'}</span>
+                </button>
+                <button onclick="addLibraryItemToMyDay('${item.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-medium transition shadow-sm flex items-center gap-1.5">
+                  <i class="fas fa-plus"></i>
+                  <span data-i18n="addToMyDay">${i18n[currentLang].addToMyDay}</span>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -2180,7 +2224,7 @@
       renderLibrary();
     }
 
-    function addLibraryItemToMyDay(id) {
+    function addLibraryItemToMyDay(id, autoComplete = false) {
       const allItems = getCombinedLibrary();
       const item = allItems.find(x => x.id === id);
       if (!item) return;
@@ -2188,14 +2232,14 @@
       const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
       const task = {
         text: title,
-        done: false,
+        done: autoComplete,
         due_date: getTodayString(),
         due_time: null,
         priority: 1,
-        status: 'pending',
+        status: autoComplete ? 'done' : 'pending',
         library_id: item.id,
         target_count: item.count || 1,
-        current_count: 0,
+        current_count: autoComplete ? (item.count || 1) : 0,
         recurrence_type: item.id === 'q1' ? 'weekly' : null,
         recurrence_interval: 1,
         recurrence_weekdays: item.id === 'q1' ? [5] : [],
@@ -2208,8 +2252,84 @@
       tasks.unshift(task);
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
       syncTask(task, 'insert');
-      showToast(i18n[currentLang].addedToMyDay || '✅ Added to My Day!', 'success');
+      showToast(autoComplete ? (i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.') : (i18n[currentLang].addedToMyDay || '✅ Added to My Day!'), 'success');
       renderActiveSmartList();
+    }
+
+    let activeDhikrTaskIndex = -1;
+    let activeDhikrLibraryId = null;
+
+    function openDhikrReaderForTask(e, taskIdx) {
+      if (e) e.stopPropagation();
+      activeDhikrTaskIndex = taskIdx;
+      activeDhikrLibraryId = null;
+      const t = tasks[taskIdx];
+      if (!t) return;
+
+      const allItems = getCombinedLibrary();
+      const libItem = t.library_id ? allItems.find(x => x.id === t.library_id) : null;
+
+      const title = t.text || '';
+      const arabic = libItem?.arabic || (currentLang === 'ar' ? t.text : '');
+      const trans = libItem ? (currentLang === 'ar' ? libItem.trans_ar : libItem.trans_en) : '';
+
+      showDhikrReaderModal(title, arabic, trans, true);
+    }
+
+    function openDhikrReaderForLibrary(id) {
+      activeDhikrTaskIndex = -1;
+      activeDhikrLibraryId = id;
+      const allItems = getCombinedLibrary();
+      const item = allItems.find(x => x.id === id);
+      if (!item) return;
+
+      const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
+      const arabic = item.arabic || '';
+      const trans = currentLang === 'ar' ? (item.trans_ar || item.trans_en) : (item.trans_en || item.trans_ar);
+
+      showDhikrReaderModal(title, arabic, trans, false);
+    }
+
+    function showDhikrReaderModal(title, arabic, trans, isTask) {
+      const titleEl = document.getElementById('dhikr-reader-title');
+      if (titleEl) titleEl.textContent = title;
+      const arEl = document.getElementById('dhikr-reader-arabic');
+      if (arEl) arEl.innerHTML = arabic ? escapeHtml(arabic) : '<span class="text-gray-400 text-base">---</span>';
+      const trEl = document.getElementById('dhikr-reader-trans');
+      if (trEl) trEl.textContent = trans || '';
+
+      const btnText = document.getElementById('dhikr-finish-btn-text');
+      if (btnText) {
+        btnText.textContent = isTask ? 
+          (i18n[currentLang].finishDhikrBtn || 'I Have Finished Reading — Complete Task') :
+          (currentLang === 'ar' ? 'أتممت القراءة — إضافة وإتمام' : 'I Have Finished Reading — Add & Complete');
+      }
+
+      const modal = document.getElementById('dhikr-reader-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeDhikrReader() {
+      activeDhikrTaskIndex = -1;
+      activeDhikrLibraryId = null;
+      const modal = document.getElementById('dhikr-reader-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function finishDhikrReading() {
+      closeDhikrReader();
+      if (activeDhikrTaskIndex >= 0 && tasks[activeDhikrTaskIndex]) {
+        const t = tasks[activeDhikrTaskIndex];
+        t.done = true;
+        t.status = 'done';
+        if (t.target_count > 0) t.current_count = t.target_count;
+        localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+        syncTask(t, 'update');
+        showToast(i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.', 'success');
+        renderActiveSmartList();
+      } else if (activeDhikrLibraryId) {
+        addLibraryItemToMyDay(activeDhikrLibraryId, true);
+      }
     }
 
     function openCustomDuaModal() {

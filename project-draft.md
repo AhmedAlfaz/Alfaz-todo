@@ -106,6 +106,7 @@
 - [2026-07-29] Phase 2.5 Pillar 1 & 2 complete — Built dedicated Library tab with Golden 20 essential catalog, Custom Duas Creator modal, One-Tap scheduling to My Day, and interactive Tap Counter Badges on task cards.
 - [2026-07-29] Phase 2.5 Quran Khatmah Complete — Added 3 Quran Riwayat (Hafs, Warsh, Qalun) and Khatmah setup modal with Classic/Custom plans (30-day, 60-day, 7-day, Custom) and choice of daily tracking (by 5 Prayers or by Page Count).
 - [2026-07-29] Phase 2.5 Quran Reader & Bookmark Complete — Built full 114-Surah Quran Reader inside Library with 3 Riwayat (Hafs, Warsh, Qalun), offline static caching, and persistent Bookmark/Resume banner (🔖 mark a pause to resume reading).
+- [2026-07-29] Phase 2.5 Dhikr Reader Complete — Built Full-Text Dhikr / Dua Reader Modal (📖 Read & Complete) for Library items and tasks, where clicking 'I Have Finished Reading' completes the task.
 
 ## Supabase Free Tier Constraints
 
@@ -157,6 +158,7 @@
 - [x] **Pillar 2: Smart Habit Cards & One-Tap Scheduling** ✓
   - **`➕ Add to My Day` button** on every Library item.
   - Interactive **Smart Habit Cards** in My Day with built-in **Tap Counters (`0/33`, `0/3`)** and auto-recurring spiritual reminders.
+  - **Full-Text Dhikr & Dua Reader (`📖 Read & Complete`):** Full-text Arabic, Tashkeel, and translation reader modal for Adhkar/Duas where clicking "I Have Finished Reading" completes the task (`t.done = true`).
 - [ ] **Pillar 3: 3-Tier Audio Engine & Spoken Reminder Tones**
   - **Tier 1 (Prayer Azan):** Full Azan MP3s for the 5 daily prayers.
   - **Tier 2 (Spoken Adhkar & Spiritual Habits):** Gentle spoken Adhkar audio tones (*Bismillah*, *Alhamdulillah*, *Salawat on Prophet ﷺ*, *Takbeer*, *SubhanAllah*) and calm spiritual chimes.
