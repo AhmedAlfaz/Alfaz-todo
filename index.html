@@ -650,6 +650,57 @@
       </div>
     </div>
 
+    <!-- ===== QURAN READER MODAL ===== -->
+    <div id="quran-reader-modal" class="hidden fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-2 sm:p-4">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl max-w-4xl w-full h-[92vh] flex flex-col shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <!-- Top Toolbar -->
+        <div class="p-4 bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-quran text-emerald-600 dark:text-emerald-400 text-xl"></i>
+            <h3 class="font-bold text-gray-800 dark:text-white text-base sm:text-lg" id="quran-reader-title" data-i18n="quranReaderTitle">Holy Quran Reader</h3>
+          </div>
+          <!-- Riwayah Selector in Reader -->
+          <div class="flex items-center gap-1 bg-white dark:bg-gray-700 p-1 rounded-xl border border-gray-200 dark:border-gray-600 text-xs font-medium">
+            <button onclick="changeReaderRiwayah('hafs')" id="read-riw-hafs" class="px-2.5 py-1 rounded-lg active bg-emerald-600 text-white font-bold transition">Hafs</button>
+            <button onclick="changeReaderRiwayah('warsh')" id="read-riw-warsh" class="px-2.5 py-1 rounded-lg text-gray-600 dark:text-gray-300 transition">Warsh</button>
+            <button onclick="changeReaderRiwayah('qalun')" id="read-riw-qalun" class="px-2.5 py-1 rounded-lg text-gray-600 dark:text-gray-300 transition">Qalun</button>
+          </div>
+          <!-- Surah Selector dropdown -->
+          <div class="flex items-center gap-2">
+            <select id="quran-surah-select" onchange="loadSurahInReader(parseInt(this.value))" class="text-xs sm:text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-1.5 text-gray-800 dark:text-white font-medium focus:outline-none focus:border-emerald-500 max-w-[150px] sm:max-w-xs"></select>
+            <button onclick="markQuranBookmark()" class="bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5" title="Save Bookmark">
+              <i class="fas fa-bookmark text-amber-500"></i>
+              <span data-i18n="markPauseBtn">Mark Pause</span>
+            </button>
+            <button onclick="closeQuranReader()" class="text-gray-400 hover:text-red-500 transition p-1.5 text-lg" title="Close"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+
+        <!-- Bookmark Indicator Bar -->
+        <div id="quran-bookmark-bar" class="hidden bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 px-4 py-2 text-xs font-medium text-amber-800 dark:text-amber-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-bookmark text-amber-500"></i>
+            <span id="quran-bookmark-text"></span>
+          </div>
+          <button onclick="clearQuranBookmark()" class="text-amber-600 dark:text-amber-400 hover:underline text-xs" data-i18n="removeBookmark">Remove</button>
+        </div>
+
+        <!-- Content Area -->
+        <div id="quran-reader-content" class="flex-1 overflow-y-auto p-4 sm:p-8 font-arabic text-xl sm:text-2xl leading-loose text-gray-800 dark:text-gray-100 dir-rtl text-justify sm:text-center" dir="rtl"></div>
+
+        <!-- Bottom Navigation Bar (Previous/Next Surah) -->
+        <div class="p-3 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+          <button onclick="prevSurahInReader()" id="prev-surah-btn" class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition disabled:opacity-40">
+            <i class="fas fa-chevron-left me-1"></i> <span data-i18n="prevSurah">Previous Surah</span>
+          </button>
+          <span class="text-xs font-bold text-gray-500 dark:text-gray-400" id="quran-reader-status">Surah 1 / 114</span>
+          <button onclick="nextSurahInReader()" id="next-surah-btn" class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition disabled:opacity-40">
+            <span data-i18n="nextSurah">Next Surah</span> <i class="fas fa-chevron-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -2044,6 +2095,23 @@
         return matchCat && matchSearch;
       });
 
+      const bm = getQuranBookmark();
+      const resumeCard = (bm && bm.surah && (category === 'all' || category === 'quran')) ? `
+        <div class="col-span-full bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600 p-4 rounded-2xl shadow-sm mb-2 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <i class="fas fa-bookmark text-amber-500 text-xl"></i>
+            <div>
+              <h4 class="font-bold text-amber-900 dark:text-amber-200 text-sm">${i18n[currentLang].continueReadingBtn || 'Continue Reading'}: سورة ${bm.surahName} (${bm.surah})</h4>
+              <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">${bm.riwayah === 'warsh' ? 'رواية ورش عن نافع' : bm.riwayah === 'qalun' ? 'رواية قالون عن نافع' : 'رواية حفص عن عاصم'}</p>
+            </div>
+          </div>
+          <button onclick="openQuranReader(${bm.surah})" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm whitespace-nowrap flex items-center gap-1.5">
+            <i class="fas fa-book-open"></i>
+            <span>${i18n[currentLang].continueReadingBtn || 'Continue Reading'}</span>
+          </button>
+        </div>
+      ` : '';
+
       const khatmahBanner = (category === 'all' || category === 'quran') ? `
         <div class="col-span-full bg-gradient-to-r from-emerald-700 to-teal-600 text-white p-6 rounded-2xl shadow-lg mb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -2055,19 +2123,25 @@
               <p class="text-xs text-emerald-100 mt-0.5">${i18n[currentLang].khatmahBannerSub || 'Choose your Riwayah (Hafs, Warsh, Qalun) and daily pace'}</p>
             </div>
           </div>
-          <button onclick="openKhatmahModal()" class="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-md whitespace-nowrap flex items-center gap-2">
-            <i class="fas fa-play text-xs"></i>
-            <span>${i18n[currentLang].startKhatmahCardBtn || 'Start Khatmah'}</span>
-          </button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openQuranReader()" class="bg-white/20 hover:bg-white/30 text-white font-semibold px-3.5 py-2.5 rounded-xl text-xs transition whitespace-nowrap flex items-center gap-1.5">
+              <i class="fas fa-book-open"></i>
+              <span>${i18n[currentLang].openQuranReaderBtn || 'Open Quran Reader'}</span>
+            </button>
+            <button onclick="openKhatmahModal()" class="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-md whitespace-nowrap flex items-center gap-2">
+              <i class="fas fa-play text-xs"></i>
+              <span>${i18n[currentLang].startKhatmahCardBtn || 'Start Khatmah'}</span>
+            </button>
+          </div>
         </div>
       ` : '';
 
-      if (filtered.length === 0 && !khatmahBanner) {
+      if (filtered.length === 0 && !khatmahBanner && !resumeCard) {
         list.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-book-open text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">No items found.</p></div>`;
         return;
       }
 
-      list.innerHTML = khatmahBanner + filtered.map(item => {
+      list.innerHTML = resumeCard + khatmahBanner + filtered.map(item => {
         const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
         const trans = currentLang === 'ar' ? (item.trans_ar || item.trans_en) : (item.trans_en || item.trans_ar);
         const arabicText = item.arabic ? `<p class="text-lg font-arabic text-gray-800 dark:text-gray-100 my-2.5 leading-relaxed dir-rtl" dir="rtl">${escapeHtml(item.arabic)}</p>` : '';
@@ -2268,6 +2342,203 @@
       closeKhatmahModal();
       showToast(i18n[currentLang].khatmahStarted || '✅ Quran Khatmah started!', 'success');
       renderActiveSmartList();
+    }
+
+    const SURAH_NAMES_AR = [
+      "الفاتحة","البقرة","آل عمران","النساء","المائدة","الأنعام","الأعراف","الأنفال","التوبة","يونس",
+      "هود","يوسف","الرعد","إبراهيم","الحجر","النحل","الإسراء","الكهف","مريم","طه",
+      "الأنبياء","الحج","المؤمنون","النور","الفرقان","الشعراء","النمل","القصص","العنكبوت","الروم",
+      "لقمان","السجدة","الأحزاب","سبأ","فاطر","يس","الصافات","ص","الزمر","غافر",
+      "فصلت","الشورى","الزخرف","الدخان","الجاثية","الأحقاف","محمد","الفتح","الحجرات","ق",
+      "الذاريات","الطور","النجم","القمر","الرحمن","الواقعة","الحديد","المجادلة","الحشر","الممتحنة",
+      "الصف","الجمعة","المنافقون","التغابن","الطلاق","التحريم","الملك","القلم","الحاقة","المعارج",
+      "نوح","الجن","المزمل","المدثر","القيامة","الإنسان","المرسلات","النبأ","النازعات","عبس",
+      "التكوير","الانفطار","المطففين","الانشقاق","البروج","الطارق","الأعلى","الغاشية","الفجر","البلد",
+      "الشمس","الليل","الضحى","الشرح","التين","العلق","القدر","البينة","الزلزلة","العاديات",
+      "القارعة","التكاثر","العصر","الهمزة","الفيل","قريش","الماعون","الكوثر","الكافرون","النصر",
+      "المسد","الإخلاص","الفلق","الناس"
+    ];
+
+    let currentReaderSurah = 1;
+    let currentReaderRiwayah = 'hafs';
+
+    function openQuranReader(surahNum = null) {
+      const modal = document.getElementById('quran-reader-modal');
+      if (!modal) return;
+      initSurahSelect();
+      modal.classList.remove('hidden');
+
+      updateBookmarkBar();
+
+      if (surahNum) {
+        loadSurahInReader(surahNum);
+      } else {
+        const bm = getQuranBookmark();
+        if (bm && bm.surah) {
+          if (bm.riwayah) currentReaderRiwayah = bm.riwayah;
+          loadSurahInReader(bm.surah);
+        } else {
+          loadSurahInReader(1);
+        }
+      }
+    }
+
+    function closeQuranReader() {
+      const modal = document.getElementById('quran-reader-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function initSurahSelect() {
+      const sel = document.getElementById('quran-surah-select');
+      if (!sel || sel.options.length > 0) return;
+      SURAH_NAMES_AR.forEach((name, idx) => {
+        const num = idx + 1;
+        const opt = document.createElement('option');
+        opt.value = num;
+        opt.textContent = `${num}. سورة ${name}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function changeReaderRiwayah(riw) {
+      currentReaderRiwayah = riw;
+      document.querySelectorAll('#read-riw-hafs, #read-riw-warsh, #read-riw-qalun').forEach(btn => {
+        const isSelf = btn.id === 'read-riw-' + riw;
+        btn.classList.toggle('active', isSelf);
+        btn.classList.toggle('bg-emerald-600', isSelf);
+        btn.classList.toggle('text-white', isSelf);
+        btn.classList.toggle('font-bold', isSelf);
+        btn.classList.toggle('text-gray-600', !isSelf);
+        btn.classList.toggle('dark:text-gray-300', !isSelf);
+      });
+      loadSurahInReader(currentReaderSurah);
+    }
+
+    function prevSurahInReader() {
+      if (currentReaderSurah > 1) loadSurahInReader(currentReaderSurah - 1);
+    }
+    function nextSurahInReader() {
+      if (currentReaderSurah < 114) loadSurahInReader(currentReaderSurah + 1);
+    }
+
+    const OFFLINE_SURAHS = {
+      1: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ (1) الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ (2) الرَّحْمَٰنِ الرَّحِيمِ (3) مَالِكِ يَوْمِ الدِّينِ (4) إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ (5) اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ (6) صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ (7)",
+      112: "قُلْ هُوَ اللَّهُ أَحَدٌ (1) اللَّهُ الصَّمَدُ (2) لَمْ يَلِدْ وَلَمْ يُولَدْ (3) وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ (4)",
+      113: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ (1) مِنْ شَرِّ مَا خَلَقَ (2) وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ (3) وَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ (4) وَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ (5)",
+      114: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ (1) مَلِكِ النَّاسِ (2) إِلَٰهِ النَّاسِ (3) مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ (4) الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ (5) مِنَ الْجِنَّةِ وَالنَّاسِ (6)"
+    };
+
+    async function loadSurahInReader(num) {
+      currentReaderSurah = num;
+      const sel = document.getElementById('quran-surah-select');
+      if (sel) sel.value = num;
+      const stat = document.getElementById('quran-reader-status');
+      if (stat) stat.textContent = `Surah ${num} / 114`;
+      const pBtn = document.getElementById('prev-surah-btn');
+      if (pBtn) pBtn.disabled = (num <= 1);
+      const nBtn = document.getElementById('next-surah-btn');
+      if (nBtn) nBtn.disabled = (num >= 114);
+
+      const contentDiv = document.getElementById('quran-reader-content');
+      if (!contentDiv) return;
+
+      const surahName = SURAH_NAMES_AR[num - 1] || '';
+      const riwLabel = currentReaderRiwayah === 'hafs' ? 'رواية حفص عن عاصم' : currentReaderRiwayah === 'warsh' ? 'رواية ورش عن نافع' : 'رواية قالون عن نافع';
+      const bismillah = num === 1 || num === 9 ? '' : `<div class="text-center font-arabic text-xl sm:text-2xl mb-6 text-emerald-700 dark:text-emerald-400">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
+
+      const cacheKey = `alfaz_quran_cache_${currentReaderRiwayah}_${num}`;
+      let cached = null;
+      try { cached = localStorage.getItem(cacheKey); } catch(e) {}
+
+      if (cached) {
+        contentDiv.innerHTML = `
+          <div class="text-center mb-6">
+            <h4 class="text-2xl sm:text-3xl font-bold font-arabic text-gray-900 dark:text-white">سُورَةُ ${surahName}</h4>
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">${riwLabel}</span>
+          </div>
+          ${bismillah}
+          <div class="leading-loose text-justify sm:text-center">${cached}</div>
+        `;
+        contentDiv.scrollTop = 0;
+        return;
+      }
+
+      if (currentReaderRiwayah === 'hafs' && OFFLINE_SURAHS[num]) {
+        contentDiv.innerHTML = `
+          <div class="text-center mb-6">
+            <h4 class="text-2xl sm:text-3xl font-bold font-arabic text-gray-900 dark:text-white">سُورَةُ ${surahName}</h4>
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">${riwLabel}</span>
+          </div>
+          <div class="leading-loose text-justify sm:text-center">${OFFLINE_SURAHS[num]}</div>
+        `;
+        contentDiv.scrollTop = 0;
+        return;
+      }
+
+      contentDiv.innerHTML = `<div class="text-center py-12"><i class="fas fa-spinner fa-spin text-4xl text-emerald-500 mb-3"></i><p class="text-sm text-gray-400">Loading Surah ${num} (${riwLabel})...</p></div>`;
+
+      try {
+        const edition = 'quran-uthmani';
+        const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/${edition}`);
+        if (!res.ok) throw new Error('fetch error');
+        const json = await res.json();
+        const ayahs = json.data?.ayahs || [];
+        const textFormatted = ayahs.map(a => `${a.text} <span class="inline-block bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full px-2 py-0.5 text-xs ms-1 me-1 font-bold">(${a.numberInSurah})</span>`).join(' ');
+
+        try { localStorage.setItem(cacheKey, textFormatted); } catch(e) {}
+
+        contentDiv.innerHTML = `
+          <div class="text-center mb-6">
+            <h4 class="text-2xl sm:text-3xl font-bold font-arabic text-gray-900 dark:text-white">سُورَةُ ${surahName}</h4>
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">${riwLabel}</span>
+          </div>
+          ${bismillah}
+          <div class="leading-loose text-justify sm:text-center">${textFormatted}</div>
+        `;
+        contentDiv.scrollTop = 0;
+      } catch(e) {
+        contentDiv.innerHTML = `
+          <div class="text-center py-12">
+            <i class="fas fa-wifi text-4xl text-red-400 mb-3"></i>
+            <p class="text-base text-gray-600 dark:text-gray-300 font-medium">Offline mode: Please connect to Wi-Fi once to download Surah ${surahName} (${riwLabel}).</p>
+          </div>`;
+      }
+    }
+
+    function getQuranBookmark() {
+      try { return JSON.parse(localStorage.getItem('alfaz_quran_bookmark')); } catch(e) { return null; }
+    }
+    function markQuranBookmark() {
+      const surahName = SURAH_NAMES_AR[currentReaderSurah - 1] || '1';
+      const bm = {
+        riwayah: currentReaderRiwayah,
+        surah: currentReaderSurah,
+        surahName: surahName,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('alfaz_quran_bookmark', JSON.stringify(bm));
+      updateBookmarkBar();
+      showToast(i18n[currentLang].bookmarkSavedToast || '🔖 Bookmark saved! You can resume from here anytime.', 'success');
+    }
+    function clearQuranBookmark() {
+      localStorage.removeItem('alfaz_quran_bookmark');
+      updateBookmarkBar();
+      showToast(i18n[currentLang].bookmarkRemovedToast || 'Bookmark removed', 'info');
+    }
+    function updateBookmarkBar() {
+      const bm = getQuranBookmark();
+      const bar = document.getElementById('quran-bookmark-bar');
+      const txt = document.getElementById('quran-bookmark-text');
+      if (bar && txt) {
+        if (bm && bm.surah) {
+          const riwLabel = bm.riwayah === 'warsh' ? 'ورش' : bm.riwayah === 'qalun' ? 'قالون' : 'حفص';
+          const fmt = i18n[currentLang].resumeBookmarkBanner || "🔖 Resume: Surah {surah} ({riwayah})";
+          txt.textContent = fmt.replace('{surah}', `${bm.surah} (${bm.surahName})`).replace('{riwayah}', riwLabel);
+          bar.classList.remove('hidden');
+        } else {
+          bar.classList.add('hidden');
+        }
+      }
     }
 
     function incrementTaskTap(e, i) {
