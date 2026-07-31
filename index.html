@@ -1572,9 +1572,9 @@
       } else if (cModal && !cModal.classList.contains('hidden')) {
         closeCustomDuaModal();
       } else {
-        const todayView = document.getElementById('today-view');
-        if (todayView && todayView.classList.contains('hidden')) {
-          switchView('today-view');
+        const tasksView = document.getElementById('tasks-view');
+        if (tasksView && tasksView.classList.contains('hidden')) {
+          switchView('tasks-view');
         }
       }
     });
@@ -1587,7 +1587,7 @@
       if (btn) btn.classList.add('active');
       if (sidebarOpen) toggleSidebar();
       if (viewId === 'qibla-view') initCompass();
-      if (viewId !== 'today-view') pushMobileHistoryState(viewId);
+      if (viewId !== 'tasks-view') pushMobileHistoryState(viewId);
     }
 
     // ===== TASKS =====
