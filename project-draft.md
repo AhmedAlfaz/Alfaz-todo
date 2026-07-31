@@ -104,6 +104,7 @@
 - [2026-07-29] Phase 2 COMPLETE — Implemented offline-first natural language date & time parsing for both English and Arabic (RTL-aware, zero external dependencies).
 - [2026-07-29] Phase 2.5 defined — Approved 3-Pillar Islamic Library & Audio Architecture: Dedicated Library tab, Golden 20 catalog + Custom Duas Creator, Smart Habit Cards with Tap Counters, and 3-Tier Audio Engine with spoken Adhkar reminder tones.
 - [2026-07-29] Phase 2.5 Pillar 1 & 2 complete — Built dedicated Library tab with Golden 20 essential catalog, Custom Duas Creator modal, One-Tap scheduling to My Day, and interactive Tap Counter Badges on task cards.
+- [2026-07-29] Phase 2.5 Quran Khatmah Complete — Added 3 Quran Riwayat (Hafs, Warsh, Qalun) and Khatmah setup modal with Classic/Custom plans (30-day, 60-day, 7-day, Custom) and choice of daily tracking (by 5 Prayers or by Page Count).
 
 ## Supabase Free Tier Constraints
 
@@ -150,6 +151,7 @@
 - [x] **Pillar 1: Dedicated Library Tab (`المكتبة`) & Catalog** ✓
   - "Golden 20" Essential Catalog (5 Morning Adhkar, 5 Evening Adhkar, 5 Daily Duas, 5 Quran/Worship Goals).
   - **Custom Duas Creator:** Let users type and save personal Duas/Adhkar with custom tap counts, cached offline & synced via Supabase.
+  - **3 Quran Riwayat & Khatmah Creator:** Choice of 3 Riwayat (*Hafs 'an 'Asim, Warsh 'an Nafi', Qalun 'an Nafi'*), Classic/Custom Pace Plans (30-day, 60-day, 7-day, Custom), and choice of daily tracking (*by 5 Prayers or by Page Count*).
 - [x] **Pillar 2: Smart Habit Cards & One-Tap Scheduling** ✓
   - **`➕ Add to My Day` button** on every Library item.
   - Interactive **Smart Habit Cards** in My Day with built-in **Tap Counters (`0/33`, `0/3`)** and auto-recurring spiritual reminders.

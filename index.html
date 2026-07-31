@@ -570,6 +570,86 @@
       </div>
     </div>
 
+    <!-- ===== QURAN KHATMAH SETUP MODAL ===== -->
+    <div id="khatmah-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-quran text-emerald-500 text-xl"></i>
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white" data-i18n="khatmahModalTitle">Start Quran Khatmah</h3>
+        </div>
+
+        <!-- 1. Riwayah Selector -->
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5" data-i18n="selectRiwayah">Select Riwayah (Qira'ah)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="selectRiwayah('hafs')" id="riw-hafs" class="riw-btn active border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 px-2 py-2 rounded-xl text-xs font-bold transition">Hafs 'an 'Asim<br><span class="text-[10px] font-normal">حفص عن عاصم</span></button>
+            <button type="button" onclick="selectRiwayah('warsh')" id="riw-warsh" class="riw-btn border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-2 rounded-xl text-xs font-medium transition">Warsh 'an Nafi'<br><span class="text-[10px] font-normal">ورش عن نافع</span></button>
+            <button type="button" onclick="selectRiwayah('qalun')" id="riw-qalun" class="riw-btn border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-2 rounded-xl text-xs font-medium transition">Qalun 'an Nafi'<br><span class="text-[10px] font-normal">قالون عن نافع</span></button>
+          </div>
+        </div>
+
+        <!-- 2. Khatmah Plan Selector -->
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5" data-i18n="selectPlan">Select Plan / Pace</label>
+          <div class="space-y-2">
+            <label class="flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+              <input type="radio" name="khatmah-plan" value="30" checked onchange="toggleCustomPace(false)" class="w-4 h-4 text-emerald-600">
+              <div class="ms-3">
+                <span class="block text-sm font-bold text-gray-800 dark:text-white" data-i18n="plan30">30-Day Monthly Khatmah (1 Juz / day)</span>
+                <span class="block text-xs text-gray-400">20 pages daily (4 pages after each prayer)</span>
+              </div>
+            </label>
+            <label class="flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+              <input type="radio" name="khatmah-plan" value="60" onchange="toggleCustomPace(false)" class="w-4 h-4 text-emerald-600">
+              <div class="ms-3">
+                <span class="block text-sm font-bold text-gray-800 dark:text-white" data-i18n="plan60">60-Day Leisurely Khatmah (0.5 Juz / day)</span>
+                <span class="block text-xs text-gray-400">10 pages daily (2 pages after each prayer)</span>
+              </div>
+            </label>
+            <label class="flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+              <input type="radio" name="khatmah-plan" value="7" onchange="toggleCustomPace(false)" class="w-4 h-4 text-emerald-600">
+              <div class="ms-3">
+                <span class="block text-sm font-bold text-gray-800 dark:text-white" data-i18n="plan7">7-Day Sunnah Khatmah (Fami Bi-Shawq)</span>
+                <span class="block text-xs text-gray-400">~4+ Juz daily (~85 pages / day)</span>
+              </div>
+            </label>
+            <label class="flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+              <input type="radio" name="khatmah-plan" value="custom" onchange="toggleCustomPace(true)" class="w-4 h-4 text-emerald-600">
+              <div class="ms-3">
+                <span class="block text-sm font-bold text-gray-800 dark:text-white" data-i18n="planCustom">Custom Pace</span>
+                <span class="block text-xs text-gray-400">Choose your custom number of days</span>
+              </div>
+            </label>
+          </div>
+          <!-- Custom days input (hidden by default) -->
+          <div id="custom-pace-box" class="hidden mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="customDaysLabel">Target Days to Complete Quran (604 pages)</label>
+            <input type="number" id="custom-khatmah-days" min="1" max="365" value="40" class="w-full px-3 py-1.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-800 dark:text-white focus:outline-none">
+          </div>
+        </div>
+
+        <!-- 3. Tracking Style -->
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5" data-i18n="trackingStyle">Daily Tracker Style</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center p-2 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <input type="radio" name="khatmah-tracker" value="prayers" checked class="w-4 h-4 text-emerald-600">
+              <span class="ms-2 text-xs font-medium text-gray-700 dark:text-gray-200" data-i18n="trackBy5">By 5 Daily Prayers (0/5)</span>
+            </label>
+            <label class="flex items-center p-2 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <input type="radio" name="khatmah-tracker" value="pages" class="w-4 h-4 text-emerald-600">
+              <span class="ms-2 text-xs font-medium text-gray-700 dark:text-gray-200" data-i18n="trackByPages">By Page Count (0/20)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <button type="button" onclick="closeKhatmahModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-i18n="cancel">Cancel</button>
+          <button type="button" onclick="saveKhatmahPlan()" class="px-5 py-2 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" data-i18n="startKhatmahBtn">Start Khatmah</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -627,7 +707,17 @@
         duaTransLabel: "Translation / Meaning", categoryLabel: "Category",
         tapCountLabel: "Target Tap Count", addToMyDay: "Add to My Day",
         addedToMyDay: "✅ Added to My Day!", customDuaSaved: "✅ Custom Dhikr saved!",
-        tapCountProgress: "{current} / {target}", completedBadge: "Completed ✓"
+        tapCountProgress: "{current} / {target}", completedBadge: "Completed ✓",
+        khatmahModalTitle: "Start Quran Khatmah", selectRiwayah: "Select Riwayah (Qira'ah)",
+        selectPlan: "Select Plan / Pace", plan30: "30-Day Monthly Khatmah (1 Juz / day)",
+        plan60: "60-Day Leisurely Khatmah (0.5 Juz / day)", plan7: "7-Day Sunnah Khatmah (Fami Bi-Shawq)",
+        planCustom: "Custom Pace", customDaysLabel: "Target Days to Complete Quran (604 pages)",
+        trackingStyle: "Daily Tracker Style", trackBy5: "By 5 Daily Prayers (0/5)",
+        trackByPages: "By Page Count", startKhatmahBtn: "Start Khatmah",
+        khatmahStarted: "✅ Quran Khatmah started!",
+        khatmahBannerTitle: "Start Full Quran Khatmah",
+        khatmahBannerSub: "Choose your Riwayah (Hafs, Warsh, Qalun) and daily pace",
+        startKhatmahCardBtn: "Start Khatmah"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -680,7 +770,17 @@
         duaTransLabel: "الترجمة / المعنى", categoryLabel: "التصنيف",
         tapCountLabel: "عدد التكرار", addToMyDay: "إضافة إلى يومي",
         addedToMyDay: "✅ تمت الإضافة إلى يومي!", customDuaSaved: "✅ تم حفظ الذكر المخصص!",
-        tapCountProgress: "{current} / {target}", completedBadge: "مكتمل ✓"
+        tapCountProgress: "{current} / {target}", completedBadge: "مكتمل ✓",
+        khatmahModalTitle: "بدء ختمة القرآن الكريم", selectRiwayah: "اختر الرواية (القراءة)",
+        selectPlan: "اختر الخطة والمدة", plan30: "ختمة شهرية (جزء يومياً - ٣٠ يوماً)",
+        plan60: "ختمة شهرين (نصف جزء يومياً - ٦٠ يوماً)", plan7: "ختمة الأسبوع (تحزيب الصحابة - ٧ أيام)",
+        planCustom: "خطة مخصصة", customDaysLabel: "عدد الأيام لختم القرآن (٦٠٤ صفحات)",
+        trackingStyle: "طريقة المتابعة اليومية", trackBy5: "حسب الصلوات الخمس (٠/٥)",
+        trackByPages: "حسب عدد الصفحات", startKhatmahBtn: "بدء الختمة",
+        khatmahStarted: "✅ تم بدء ختمة القرآن الكريم!",
+        khatmahBannerTitle: "بدء ختمة القرآن الكريم",
+        khatmahBannerSub: "اختر روايتك (حفص، ورش، قالون) وخطة قراءتك اليومية",
+        startKhatmahCardBtn: "بدء الختمة"
       }
     };
 
@@ -1944,12 +2044,30 @@
         return matchCat && matchSearch;
       });
 
-      if (filtered.length === 0) {
+      const khatmahBanner = (category === 'all' || category === 'quran') ? `
+        <div class="col-span-full bg-gradient-to-r from-emerald-700 to-teal-600 text-white p-6 rounded-2xl shadow-lg mb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-quran text-2xl text-amber-300"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-lg leading-snug">${i18n[currentLang].khatmahBannerTitle || 'Start Full Quran Khatmah'}</h4>
+              <p class="text-xs text-emerald-100 mt-0.5">${i18n[currentLang].khatmahBannerSub || 'Choose your Riwayah (Hafs, Warsh, Qalun) and daily pace'}</p>
+            </div>
+          </div>
+          <button onclick="openKhatmahModal()" class="bg-amber-400 hover:bg-amber-300 text-emerald-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-md whitespace-nowrap flex items-center gap-2">
+            <i class="fas fa-play text-xs"></i>
+            <span>${i18n[currentLang].startKhatmahCardBtn || 'Start Khatmah'}</span>
+          </button>
+        </div>
+      ` : '';
+
+      if (filtered.length === 0 && !khatmahBanner) {
         list.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-book-open text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">No items found.</p></div>`;
         return;
       }
 
-      list.innerHTML = filtered.map(item => {
+      list.innerHTML = khatmahBanner + filtered.map(item => {
         const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
         const trans = currentLang === 'ar' ? (item.trans_ar || item.trans_en) : (item.trans_en || item.trans_ar);
         const arabicText = item.arabic ? `<p class="text-lg font-arabic text-gray-800 dark:text-gray-100 my-2.5 leading-relaxed dir-rtl" dir="rtl">${escapeHtml(item.arabic)}</p>` : '';
@@ -2061,6 +2179,95 @@
       customLibraryItems = customLibraryItems.filter(x => x.id !== id);
       localStorage.setItem('alfaz_custom_lib', JSON.stringify(customLibraryItems));
       renderLibrary();
+    }
+
+    let selectedRiwayah = 'hafs';
+
+    function selectRiwayah(riw) {
+      selectedRiwayah = riw;
+      document.querySelectorAll('.riw-btn').forEach(btn => {
+        const isSelected = btn.id === 'riw-' + riw;
+        btn.classList.toggle('active', isSelected);
+        btn.classList.toggle('border-2', isSelected);
+        btn.classList.toggle('border-emerald-500', isSelected);
+        btn.classList.toggle('bg-emerald-50', isSelected);
+        btn.classList.toggle('dark:bg-emerald-900/30', isSelected);
+        btn.classList.toggle('text-emerald-800', isSelected);
+        btn.classList.toggle('dark:text-emerald-200', isSelected);
+        btn.classList.toggle('font-bold', isSelected);
+        btn.classList.toggle('border-gray-300', !isSelected);
+        btn.classList.toggle('dark:border-gray-600', !isSelected);
+      });
+    }
+
+    function toggleCustomPace(show) {
+      const box = document.getElementById('custom-pace-box');
+      if (box) box.classList.toggle('hidden', !show);
+    }
+
+    function openKhatmahModal() {
+      selectRiwayah('hafs');
+      const mod = document.getElementById('khatmah-modal');
+      if (mod) mod.classList.remove('hidden');
+    }
+    function closeKhatmahModal() {
+      const mod = document.getElementById('khatmah-modal');
+      if (mod) mod.classList.add('hidden');
+    }
+
+    function saveKhatmahPlan() {
+      const planRadio = document.querySelector('input[name="khatmah-plan"]:checked');
+      const planVal = planRadio ? planRadio.value : '30';
+      const trackerRadio = document.querySelector('input[name="khatmah-tracker"]:checked');
+      const trackerVal = trackerRadio ? trackerRadio.value : 'prayers';
+
+      let days = 30;
+      if (planVal === '60') days = 60;
+      else if (planVal === '7') days = 7;
+      else if (planVal === 'custom') {
+        const cDays = parseInt(document.getElementById('custom-khatmah-days').value);
+        days = (cDays && cDays > 0) ? cDays : 30;
+      }
+
+      const riwNames = {
+        hafs: currentLang === 'ar' ? 'رواية حفص عن عاصم' : "Hafs 'an 'Asim",
+        warsh: currentLang === 'ar' ? 'رواية ورش عن نافع' : "Warsh 'an Nafi'",
+        qalun: currentLang === 'ar' ? 'رواية قالون عن نافع' : "Qalun 'an Nafi'"
+      };
+
+      const pagesPerDay = Math.max(1, Math.round(604 / days));
+      const targetCount = trackerVal === 'prayers' ? 5 : pagesPerDay;
+      const stepText = trackerVal === 'prayers' ? 
+        (currentLang === 'ar' ? `(بعد كل صلاة: ~${Math.max(1, Math.round(pagesPerDay/5))} صفحات)` : `(~${Math.max(1, Math.round(pagesPerDay/5))} pages after each prayer)`) :
+        (currentLang === 'ar' ? `(الورد اليومي: ${pagesPerDay} صفحة)` : `(Daily Goal: ${pagesPerDay} pages)`);
+
+      const title = (currentLang === 'ar' ? `📖 ورد القرآن اليومي - ` : `📖 Daily Quran Khatmah - `) + riwNames[selectedRiwayah] + ' ' + stepText;
+
+      const task = {
+        text: title,
+        done: false,
+        due_date: getTodayString(),
+        due_time: null,
+        priority: 2,
+        status: 'pending',
+        library_id: 'khatmah_' + selectedRiwayah,
+        target_count: targetCount,
+        current_count: 0,
+        recurrence_type: 'daily',
+        recurrence_interval: 1,
+        recurrence_weekdays: [],
+        recurrence_end: null,
+        recurrence_done_at: null,
+        reminder_minutes: null,
+        reminder_fired: false
+      };
+
+      tasks.unshift(task);
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      syncTask(task, 'insert');
+      closeKhatmahModal();
+      showToast(i18n[currentLang].khatmahStarted || '✅ Quran Khatmah started!', 'success');
+      renderActiveSmartList();
     }
 
     function incrementTaskTap(e, i) {
