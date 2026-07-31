@@ -199,10 +199,14 @@
     </nav>
 
     <!-- Notification Button -->
-    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
       <button onclick="requestNotificationPermission()" id="notif-btn" class="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-bell"></i>
         <span data-i18n="enableNotif">Enable Notifications</span>
+      </button>
+      <button onclick="checkForAppUpdate()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-sync-alt"></i>
+        <span data-i18n="refreshAppBtn">Refresh / Update App</span>
       </button>
     </div>
 
@@ -806,7 +810,8 @@
         khatmahBannerSub: "Choose your Riwayah (Hafs, Warsh, Qalun) and daily pace",
         startKhatmahCardBtn: "Start Khatmah",
         readAndCompleteBtn: "Read & Complete", finishDhikrBtn: "I Have Finished Reading — Complete Task",
-        readBtn: "Read", dhikrCompletedToast: "✅ May Allah accept from you! Task completed."
+        readBtn: "Read", dhikrCompletedToast: "✅ May Allah accept from you! Task completed.",
+        refreshAppBtn: "Refresh / Update App", checkingUpdateToast: "🔄 Checking for updates & reloading..."
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -871,7 +876,8 @@
         khatmahBannerSub: "اختر روايتك (حفص، ورش، قالون) وخطة قراءتك اليومية",
         startKhatmahCardBtn: "بدء الختمة",
         readAndCompleteBtn: "قراءة وإتمام", finishDhikrBtn: "أتممت القراءة — إنجاز المهمة",
-        readBtn: "قراءة", dhikrCompletedToast: "✅ تقبل الله طاعتكم! تم إنجاز المهمة."
+        readBtn: "قراءة", dhikrCompletedToast: "✅ تقبل الله طاعتكم! تم إنجاز المهمة.",
+        refreshAppBtn: "تحديث التطبيق", checkingUpdateToast: "🔄 جاري تحديث التطبيق وإعادة التحميل..."
       }
     };
 
@@ -1433,6 +1439,18 @@
       }
       checkSession();
     });
+
+    function checkForAppUpdate() {
+      showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg) reg.update();
+        });
+      }
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 500);
+    }
 
     function initSmartList() {
       const hash = window.location.hash.replace('#','');
