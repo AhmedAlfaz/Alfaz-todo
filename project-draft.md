@@ -108,6 +108,7 @@
 - [2026-07-29] Phase 2.5 Quran Reader & Bookmark Complete — Built full 114-Surah Quran Reader inside Library with 3 Riwayat (Hafs, Warsh, Qalun), offline static caching, and persistent Bookmark/Resume banner (🔖 mark a pause to resume reading).
 - [2026-07-29] Phase 2.5 Dhikr Reader Complete — Built Full-Text Dhikr / Dua Reader Modal (📖 Read & Complete) for Library items and tasks, where clicking 'I Have Finished Reading' completes the task.
 - [2026-07-29] Mobile UX & Reader Polish Complete — Added Word/Ayah-level bookmarking in Quran Reader, 100% complete unabridged text for all Adhkar/Duas in catalog, Surah task completion button in Quran Reader, and HTML5 History API popstate handler so Android Back button closes modals without exiting the app.
+- [2026-07-29] Phase 2.5 COMPLETE — Implemented 3-Tier Audio Suite with Spoken Adhkar/Quranic reminders via Web Speech API, harmonic chimes via Web Audio API, Audio Tones Studio modal, and 3-Layer Mobile Reminder Architecture.
 
 ## Supabase Free Tier Constraints
 
@@ -148,7 +149,7 @@
 **Timeline:** ~6 weeks
 **Status:** All 6 features built and tested (EN & AR)
 
-### Phase 2.5 (IN PROGRESS) — Islamic Library & Audio Architecture
+### Phase 2.5 (COMPLETE ✓) — Islamic Library & Audio Architecture
 **Goal:** Provide an authentic, offline-first Islamic Library (`المكتبة`) and 3-Tier Audio Engine connected to daily tasks and habits.
 
 - [x] **Pillar 1: Dedicated Library Tab (`المكتبة`) & Catalog** ✓
@@ -160,10 +161,13 @@
   - **`➕ Add to My Day` button** on every Library item.
   - Interactive **Smart Habit Cards** in My Day with built-in **Tap Counters (`0/33`, `0/3`)** and auto-recurring spiritual reminders.
   - **Full-Text Dhikr & Dua Reader (`📖 Read & Complete`):** Full-text Arabic, Tashkeel, and translation reader modal for Adhkar/Duas where clicking "I Have Finished Reading" completes the task (`t.done = true`).
-- [ ] **Pillar 3: 3-Tier Audio Engine & Spoken Reminder Tones**
+- [x] **Pillar 3: 3-Tier Audio Engine & Spoken Reminder Tones** ✓
   - **Tier 1 (Prayer Azan):** Full Azan MP3s for the 5 daily prayers.
-  - **Tier 2 (Spoken Adhkar & Spiritual Habits):** Gentle spoken Adhkar audio tones (*Bismillah*, *Alhamdulillah*, *Salawat on Prophet ﷺ*, *Takbeer*, *SubhanAllah*) and calm spiritual chimes.
+  - **Tier 2 (Spoken Adhkar & Spiritual Habits):** Gentle spoken Adhkar audio tones (*Bismillah*, *Alhamdulillah*, *Salawat on Prophet ﷺ*, *Takbeer*, *SubhanAllah*) via Web Speech API and calm harmonic spiritual chimes via Web Audio API.
   - **Tier 3 (Work & Personal Tasks):** Subtle, modern productivity chimes for regular tasks.
+  - **3-Layer Mobile Reminder Architecture:** Service Worker Notifications + Foreground Audio Studio + Missed Reminder Catch-Up Engine.
+
+**Status:** All 3 Pillars built, tested, and verified on mobile.
 
 ### Phase 3 — Team Features
 - Groups / organizations
