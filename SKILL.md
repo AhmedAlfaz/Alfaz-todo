@@ -84,6 +84,7 @@ Stop immediately and discuss with me when:
 - [2026-07-29] Lesson: Raw orientation alpha angle suffers from gimbal lock / distortion when the phone is held vertically. Always use W3C 3D rotation matrix formula (alpha, beta, gamma) for tilt-compensated heading, and apply a low-pass filter (0.2 factor) to prevent spinning and jitter.
 - [2026-07-29] Lesson: PWA start_url and sw.js cache paths must use relative paths (./ and ./index.html) instead of root slashes (/index.html). When hosted on a GitHub Pages subdirectory (/Alfaz-todo/), root slashes resolve to ahmedalfaz.github.io/index.html causing 404 on PWA launch.
 - [2026-07-29] Lesson: On Android mobile PWAs, pressing the physical Back button closes the app unless window.history.pushState is used when opening modals or switching views. Always attach a window.onpopstate listener to close modals first before exiting.
+- [2026-07-29] Lesson: Always increment CACHE_NAME in sw.js ('v4' -> 'v5') whenever modifying index.html. Otherwise, mobile Service Workers serve the old cached version from disk and users report 'nothing changed'.
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 
