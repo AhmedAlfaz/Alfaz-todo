@@ -87,6 +87,7 @@ Stop immediately and discuss with me when:
 - [2026-07-29] Lesson: Always increment CACHE_NAME in sw.js ('v4' -> 'v5') whenever modifying index.html. Otherwise, mobile Service Workers serve the old cached version from disk and users report 'nothing changed'.
 - [2026-07-29] Lesson: Standalone PWAs disable browser pull-to-refresh gestures. Always provide an in-app 'Refresh / Update App' button in the sidebar that calls serviceWorker reg.update() and window.location.reload(true).
 - [2026-07-29] Lesson: On mobile browsers, new Audio().play() fails inside timers due to autoplay restrictions. Always use a permanent HTML <audio id="azan-player"> unlocked on first touch via unlockMobileAudio(), and provide a Full-Screen Azan Modal with a prominent 'Listen to Azan' button as fallback.
+- [2026-07-29] Lesson: When dynamically changing an HTML5 <audio> element src on mobile browsers (Android Chrome/Safari), calling .play() immediately without calling .load() first causes silent playback failures. Always call player.load() before player.play().
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 

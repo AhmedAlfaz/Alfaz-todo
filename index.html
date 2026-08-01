@@ -3207,6 +3207,7 @@
 
       const ayahObj = currentRecitingAyahs[idx];
       player.src = ayahObj.audio;
+      player.load(); // REQUIRED FOR ANDROID CHROME & IOS SAFARI!
       player.volume = 1.0;
 
       document.querySelectorAll('.quran-ayah-span').forEach(el => {
@@ -3222,7 +3223,18 @@
       if (pIcon) pIcon.className = 'fas fa-pause';
       if (pText) pText.textContent = (currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause');
 
-      player.play().catch(() => {});
+      player.play().catch(e => {
+        console.error("Audio play error:", e);
+        if (ayahObj.audioSecondary && ayahObj.audioSecondary[0]) {
+          player.src = ayahObj.audioSecondary[0];
+          player.load();
+          player.play().catch(() => {
+            showToast('⚠️ Tap screen to enable audio', 'error');
+          });
+        } else {
+          showToast('⚠️ Tap screen to enable audio', 'error');
+        }
+      });
 
       player.onended = () => {
         if (idx + 1 < currentRecitingAyahs.length) {
