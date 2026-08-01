@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alfaz-todo-v10';
+const CACHE_NAME = 'alfaz-todo-v11';
 const STATIC_ASSETS = [
   '/Alfaz-todo/',
   '/Alfaz-todo/index.html',

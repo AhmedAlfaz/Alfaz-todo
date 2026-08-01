@@ -88,6 +88,7 @@ Stop immediately and discuss with me when:
 - [2026-07-29] Lesson: Standalone PWAs disable browser pull-to-refresh gestures. Always provide an in-app 'Refresh / Update App' button in the sidebar that calls serviceWorker reg.update() and window.location.reload(true).
 - [2026-07-29] Lesson: On mobile browsers, new Audio().play() fails inside timers due to autoplay restrictions. Always use a permanent HTML <audio id="azan-player"> unlocked on first touch via unlockMobileAudio(), and provide a Full-Screen Azan Modal with a prominent 'Listen to Azan' button as fallback.
 - [2026-07-29] Lesson: When dynamically changing an HTML5 <audio> element src on mobile browsers (Android Chrome/Safari), calling .play() immediately without calling .load() first causes silent playback failures. Always call player.load() before player.play().
+- [2026-07-29] Lesson: JavaScript timers setInterval(..., 1000) checking minute rollovers miss reminders created for the current minute. Always run checkTaskReminders(now) immediately after saving a task and 3 seconds after page load.
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 
