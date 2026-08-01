@@ -1552,6 +1552,7 @@
       if (!SR) { const mb = document.getElementById('mic-btn'); if (mb) mb.style.display='none'; return; }
       recognition = new SR();
       recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.onresult = function(ev) {
@@ -1560,9 +1561,15 @@
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
           const t = ev.results[i][0].transcript;
           if (ev.results[i].isFinal) final += t;
-          else inp.value = t;
+          else {
+            inp.value = t;
+            onTaskInputChanged(t);
+          }
         }
-        if (final) inp.value = final.trim();
+        if (final) {
+          inp.value = final.trim();
+          onTaskInputChanged(final.trim());
+        }
       };
       recognition.onerror = function(ev) {
         isRecording = false;
@@ -1863,8 +1870,12 @@
 
     // ===== TASKS =====
     function renderTasks() { renderActiveSmartList(); }
+    function normalizeDigits(s) {
+      return (s || '').replace(/[٠-٩۰-۹]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹'.indexOf(d) % 10]);
+    }
+
     function parseNaturalLanguageDate(text) {
-      let cleanText = text;
+      let cleanText = normalizeDigits(text);
       let date = null;
       let time = null;
       const today = new Date();
@@ -2248,30 +2259,85 @@
       } catch(e) {}
     }
 
+    let activeAlarmTaskIndex = -1;
+
     function checkTaskReminders(now) {
       const today = getTodayString();
       const nowMins = now.getHours() * 60 + now.getMinutes();
-      tasks.forEach(t => {
+      tasks.forEach((t, idx) => {
         if (t.done || t.status === 'cancelled' || t.reminder_fired) return;
         if (!t.due_date || !t.due_time || t.due_date !== today) return;
-        if (t.reminder_minutes === null || t.reminder_minutes === undefined) return;
+
         const [h, m] = t.due_time.split(':').map(Number);
         const dueMins = h * 60 + m;
-        const remindAt = dueMins - t.reminder_minutes;
-        if (nowMins >= remindAt && nowMins <= remindAt + 2) {
+        const remindMins = (t.reminder_minutes !== null && t.reminder_minutes !== undefined) ? t.reminder_minutes : 0;
+        const remindAt = Math.max(0, dueMins - remindMins);
+
+        if (nowMins >= remindAt && nowMins <= remindAt + 60) {
           t.reminder_fired = true;
           localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
           syncTask(t, 'update');
-          const msg = t.reminder_minutes === 0
-            ? i18n[currentLang].taskDueNow.replace('{task}', t.text)
-            : i18n[currentLang].taskReminder.replace('{task}', t.text);
+
+          activeAlarmTaskIndex = idx;
+          const titleEl = document.getElementById('task-alarm-modal-title');
+          const timeEl = document.getElementById('task-alarm-modal-time');
+          if (titleEl) titleEl.textContent = t.text;
+          if (timeEl) timeEl.textContent = `${t.due_date} ${t.due_time}`;
+
+          const modal = document.getElementById('task-alarm-modal');
+          if (modal) {
+            modal.classList.remove('hidden');
+            pushMobileHistoryState('task-alarm-modal');
+          }
+
+          const msg = remindMins === 0
+            ? (i18n[currentLang].taskDueNow || '⏰ {task} is due now!').replace('{task}', t.text)
+            : (i18n[currentLang].taskReminder || '⏰ Reminder: {task}').replace('{task}', t.text);
+
           showToast(msg, 'prayer');
           showBrowserNotification('🔔 Alfaz todo', msg);
+
           const isSpiritual = !!t.library_id;
           const tone = isSpiritual ? audioSettings.adhkar_tone : audioSettings.task_tone;
           playAudioTone(tone, t.text, isSpiritual);
         }
       });
+    }
+
+    function completeTaskFromAlarm() {
+      if (activeAlarmTaskIndex >= 0 && tasks[activeAlarmTaskIndex]) {
+        const t = tasks[activeAlarmTaskIndex];
+        t.done = true;
+        t.status = 'done';
+        if (t.target_count > 0) t.current_count = t.target_count;
+        localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+        syncTask(t, 'update');
+        showToast(i18n[currentLang].completedBadge || 'Completed ✓', 'success');
+        renderActiveSmartList();
+      }
+      closeTaskAlarmModal();
+    }
+
+    function snoozeTaskFromAlarm(mins) {
+      if (activeAlarmTaskIndex >= 0 && tasks[activeAlarmTaskIndex]) {
+        const t = tasks[activeAlarmTaskIndex];
+        t.reminder_fired = false;
+        const now = new Date();
+        const nextTime = new Date(now.getTime() + mins * 60000);
+        t.due_time = ('0' + nextTime.getHours()).slice(-2) + ':' + ('0' + nextTime.getMinutes()).slice(-2);
+        t.reminder_minutes = 0;
+        localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+        syncTask(t, 'update');
+        showToast((currentLang === 'ar' ? `💤 تم تأجيل التنبيه ١٥ دقيقة` : `💤 Snoozed for 15 minutes`), 'info');
+        renderActiveSmartList();
+      }
+      closeTaskAlarmModal();
+    }
+
+    function closeTaskAlarmModal() {
+      activeAlarmTaskIndex = -1;
+      const modal = document.getElementById('task-alarm-modal');
+      if (modal) modal.classList.add('hidden');
     }
 
     document.addEventListener('visibilitychange', function() {
