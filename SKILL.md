@@ -86,6 +86,7 @@ Stop immediately and discuss with me when:
 - [2026-07-29] Lesson: On Android mobile PWAs, pressing the physical Back button closes the app unless window.history.pushState is used when opening modals or switching views. Always attach a window.onpopstate listener to close modals first before exiting.
 - [2026-07-29] Lesson: Always increment CACHE_NAME in sw.js ('v4' -> 'v5') whenever modifying index.html. Otherwise, mobile Service Workers serve the old cached version from disk and users report 'nothing changed'.
 - [2026-07-29] Lesson: Standalone PWAs disable browser pull-to-refresh gestures. Always provide an in-app 'Refresh / Update App' button in the sidebar that calls serviceWorker reg.update() and window.location.reload(true).
+- [2026-07-29] Lesson: On mobile browsers, new Audio().play() fails inside timers due to autoplay restrictions. Always use a permanent HTML <audio id="azan-player"> unlocked on first touch via unlockMobileAudio(), and provide a Full-Screen Azan Modal with a prominent 'Listen to Azan' button as fallback.
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 

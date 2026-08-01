@@ -801,6 +801,41 @@
       </div>
     </div>
 
+    <!-- ===== FULL-SCREEN AZAN PRAYER ALERT MODAL ===== -->
+    <div id="azan-alert-modal" class="hidden fixed inset-0 bg-gradient-to-b from-indigo-950 via-slate-900 to-black z-[100] flex flex-col items-center justify-between p-6 sm:p-10 text-white overflow-y-auto">
+      <div class="w-full flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-mosque text-emerald-400 text-2xl animate-pulse"></i>
+          <span class="font-bold text-sm sm:text-base tracking-wider uppercase text-emerald-300" data-i18n="azanAlertHeader">Call to Prayer</span>
+        </div>
+        <button onclick="closeAzanAlertModal(false)" class="text-gray-400 hover:text-white transition p-2 text-xl" title="Close"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div class="flex flex-col items-center text-center my-auto py-8">
+        <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-emerald-500/20 border-2 border-emerald-400/50 flex items-center justify-center mb-6 shadow-2xl shadow-emerald-500/30 animate-bounce-slow">
+          <i class="fas fa-mosque text-4xl sm:text-6xl text-emerald-300"></i>
+        </div>
+        <h2 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-2" id="azan-modal-prayer-name">Maghrib</h2>
+        <p class="text-xl sm:text-2xl text-emerald-300 font-semibold mb-6" id="azan-modal-prayer-time">18:45</p>
+        <p class="text-base sm:text-lg text-gray-300 max-w-md leading-relaxed" data-i18n="azanModalQuote">"Come to prayer, come to success. Hayya 'ala-s-Salah, Hayya 'ala-l-Falah."</p>
+      </div>
+
+      <div class="w-full max-w-md space-y-3 pb-4">
+        <button onclick="startAzanAudio()" id="azan-listen-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3.5 px-6 rounded-2xl shadow-xl transition flex items-center justify-center gap-2 text-base">
+          <i class="fas fa-volume-up text-lg"></i>
+          <span data-i18n="listenAzanBtn">Listen to Azan</span>
+        </button>
+        <button onclick="silenceAzanAudio()" id="azan-silence-btn" class="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-3.5 px-6 rounded-2xl transition flex items-center justify-center gap-2 text-base">
+          <i class="fas fa-volume-mute"></i>
+          <span data-i18n="silenceAzanBtn">Silence Azan</span>
+        </button>
+        <button onclick="completePrayerFromModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl shadow-2xl transition flex items-center justify-center gap-2 text-lg">
+          <i class="fas fa-check-circle text-xl"></i>
+          <span data-i18n="iHavePrayedBtn">I Have Prayed (أتممت الصلاة)</span>
+        </button>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
@@ -1719,6 +1754,7 @@
       const eModal = document.getElementById('edit-task-modal');
       const cModal = document.getElementById('custom-dua-modal');
       const aModal = document.getElementById('audio-studio-modal');
+      const azAlertModal = document.getElementById('azan-alert-modal');
 
       if (qReader && !qReader.classList.contains('hidden')) {
         closeQuranReader();
@@ -1732,6 +1768,8 @@
         closeCustomDuaModal();
       } else if (aModal && !aModal.classList.contains('hidden')) {
         closeAudioStudioModal();
+      } else if (azAlertModal && !azAlertModal.classList.contains('hidden')) {
+        closeAzanAlertModal(false);
       } else {
         const tasksView = document.getElementById('tasks-view');
         if (tasksView && tasksView.classList.contains('hidden')) {
@@ -2185,21 +2223,97 @@
       }
     }, 60000);
 
+    let audioUnlocked = false;
+
+    function unlockMobileAudio() {
+      if (audioUnlocked) return;
+      try {
+        const azPlayer = document.getElementById('azan-player');
+        if (azPlayer) {
+          azPlayer.volume = 0;
+          azPlayer.play().then(() => {
+            azPlayer.pause();
+            azPlayer.volume = 1;
+            audioUnlocked = true;
+          }).catch(() => {});
+        }
+      } catch(e) {}
+    }
+
+    document.addEventListener('touchstart', unlockMobileAudio, { once: true });
+    document.addEventListener('click', unlockMobileAudio, { once: true });
+
     function triggerAzan(prayerName) {
-      let pN = currentLang==='ar'?prayerNamesAr[prayerName]:prayerName;
+      let pN = currentLang === 'ar' ? prayerNamesAr[prayerName] : prayerName;
+      let timeStr = prayerTimings[prayerName] || '';
+
+      const nameEl = document.getElementById('azan-modal-prayer-name');
+      const timeEl = document.getElementById('azan-modal-prayer-time');
+      if (nameEl) nameEl.textContent = pN;
+      if (timeEl) timeEl.textContent = timeStr;
+
+      const modal = document.getElementById('azan-alert-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        pushMobileHistoryState('azan-alert-modal');
+      }
+
+      startAzanAudio();
+
       let msg = i18n[currentLang].prayerAlert.replace('{prayer}', pN);
       showBrowserNotification('🕌 Alfaz todo', msg);
-      showToast(msg, 'prayer');
-      playSelectedAzan();
+    }
+
+    function startAzanAudio() {
+      const azPlayer = document.getElementById('azan-player');
+      if (!azPlayer) return;
+      const src = azanSources[document.getElementById('azan-select')?.value || 0];
+      azPlayer.src = src;
+      azPlayer.volume = 1.0;
+      azPlayer.play().then(() => {
+        const lBtn = document.getElementById('azan-listen-btn');
+        if (lBtn) lBtn.classList.add('hidden');
+      }).catch(() => {
+        const lBtn = document.getElementById('azan-listen-btn');
+        if (lBtn) lBtn.classList.remove('hidden');
+      });
+    }
+
+    function silenceAzanAudio() {
+      const azPlayer = document.getElementById('azan-player');
+      if (azPlayer) {
+        azPlayer.pause();
+        azPlayer.currentTime = 0;
+      }
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+      showToast('⏹ Azan silenced', 'info');
+    }
+
+    function closeAzanAlertModal(prayed) {
+      silenceAzanAudio();
+      const modal = document.getElementById('azan-alert-modal');
+      if (modal) modal.classList.add('hidden');
+      if (prayed) {
+        showToast(i18n[currentLang].prayedCongratToast || '✅ May Allah accept your prayer!', 'success');
+      }
+    }
+
+    function completePrayerFromModal() {
+      closeAzanAlertModal(true);
     }
 
     function playSelectedAzan() {
-      if (currentAudio) currentAudio.pause();
-      currentAudio = new Audio(azanSources[document.getElementById('azan-select').value]);
-      currentAudio.play().catch(() => showToast('⚠️ Tap to enable audio', 'error'));
+      startAzanAudio();
     }
-    function testAzan() { playSelectedAzan(); }
-    function stopAzan() { if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; showToast('⏹ Audio stopped', 'info'); } }
+    function testAzan() {
+      startAzanAudio();
+    }
+    function stopAzan() {
+      silenceAzanAudio();
+    }
 
     // ===== ISLAMIC LIBRARY (المكتبة) =====
     const GOLDEN_CATALOG = [
@@ -3093,5 +3207,8 @@
       dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
     }
   </script>
+  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
+  <audio id="azan-player" preload="none" playsinline></audio>
+  <audio id="sound-reader-player" preload="none" playsinline></audio>
 </body>
 </html>
