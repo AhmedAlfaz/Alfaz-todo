@@ -90,6 +90,6 @@ To make the Quran, Adhkar, and Duas truly accessible and interactive for users w
 
 1. [x] **Step 1:** Add permanent `<audio id="azan-player">` and `unlockMobileAudio()` handler in `index.html`. ✓
 2. [x] **Step 2:** Build Full-Screen Azan Prayer Modal (`#azan-alert-modal`) with `I Have Prayed` & `Silence` buttons. ✓
-3. [ ] **Step 3:** Implement Spiritual & Task sliding banner cards with `Read Now` and `Snooze 15m`.
-4. [ ] **Step 4:** Implement Missed Reminders Catch-Up Engine on `visibilitychange`.
+3. [x] **Step 3:** Implement Task Reminder Alert Modal (`#task-alarm-modal`), Snooze 15m, and Quran/Dhikr Sound Readers (`#quran-audio-bar` & `Listen & Repeat`) with verse-by-verse highlighting. ✓
+4. [x] **Step 4:** Implement Missed Reminders Catch-Up Engine on `visibilitychange`. ✓
 5. [ ] **Step 5:** Test and verify on mobile (screen ON and screen OFF).

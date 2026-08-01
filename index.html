@@ -684,6 +684,30 @@
           </div>
         </div>
 
+        <!-- Quran Sound Reader Player Bar -->
+        <div id="quran-audio-bar" class="p-3 bg-emerald-900 text-white flex flex-wrap items-center justify-between gap-3 flex-shrink-0 shadow-md">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-volume-up text-amber-300 text-lg"></i>
+            <span class="text-xs font-bold text-emerald-200" data-i18n="reciterLabel">Reciter:</span>
+            <select id="quran-reciter-select" onchange="changeQuranReciter(this.value)" class="text-xs bg-emerald-800 border border-emerald-700 rounded-lg px-2 py-1 text-white focus:outline-none">
+              <option value="ar.alafasy">Mishary Alafasy (مشاري العفاسي)</option>
+              <option value="ar.abdulbasitmurattal">Abdul Basit (عبد الباسط عبد الصمد)</option>
+              <option value="ar.husary">Mahmoud Khalil Al-Husary (الحصري)</option>
+              <option value="ar.minshawi">Mohamed Siddiq Al-Minshawi (المنشاوي)</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="toggleQuranRecitation()" id="quran-play-btn" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold px-3.5 py-1.5 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5">
+              <i class="fas fa-play" id="quran-play-icon"></i>
+              <span id="quran-play-text" data-i18n="playSurahBtn">Play Surah</span>
+            </button>
+            <button onclick="stopQuranRecitation()" id="quran-stop-btn" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl text-xs font-medium transition hidden">
+              <i class="fas fa-stop me-1"></i> <span data-i18n="stopBtn">Stop</span>
+            </button>
+            <span id="quran-audio-ayah-status" class="text-xs font-mono text-amber-300 hidden">Ayah 1</span>
+          </div>
+        </div>
+
         <!-- Bookmark Indicator Bar -->
         <div id="quran-bookmark-bar" class="hidden bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 px-4 py-2 text-xs font-medium text-amber-800 dark:text-amber-200 flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -733,6 +757,14 @@
         <div class="flex-1 overflow-y-auto py-6 my-2 text-center">
           <div id="dhikr-reader-arabic" class="font-arabic text-2xl sm:text-3xl leading-loose text-gray-900 dark:text-gray-100 mb-6 dir-rtl" dir="rtl"></div>
           <div id="dhikr-reader-trans" class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed max-w-md mx-auto"></div>
+        </div>
+
+        <!-- Audio Reader Control in Dhikr Modal -->
+        <div class="my-3 flex items-center justify-center flex-shrink-0">
+          <button onclick="playDhikrReaderAudio()" id="dhikr-audio-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-sm">
+            <i class="fas fa-volume-up text-base"></i>
+            <span id="dhikr-audio-btn-text" data-i18n="listenDhikrBtn">Listen & Repeat (استماع وترديد)</span>
+          </button>
         </div>
 
         <!-- Action Button (Complete Task) -->
@@ -833,6 +865,29 @@
           <i class="fas fa-check-circle text-xl"></i>
           <span data-i18n="iHavePrayedBtn">I Have Prayed (أتممت الصلاة)</span>
         </button>
+      </div>
+    </div>
+
+    <!-- ===== TASK REMINDER ALERT MODAL ===== -->
+    <div id="task-alarm-modal" class="hidden fixed inset-0 bg-black/85 z-[100] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-amber-400 dark:border-gray-700 flex flex-col items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-500 flex items-center justify-center mb-4 text-3xl animate-bounce-slow shadow-md">
+          <i class="fas fa-bell"></i>
+        </div>
+        <span class="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1" data-i18n="taskAlertHeader">Task Reminder</span>
+        <h3 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-2" id="task-alarm-modal-title">Task Title</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-300 mb-6" id="task-alarm-modal-time">Due today at 17:00</p>
+        <div class="w-full space-y-2.5">
+          <button onclick="completeTaskFromAlarm()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-5 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-base">
+            <i class="fas fa-check-circle"></i>
+            <span data-i18n="completeTaskBtn">Complete Task</span>
+          </button>
+          <button onclick="snoozeTaskFromAlarm(15)" class="w-full bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/40 dark:hover:bg-amber-800 text-amber-800 dark:text-amber-200 font-bold py-3 px-5 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+            <i class="fas fa-clock"></i>
+            <span data-i18n="snooze15Btn">Snooze 15 Min</span>
+          </button>
+          <button onclick="closeTaskAlarmModal()" class="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-medium py-2.5 px-5 rounded-xl transition text-sm" data-i18n="dismissBtn">Dismiss</button>
+        </div>
       </div>
     </div>
 
@@ -3084,6 +3139,145 @@
         } else {
           bar.classList.add('hidden');
         }
+      }
+    }
+
+    let currentRecitingAyahs = [];
+    let currentRecitingIndex = -1;
+    let isRecitingQuran = false;
+    let selectedQuranReciter = 'ar.alafasy';
+
+    function changeQuranReciter(rec) {
+      selectedQuranReciter = rec;
+      if (isRecitingQuran) {
+        stopQuranRecitation();
+        toggleQuranRecitation();
+      }
+    }
+
+    async function toggleQuranRecitation() {
+      const player = document.getElementById('sound-reader-player');
+      const pIcon = document.getElementById('quran-play-icon');
+      const pText = document.getElementById('quran-play-text');
+      const sBtn = document.getElementById('quran-stop-btn');
+      const statusEl = document.getElementById('quran-audio-ayah-status');
+
+      if (!player) return;
+
+      if (isRecitingQuran && !player.paused) {
+        player.pause();
+        if (pIcon) pIcon.className = 'fas fa-play';
+        if (pText) pText.textContent = (currentLang === 'ar' ? 'إكمال التلاوة' : 'Resume');
+        return;
+      } else if (isRecitingQuran && player.paused) {
+        player.play();
+        if (pIcon) pIcon.className = 'fas fa-pause';
+        if (pText) pText.textContent = (currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause');
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://api.alquran.cloud/v1/surah/${currentReaderSurah}/${selectedQuranReciter}`);
+        if (!res.ok) throw new Error('audio fetch error');
+        const json = await res.json();
+        currentRecitingAyahs = json.data?.ayahs || [];
+        if (currentRecitingAyahs.length === 0) return;
+
+        isRecitingQuran = true;
+        currentRecitingIndex = 0;
+        if (sBtn) sBtn.classList.remove('hidden');
+        if (statusEl) statusEl.classList.remove('hidden');
+
+        playAyahAudio(0);
+      } catch(e) {
+        showToast('⚠️ Recitation audio offline', 'error');
+      }
+    }
+
+    function playAyahAudio(idx) {
+      const player = document.getElementById('sound-reader-player');
+      const pIcon = document.getElementById('quran-play-icon');
+      const pText = document.getElementById('quran-play-text');
+      const statusEl = document.getElementById('quran-audio-ayah-status');
+
+      if (!player || !currentRecitingAyahs[idx]) {
+        stopQuranRecitation();
+        return;
+      }
+
+      const ayahObj = currentRecitingAyahs[idx];
+      player.src = ayahObj.audio;
+      player.volume = 1.0;
+
+      document.querySelectorAll('.quran-ayah-span').forEach(el => {
+        el.classList.remove('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
+      });
+      const ayahSpan = document.getElementById(`ayah-span-${ayahObj.numberInSurah}`);
+      if (ayahSpan) {
+        ayahSpan.classList.add('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
+        try { ayahSpan.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+      }
+
+      if (statusEl) statusEl.textContent = `Ayah ${ayahObj.numberInSurah} / ${currentRecitingAyahs.length}`;
+      if (pIcon) pIcon.className = 'fas fa-pause';
+      if (pText) pText.textContent = (currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause');
+
+      player.play().catch(() => {});
+
+      player.onended = () => {
+        if (idx + 1 < currentRecitingAyahs.length) {
+          currentRecitingIndex = idx + 1;
+          playAyahAudio(currentRecitingIndex);
+        } else {
+          stopQuranRecitation();
+        }
+      };
+    }
+
+    function stopQuranRecitation() {
+      const player = document.getElementById('sound-reader-player');
+      if (player) {
+        player.pause();
+        player.currentTime = 0;
+      }
+      isRecitingQuran = false;
+      currentRecitingIndex = -1;
+
+      const pIcon = document.getElementById('quran-play-icon');
+      const pText = document.getElementById('quran-play-text');
+      const sBtn = document.getElementById('quran-stop-btn');
+      const statusEl = document.getElementById('quran-audio-ayah-status');
+
+      if (pIcon) pIcon.className = 'fas fa-play';
+      if (pText) pText.textContent = (currentLang === 'ar' ? 'تشغيل السورة' : 'Play Surah');
+      if (sBtn) sBtn.classList.add('hidden');
+      if (statusEl) statusEl.classList.add('hidden');
+
+      document.querySelectorAll('.quran-ayah-span').forEach(el => {
+        el.classList.remove('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
+      });
+    }
+
+    function playDhikrReaderAudio() {
+      const arText = document.getElementById('dhikr-reader-arabic')?.innerText || '';
+      if (!arText || arText === '---') return;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(arText);
+        u.lang = 'ar-SA';
+        u.rate = 0.85;
+        u.onstart = () => {
+          const btn = document.getElementById('dhikr-audio-btn');
+          if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>' + (currentLang==='ar'?'جاري التلاوة...':'Reciting...') + '</span>';
+        };
+        u.onend = () => {
+          const btn = document.getElementById('dhikr-audio-btn');
+          if (btn) btn.innerHTML = '<i class="fas fa-volume-up"></i> <span>' + (currentLang==='ar'?'استماع وترديد':'Listen & Repeat') + '</span>';
+        };
+        window.speechSynthesis.speak(u);
+      } else {
+        showToast('⚠️ Web Speech not supported on this browser', 'error');
       }
     }
 
