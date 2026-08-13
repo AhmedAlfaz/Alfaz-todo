@@ -25,10 +25,54 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    /* Fallback if Tailwind CDN fails on mobile PWA */
+    .hidden { display: none !important; }
+    html, body { margin: 0; min-height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       transition: background-color 0.3s ease, color 0.3s ease;
+      background: #f9fafb;
+      color: #1f2937;
     }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .flex-1 { flex: 1 1 auto; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .h-screen { height: 100vh; }
+    .overflow-hidden { overflow: hidden; }
+    .overflow-y-auto { overflow-y: auto; }
+    .fixed { position: fixed; }
+    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+    .relative { position: relative; }
+    .w-full { width: 100%; }
+    .max-w-md { max-width: 28rem; }
+    .max-w-3xl { max-width: 48rem; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .p-4 { padding: 1rem; }
+    .p-5 { padding: 1.25rem; }
+    .p-6 { padding: 1.5rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .bg-white { background: #fff; }
+    .bg-gray-50 { background: #f9fafb; }
+    .bg-blue-600 { background: #2563eb; color: #fff; }
+    .text-white { color: #fff; }
+    .text-gray-800 { color: #1f2937; }
+    .text-gray-500 { color: #6b7280; }
+    .border { border: 1px solid #e5e7eb; }
+    .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+    button { cursor: pointer; }
+    #sidebar { width: 16rem; background: #fff; border-right: 1px solid #e5e7eb; }
+    main { flex: 1; background: #f9fafb; }
+    .dark body, .dark { background: #111827; color: #e5e7eb; }
+    .dark #sidebar, .dark .bg-white { background: #1f2937; }
+    .dark main, .dark .bg-gray-50 { background: #111827; }
     .nav-item.active { background-color: #EFF6FF; color: #2563EB; font-weight: 600; }
     .nav-item.active i { color: #2563EB; }
     .dark .nav-item.active { background-color: #1E3A5F; color: #93C5FD; }
