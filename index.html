@@ -1665,7 +1665,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=16'; }, 400);
+      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=17'; }, 400);
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           return Promise.all(regs.map(r => r.update().catch(() => {})));
@@ -2557,14 +2557,14 @@
     // ===== ISLAMIC LIBRARY (المكتبة) =====
     const GOLDEN_CATALOG = [
       {
-        id: 'm1', category: 'morning', count: 1,
+        id: 'm1', category: 'morning', count: 1, audio: [{s:2,a:255}],
         title_en: 'Ayat al-Kursi (The Throne Verse)', title_ar: 'آية الكرسي',
         arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
         trans_en: 'Allah - there is no deity except Him, the Ever-Living, the Sustainer of all existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.',
         trans_ar: 'قراءة آية الكرسي للحفظ والبركة في الصباح.'
       },
       {
-        id: 'm2', category: 'morning', count: 3,
+        id: 'm2', category: 'morning', count: 3, audio: [{s:112,a:1},{s:112,a:2},{s:112,a:3},{s:112,a:4},{s:113,a:1},{s:113,a:2},{s:113,a:3},{s:113,a:4},{s:113,a:5},{s:114,a:1},{s:114,a:2},{s:114,a:3},{s:114,a:4},{s:114,a:5},{s:114,a:6}],
         title_en: 'Al-Ikhlas & Mu\'awwidhatayn (3x)', title_ar: 'سورة الإخلاص والمعوذتان (٣ مرات)',
         arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ (1) اللَّهُ الصَّمَدُ (2) لَمْ يَلِدْ وَلَمْ يُولَدْ (3) وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ (4) • بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ (1) مِن شَرِّ مَا خَلَقَ (2) وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ (3) وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ (4) وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ (5) • بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ النَّاسِ (1) مَلِكِ النَّاسِ (2) إِلَٰهِ النَّاسِ (3) مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ (4) الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ (5) مِنَ الْجِنَّةِ وَالنَّاسِ (6)',
         trans_en: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas 3 times each for protection against all harm.',
@@ -2599,7 +2599,7 @@
         trans_ar: 'ذكر المساء للاعتراف بملك الله والحمد له والتعوذ من الشرور.'
       },
       {
-        id: 'e2', category: 'evening', count: 3,
+        id: 'e2', category: 'evening', count: 3, audio: [{s:112,a:1},{s:112,a:2},{s:112,a:3},{s:112,a:4},{s:113,a:1},{s:113,a:2},{s:113,a:3},{s:113,a:4},{s:113,a:5},{s:114,a:1},{s:114,a:2},{s:114,a:3},{s:114,a:4},{s:114,a:5},{s:114,a:6}],
         title_en: 'Evening Ikhlas & Mu\'awwidhatayn (3x)', title_ar: 'الإخلاص والمعوذتان في المساء (٣ مرات)',
         arabic: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ • قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ • قُلْ أَعُوذُ بِرَبِّ النَّاسِ (ثلاث مرات)',
         trans_en: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas 3 times in the evening for protection against all harm.',
@@ -2877,6 +2877,7 @@
       const arabic = libItem?.arabic || (currentLang === 'ar' ? t.text : '');
       const trans = libItem ? (currentLang === 'ar' ? libItem.trans_ar : libItem.trans_en) : '';
 
+      activeDhikrAudioPlan = libItem?.audio || [];
       showDhikrReaderModal(title, arabic, trans, true);
     }
 
@@ -2912,8 +2913,11 @@
       const arabic = item.arabic || '';
       const trans = currentLang === 'ar' ? (item.trans_ar || item.trans_en) : (item.trans_en || item.trans_ar);
 
+      activeDhikrAudioPlan = item.audio || [];
       showDhikrReaderModal(title, arabic, trans, false);
     }
+
+    let activeDhikrAudioPlan = [];
 
     function showDhikrReaderModal(title, arabic, trans, isTask) {
       const titleEl = document.getElementById('dhikr-reader-title');
@@ -2938,8 +2942,10 @@
     }
 
     function closeDhikrReader() {
+      stopDhikrAyahAudio();
       activeDhikrTaskIndex = -1;
       activeDhikrLibraryId = null;
+      activeDhikrAudioPlan = [];
       const modal = document.getElementById('dhikr-reader-modal');
       if (modal) modal.classList.add('hidden');
     }
@@ -3200,6 +3206,21 @@
       114: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ (1) مَلِكِ النَّاسِ (2) إِلَٰهِ النَّاسِ (3) مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ (4) الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ (5) مِنَ الْجِنَّةِ وَالنَّاسِ (6)"
     };
 
+    const RIWAYAH_TEXT_URL = {
+      hafs: 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/ara-quranuthmanihaf/',
+      warsh: 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/ara-quranwarsh/',
+      qalun: 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/ara-quranqaloon/'
+    };
+
+    async function fetchRiwayahAyahs(num, riw) {
+      const base = RIWAYAH_TEXT_URL[riw] || RIWAYAH_TEXT_URL.hafs;
+      const res = await fetch(base + num + '.min.json');
+      if (!res.ok) throw new Error('riwayah fetch');
+      const json = await res.json();
+      const chapter = json.chapter || [];
+      return chapter.map(v => ({ numberInSurah: v.verse, text: v.text }));
+    }
+
     async function loadSurahInReader(num) {
       currentReaderSurah = num;
       const sel = document.getElementById('quran-surah-select');
@@ -3238,11 +3259,16 @@
       contentDiv.innerHTML = `<div class="text-center py-12"><i class="fas fa-spinner fa-spin text-4xl text-emerald-500 mb-3"></i><p class="text-sm text-gray-400">Loading Surah ${num} (${riwLabel})...</p></div>`;
 
       try {
-        const edition = 'quran-uthmani';
-        const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/${edition}`);
-        if (!res.ok) throw new Error('fetch error');
-        const json = await res.json();
-        const ayahs = json.data?.ayahs || [];
+        let ayahs = [];
+        try {
+          ayahs = await fetchRiwayahAyahs(num, currentReaderRiwayah);
+        } catch (riwErr) {
+          const edition = 'quran-uthmani';
+          const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/${edition}`);
+          if (!res.ok) throw new Error('fetch error');
+          const json = await res.json();
+          ayahs = json.data?.ayahs || [];
+        }
         const textFormatted = ayahs.map(a => `
           <span id="ayah-span-${a.numberInSurah}" onclick="markQuranAyahBookmark(${num}, ${a.numberInSurah}, '${escapeHtml(a.text.slice(0, 35))}')" class="quran-ayah-span inline hover:bg-amber-100 dark:hover:bg-amber-900/40 cursor-pointer transition rounded px-1.5 py-0.5">
             ${a.text} <span class="inline-block bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full px-2 py-0.5 text-xs ms-1 me-1 font-bold">(${a.numberInSurah})</span>
@@ -3598,7 +3624,79 @@
       });
     }
 
-    function playDhikrReaderAudio() {
+    let dhikrAyahQueue = [];
+    let dhikrAyahPlaying = false;
+
+    function setDhikrAudioBtn(html) {
+      const btn = document.getElementById('dhikr-audio-btn');
+      if (btn) btn.innerHTML = html;
+    }
+
+    function stopDhikrAyahAudio() {
+      dhikrAyahPlaying = false;
+      dhikrAyahQueue = [];
+      const player = document.getElementById('sound-reader-player');
+      if (player && !isRecitingQuran) {
+        player.pause();
+        player.onended = null;
+      }
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      setDhikrAudioBtn('<i class="fas fa-volume-up"></i> <span>' + (currentLang==='ar'?'استماع وترديد':'Listen & Repeat') + '</span>');
+    }
+
+    function playNextDhikrAyah() {
+      if (!dhikrAyahPlaying || !dhikrAyahQueue.length) {
+        stopDhikrAyahAudio();
+        return;
+      }
+      const next = dhikrAyahQueue.shift();
+      const player = document.getElementById('sound-reader-player');
+      if (!player) return;
+      const url = 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/' + next + '.mp3';
+      player.src = url;
+      player.load();
+      player.onended = () => playNextDhikrAyah();
+      player.play().catch(() => {
+        showToast('⚠️ Tap screen to enable audio', 'error');
+        stopDhikrAyahAudio();
+      });
+    }
+
+    async function resolveGlobalAyahNumbers(plan) {
+      const nums = [];
+      for (const item of plan) {
+        try {
+          const res = await fetch('https://api.alquran.cloud/v1/ayah/' + item.s + ':' + item.a);
+          if (!res.ok) continue;
+          const json = await res.json();
+          const n = json.data && json.data.number;
+          if (n) nums.push(n);
+        } catch (e) {}
+      }
+      return nums;
+    }
+
+    async function playDhikrReaderAudio() {
+      if (dhikrAyahPlaying) {
+        stopDhikrAyahAudio();
+        return;
+      }
+
+      if (activeDhikrAudioPlan && activeDhikrAudioPlan.length) {
+        setDhikrAudioBtn('<i class="fas fa-spinner fa-spin"></i> <span>' + (currentLang==='ar'?'جاري التلاوة...':'Reciting...') + '</span>');
+        const nums = await resolveGlobalAyahNumbers(activeDhikrAudioPlan);
+        if (!nums.length) {
+          showToast('⚠️ Could not load recitation', 'error');
+          stopDhikrAyahAudio();
+          return;
+        }
+        dhikrAyahQueue = nums;
+        dhikrAyahPlaying = true;
+        setDhikrAudioBtn('<i class="fas fa-stop"></i> <span>' + (currentLang==='ar'?'إيقاف':'Stop') + '</span>');
+        playNextDhikrAyah();
+        return;
+      }
+
       const arText = document.getElementById('dhikr-reader-arabic')?.innerText || '';
       if (!arText || arText === '---') return;
 
@@ -3608,12 +3706,10 @@
         u.lang = 'ar-SA';
         u.rate = 0.85;
         u.onstart = () => {
-          const btn = document.getElementById('dhikr-audio-btn');
-          if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>' + (currentLang==='ar'?'جاري التلاوة...':'Reciting...') + '</span>';
+          setDhikrAudioBtn('<i class="fas fa-spinner fa-spin"></i> <span>' + (currentLang==='ar'?'جاري التلاوة...':'Reciting...') + '</span>');
         };
         u.onend = () => {
-          const btn = document.getElementById('dhikr-audio-btn');
-          if (btn) btn.innerHTML = '<i class="fas fa-volume-up"></i> <span>' + (currentLang==='ar'?'استماع وترديد':'Listen & Repeat') + '</span>';
+          setDhikrAudioBtn('<i class="fas fa-volume-up"></i> <span>' + (currentLang==='ar'?'استماع وترديد':'Listen & Repeat') + '</span>');
         };
         window.speechSynthesis.speak(u);
       } else {
