@@ -252,7 +252,13 @@
       </button>
     </nav>
 
-    <!-- Notification Butt <button onclick="checkForAppUpdate()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
+    <!-- Notification Button -->
+    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+      <button onclick="requestNotificationPermission()" id="notif-btn" class="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-bell"></i>
+        <span data-i18n="enableNotif">Enable Notifications</span>
+      </button>
+      <button onclick="checkForAppUpdate()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-sync-alt"></i>
         <span data-i18n="refreshAppBtn">Refresh / Update App</span>
       </button>
@@ -527,6 +533,28 @@
 
       <!-- Library Items Grid -->
       <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12"></div>
+    </div>
+
+    <div id="calendar-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="occasionsCalendar">Occasions Calendar</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" data-i18n="occasionsSubtitle">Islamic occasions & Egypt official holidays</p>
+        </div>
+        <span class="text-4xl">📅</span>
+      </div>
+      <div class="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 mb-4">
+        <button type="button" onclick="shiftOccasionsMonth(-1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"><i class="fas fa-chevron-left"></i></button>
+        <div class="text-center">
+          <p id="occasions-month-title" class="font-bold text-gray-800 dark:text-white">Month</p>
+          <p id="occasions-hijri-title" class="text-xs text-emerald-600 dark:text-emerald-400"></p>
+        </div>
+        <button type="button" onclick="shiftOccasionsMonth(1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"><i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div id="occasions-weekdays" class="grid grid-cols-7 gap-1 mb-1 text-center text-[11px] font-bold text-gray-400"></div>
+      <div id="occasions-grid" class="grid grid-cols-7 gap-1 mb-4"></div>
+      <div id="occasions-day-panel" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4 min-h-[100px]"></div>
+      <div id="occasions-month-list" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-8"></div>
     </div>
 
     <!-- ===== 4. GROUPS ===== -->
@@ -1701,7 +1729,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=18'; }, 400);
+      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=19'; }, 400);
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           return Promise.all(regs.map(r => r.update().catch(() => {})));
@@ -1951,11 +1979,13 @@
     // ===== NAVIGATION =====
     function switchView(viewId, btn) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-      document.getElementById(viewId).classList.remove('hidden');
+      const target = document.getElementById(viewId);
+      if (target) target.classList.remove('hidden');
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (btn) btn.classList.add('active');
       if (sidebarOpen) toggleSidebar();
       if (viewId === 'qibla-view') initCompass();
+      if (viewId === 'calendar-view') openOccasionsCalendar();
       if (viewId !== 'tasks-view') pushMobileHistoryState(viewId);
     }
 
@@ -3910,6 +3940,25 @@
         occSelectedIso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-01';
       }
       renderOccasionDayPanel(occSelectedIso, hijriMap);
+      const listEl = document.getElementById('occasions-month-list');
+      if (listEl) {
+        const monthEvs = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const iso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+          eventsForIso(iso, hijriMap).forEach(ev => monthEvs.push({ iso: iso, ev: ev }));
+        }
+        if (!monthEvs.length) {
+          listEl.innerHTML = '<p class="text-sm text-gray-500">' + (i18n[currentLang].noOccasionsDay || '') + '</p>';
+        } else {
+          listEl.innerHTML = '<p class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">' + monthName + '</p>' +
+            monthEvs.map(row => {
+              const name = currentLang === 'ar' ? row.ev.ar : row.ev.en;
+              return '<button type="button" onclick="selectOccasionDay(\'' + row.iso + '\')" class="w-full text-start flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">' +
+                '<span class="text-sm font-bold text-gray-800 dark:text-white">' + name + '</span>' +
+                '<span class="text-xs text-gray-400">' + row.iso + ' · ' + occTypeLabel(row.ev.type) + '</span></button>';
+            }).join('');
+        }
+      }
     }
 
     function selectOccasionDay(iso) {
