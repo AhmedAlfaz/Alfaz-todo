@@ -1894,6 +1894,9 @@
       renderActiveSmartList(); updateDarkModeButton(); updateNotifButton();
       if (userLat) calculateQibla(userLat, userLng);
       if (Object.keys(prayerTimings).length > 0) { renderPrayerCards(); updateNextPrayer(); }
+      if (document.getElementById('calendar-view') && !document.getElementById('calendar-view').classList.contains('hidden')) {
+        renderOccasionsCalendar();
+      }
     }
     function applyLanguage(lang) {
       document.documentElement.lang = lang;
@@ -4085,14 +4088,6 @@
       if (!dial) return;
       currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
       dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
-    }
-  </script>
-  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
-  <audio id="azan-player" preload="none" playsinline></audio>
-  <audio id="sound-reader-player" preload="none" playsinline></audio>
-</body>
-</html>
-(${currentDisplayHeading}deg)`;
     }
   </script>
   <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
