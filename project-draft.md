@@ -110,6 +110,7 @@
 - [2026-07-29] Mobile UX & Reader Polish Complete — Added Word/Ayah-level bookmarking in Quran Reader, 100% complete unabridged text for all Adhkar/Duas in catalog, Surah task completion button in Quran Reader, and HTML5 History API popstate handler so Android Back button closes modals without exiting the app.
 - [2026-07-29] Phase 2.5 COMPLETE — Implemented 3-Tier Audio Suite with Spoken Adhkar/Quranic reminders via Web Speech API, harmonic chimes via Web Audio API, Audio Tones Studio modal, and 3-Layer Mobile Reminder Architecture.
 - [2026-07-29] Mobile Voice & Reminder Fix — Added Arabic-Indic numeral normalization for voice NLP date/time detection, continuous speech listening, and guaranteed task alert firing when due_time is set.
+- [2026-08-14] Phase 2.5 close-out — Real Hafs/Warsh/Qalun mushaf text (Quran Complex via quran-api), Quran pause/resume + ayah timestamps, Quranic Adhkar recitation audio. User will live-test azan + task reminders.
 
 ## Supabase Free Tier Constraints
 
