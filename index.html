@@ -1056,12 +1056,20 @@
     // ===== SUPABASE =====
     const SUPABASE_URL = 'https://fxceebqojhfupsmadswl.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4Y2VlYnFvamhmdXBzbWFkc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxOTMwNzgsImV4cCI6MjA5OTc2OTA3OH0.Rnp2ByI9FM8hrX0KqlftIvcpax8jFrI_dQcG3cq6io8';
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let db = null;
+    try {
+      if (typeof supabase !== 'undefined') {
+        db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch (e) { db = null; }
     let currentUser = null;
 
     async function checkSession() {
-      const { data: { session } } = await db.auth.getSession();
-      if (session) { currentUser = session.user; showApp(); loadUserTasks(); } else { showAuth(); }
+      try {
+        if (!db) { showApp(); return; }
+        const { data: { session } } = await db.auth.getSession();
+        if (session) { currentUser = session.user; showApp(); loadUserTasks(); } else { showAuth(); }
+      } catch (e) { showApp(); }
     }
     function showAuth() {
       document.getElementById('auth-screen').classList.remove('hidden');
@@ -1613,14 +1621,12 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.getRegistration().then(reg => {
-          if (reg) reg.update();
-        });
-      }
-      setTimeout(() => {
-        window.location.reload(true);
-      }, 500);
+      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=14'; }, 400);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          return Promise.all(regs.map(r => r.update().catch(() => {})));
+        }).finally(finish);
+      } else finish();
     }
 
     let audioSettings = {
@@ -2394,6 +2400,35 @@
 
     document.addEventListener('touchstart', unlockMobileAudio, { once: true });
     document.addEventListener('click', unlockMobileAudio, { once: true });
+
+    function prayerTimeHHMM(raw) {
+      if (!raw) return '';
+      const m = String(raw).match(/(\d{1,2}):(\d{2})/);
+      if (!m) return String(raw).slice(0, 5);
+      return ('0' + m[1]).slice(-2) + ':' + m[2];
+    }
+    function getAzanFiredKey(prayerName) {
+      return 'alfaz_azan_' + getTodayString() + '_' + prayerName;
+    }
+    function wasAzanFired(prayerName) {
+      try { return localStorage.getItem(getAzanFiredKey(prayerName)) === '1'; } catch (e) { return false; }
+    }
+    function markAzanFired(prayerName) {
+      try { localStorage.setItem(getAzanFiredKey(prayerName), '1'); } catch (e) {}
+    }
+    function checkPrayerAzanNow(now) {
+      if (!prayerTimings || !Object.keys(prayerTimings).length) return;
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      for (const p in prayerTimings) {
+        const hhmm = prayerTimeHHMM(prayerTimings[p]);
+        if (!hhmm) continue;
+        const parts = hhmm.split(':').map(Number);
+        const pMins = parts[0] * 60 + parts[1];
+        if (nowMins === pMins && !wasAzanFired(p)) {
+          triggerAzan(p);
+        }
+      }
+    }
 
     function triggerAzan(prayerName) {
       let pN = currentLang === 'ar' ? prayerNamesAr[prayerName] : prayerName;
@@ -3561,92 +3596,6 @@
       if (!dial) return;
       currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
       dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
-    }
-  </script>
-  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
-  <audio id="azan-player" preload="none" playsinline></audio>
-  <audio id="sound-reader-player" preload="none" playsinline></audio>
-</body>
-</html>
-   dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
-    }
-  </script>
-  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
-  <audio id="azan-player" preload="none" playsinline></audio>
-  <audio id="sound-reader-player" preload="none" playsinline></audio>
-</body>
-</html>
-w.addEventListener('deviceorientation', handleOrientation, true);
-            showToast('🧭 Compass active!','success');
-          } else {
-            showToast('⚠️ Compass permission denied','error');
-          }
-        }).catch(() => showToast('⚠️ Compass permission denied','error'));
-      } else {
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-        window.addEventListener('deviceorientation', handleOrientation, true);
-        showToast('🧭 Compass active!','success');
-      }
-    }
-
-    let currentDisplayHeading = null;
-
-    function getTiltCompensatedHeading(alpha, beta, gamma) {
-      if (alpha === null || beta === null || gamma === null) return (360 - (alpha || 0)) % 360;
-      const degToRad = Math.PI / 180;
-      const _alpha = alpha * degToRad;
-      const _beta = beta * degToRad;
-      const _gamma = gamma * degToRad;
-      const cA = Math.cos(_alpha), sA = Math.sin(_alpha);
-      const cB = Math.cos(_beta), sB = Math.sin(_beta);
-      const cG = Math.cos(_gamma), sG = Math.sin(_gamma);
-      const rA = -cA * sG - sA * sB * cG;
-      const rB = -sA * sG + cA * sB * cG;
-      let heading = Math.atan2(rA, rB) * (180 / Math.PI);
-      if (heading < 0) heading += 360;
-      return heading % 360;
-    }
-
-    function smoothAngle(oldAngle, newAngle, factor = 0.2) {
-      if (oldAngle === null || isNaN(oldAngle)) return newAngle;
-      let diff = ((newAngle - oldAngle + 540) % 360) - 180;
-      return (oldAngle + diff * factor + 360) % 360;
-    }
-
-    function handleOrientation(e) {
-      let heading = null;
-      if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-        heading = e.webkitCompassHeading;
-      } else if (e.alpha !== null && e.alpha !== undefined) {
-        heading = getTiltCompensatedHeading(e.alpha, e.beta || 0, e.gamma || 0);
-      }
-      if (heading !== null && !isNaN(heading)) {
-        compassHeading = heading;
-        updateCompass();
-      }
-    }
-
-    function updateCompass() {
-      const dial = document.getElementById('compass-dial');
-      if (!dial) return;
-      currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
-      dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
-    }
-  </script>
-  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
-  <audio id="azan-player" preload="none" playsinline></audio>
-  <audio id="sound-reader-player" preload="none" playsinline></audio>
-</body>
-</html>
-   dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
-    }
-  </script>
-  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
-  <audio id="azan-player" preload="none" playsinline></audio>
-  <audio id="sound-reader-player" preload="none" playsinline></audio>
-</body>
-</html>
-
     }
   </script>
   <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
