@@ -1996,6 +1996,7 @@
           if (!dueTime && parsed.time) { dueTime = parsed.time; nlTime = parsed.time; }
         }
       }
+      if (dueTime && !dueDate) { dueDate = getTodayString(); nlDate = nlDate || dueDate; }
 
       const task = {
         text: taskText, done: false,
@@ -2227,7 +2228,7 @@
         let hhmm = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
         if (hhmm !== lastCheckedMinute) {
           lastCheckedMinute = hhmm;
-          for (let p in prayerTimings) { if (prayerTimings[p]===hhmm) triggerAzan(p); }
+          checkPrayerAzanNow(now);
           checkTaskReminders(now);
           if (Object.keys(prayerTimings).length>0) updateNextPrayer();
         }
@@ -2295,7 +2296,7 @@
             : (i18n[currentLang].taskReminder || '⏰ Reminder: {task}').replace('{task}', t.text);
 
           showToast(msg, 'prayer');
-          showBrowserNotification('🔔 Alfaz todo', msg);
+          showBrowserNotification('🔔 Alfaz todo', msg, 'alfaz-task-' + (t.id || idx));
 
           const isSpiritual = !!t.library_id;
           const tone = isSpiritual ? audioSettings.adhkar_tone : audioSettings.task_tone;
@@ -2344,6 +2345,7 @@
       if (!document.hidden) {
         const now = new Date();
         checkTaskReminders(now);
+        checkPrayerAzanNow(now);
         if (Object.keys(prayerTimings).length > 0) {
           updateNextPrayer();
         }
@@ -3241,11 +3243,49 @@
     let currentRecitingIndex = -1;
     let isRecitingQuran = false;
     let selectedQuranReciter = 'ar.alafasy';
+    let quranResumeTime = 0;
+    let quranLoadedUrl = '';
+
+    function getQuranSurahUrl(reciter, surahNum) {
+      const serverMap = {
+        'ar.alafasy': 'https://server8.mp3quran.net/afs/',
+        'ar.abdulbasitmurattal': 'https://server7.mp3quran.net/basit/',
+        'ar.husary': 'https://server13.mp3quran.net/husr/',
+        'ar.minshawi': 'https://server10.mp3quran.net/minsh/'
+      };
+      const baseUrl = serverMap[reciter] || 'https://server8.mp3quran.net/afs/';
+      return baseUrl + ('00' + surahNum).slice(-3) + '.mp3';
+    }
+
+    function saveQuranAudioPosition(player) {
+      if (!player) return;
+      quranResumeTime = player.currentTime || 0;
+      try {
+        localStorage.setItem('alfaz_quran_audio_pos', JSON.stringify({
+          surah: currentReaderSurah,
+          reciter: selectedQuranReciter,
+          time: quranResumeTime,
+          url: quranLoadedUrl
+        }));
+      } catch (e) {}
+    }
+
+    function loadSavedQuranAudioPosition(surahNum, reciter) {
+      try {
+        const s = JSON.parse(localStorage.getItem('alfaz_quran_audio_pos') || 'null');
+        if (s && s.surah === surahNum && s.reciter === reciter && s.time > 1) return s.time;
+      } catch (e) {}
+      return 0;
+    }
 
     function changeQuranReciter(rec) {
+      const player = document.getElementById('sound-reader-player');
+      if (player && isRecitingQuran) saveQuranAudioPosition(player);
       selectedQuranReciter = rec;
+      quranResumeTime = 0;
+      quranLoadedUrl = '';
       if (isRecitingQuran) {
-        stopQuranRecitation();
+        isRecitingQuran = false;
         toggleQuranRecitation();
       }
     }
@@ -3259,36 +3299,49 @@
 
       if (!player) return;
 
-      if (isRecitingQuran && !player.paused) {
+      const desiredUrl = getQuranSurahUrl(selectedQuranReciter, currentReaderSurah);
+      const sameTrack = quranLoadedUrl === desiredUrl && player.src && player.src.indexOf(('00' + currentReaderSurah).slice(-3) + '.mp3') !== -1;
+
+      if (sameTrack && !player.paused && !player.ended) {
+        saveQuranAudioPosition(player);
         player.pause();
         if (pIcon) pIcon.className = 'fas fa-play';
         if (pText) pText.textContent = (currentLang === 'ar' ? 'إكمال التلاوة' : 'Resume');
-        return;
-      } else if (isRecitingQuran && player.paused) {
-        player.play();
-        if (pIcon) pIcon.className = 'fas fa-pause';
-        if (pText) pText.textContent = (currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause');
+        isRecitingQuran = true;
         return;
       }
 
-      const serverMap = {
-        'ar.alafasy': 'https://server8.mp3quran.net/afs/',
-        'ar.abdulbasitmurattal': 'https://server7.mp3quran.net/basit/',
-        'ar.husary': 'https://server13.mp3quran.net/husr/',
-        'ar.minshawi': 'https://server10.mp3quran.net/minsh/'
-      };
-      const baseUrl = serverMap[selectedQuranReciter] || 'https://server8.mp3quran.net/afs/';
-      const surahStr = ('00' + currentReaderSurah).slice(-3);
-      const fullSurahUrl = baseUrl + surahStr + '.mp3';
+      if (sameTrack && (player.paused || isRecitingQuran) && !player.ended) {
+        const resumeAt = (player.currentTime > 1) ? player.currentTime : (quranResumeTime || loadSavedQuranAudioPosition(currentReaderSurah, selectedQuranReciter));
+        if (resumeAt > 1 && Math.abs((player.currentTime || 0) - resumeAt) > 1.5) {
+          try { player.currentTime = resumeAt; } catch (e) {}
+        }
+        isRecitingQuran = true;
+        if (sBtn) sBtn.classList.remove('hidden');
+        if (pIcon) pIcon.className = 'fas fa-pause';
+        if (pText) pText.textContent = (currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause');
+        player.play().catch(() => showToast('⚠️ Tap screen to enable audio', 'error'));
+        return;
+      }
+
+      const fullSurahUrl = desiredUrl;
 
       isRecitingQuran = true;
       if (sBtn) sBtn.classList.remove('hidden');
       if (statusEl) statusEl.classList.remove('hidden');
       if (statusEl) statusEl.textContent = `Surah ${currentReaderSurah} Playing`;
 
+      const resumeAt = loadSavedQuranAudioPosition(currentReaderSurah, selectedQuranReciter);
       player.src = fullSurahUrl;
+      quranLoadedUrl = fullSurahUrl;
       player.load();
       player.volume = 1.0;
+      player.onloadedmetadata = () => {
+        const t = resumeAt || quranResumeTime;
+        if (t > 1 && t < (player.duration || Infinity)) {
+          try { player.currentTime = t; } catch (e) {}
+        }
+      };
 
       if ('mediaSession' in navigator) {
         try {
@@ -3320,6 +3373,7 @@
 
       player.ontimeupdate = () => {
         if (!player.duration || player.duration <= 0) return;
+        if (Math.floor(player.currentTime) % 5 === 0) saveQuranAudioPosition(player);
         const totalAyahs = document.querySelectorAll('.quran-ayah-span').length || 1;
         const ratio = player.currentTime / player.duration;
         const approxAyah = Math.min(totalAyahs, Math.max(1, Math.ceil(ratio * totalAyahs)));
@@ -3347,6 +3401,9 @@
         player.ontimeupdate = null;
       }
       isRecitingQuran = false;
+      quranResumeTime = 0;
+      quranLoadedUrl = '';
+      try { localStorage.removeItem('alfaz_quran_audio_pos'); } catch (e) {}
 
       const pIcon = document.getElementById('quran-play-icon');
       const pText = document.getElementById('quran-play-text');
@@ -3504,6 +3561,92 @@
       if (!dial) return;
       currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
       dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
+    }
+  </script>
+  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
+  <audio id="azan-player" preload="none" playsinline></audio>
+  <audio id="sound-reader-player" preload="none" playsinline></audio>
+</body>
+</html>
+   dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
+    }
+  </script>
+  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
+  <audio id="azan-player" preload="none" playsinline></audio>
+  <audio id="sound-reader-player" preload="none" playsinline></audio>
+</body>
+</html>
+w.addEventListener('deviceorientation', handleOrientation, true);
+            showToast('🧭 Compass active!','success');
+          } else {
+            showToast('⚠️ Compass permission denied','error');
+          }
+        }).catch(() => showToast('⚠️ Compass permission denied','error'));
+      } else {
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        showToast('🧭 Compass active!','success');
+      }
+    }
+
+    let currentDisplayHeading = null;
+
+    function getTiltCompensatedHeading(alpha, beta, gamma) {
+      if (alpha === null || beta === null || gamma === null) return (360 - (alpha || 0)) % 360;
+      const degToRad = Math.PI / 180;
+      const _alpha = alpha * degToRad;
+      const _beta = beta * degToRad;
+      const _gamma = gamma * degToRad;
+      const cA = Math.cos(_alpha), sA = Math.sin(_alpha);
+      const cB = Math.cos(_beta), sB = Math.sin(_beta);
+      const cG = Math.cos(_gamma), sG = Math.sin(_gamma);
+      const rA = -cA * sG - sA * sB * cG;
+      const rB = -sA * sG + cA * sB * cG;
+      let heading = Math.atan2(rA, rB) * (180 / Math.PI);
+      if (heading < 0) heading += 360;
+      return heading % 360;
+    }
+
+    function smoothAngle(oldAngle, newAngle, factor = 0.2) {
+      if (oldAngle === null || isNaN(oldAngle)) return newAngle;
+      let diff = ((newAngle - oldAngle + 540) % 360) - 180;
+      return (oldAngle + diff * factor + 360) % 360;
+    }
+
+    function handleOrientation(e) {
+      let heading = null;
+      if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+        heading = e.webkitCompassHeading;
+      } else if (e.alpha !== null && e.alpha !== undefined) {
+        heading = getTiltCompensatedHeading(e.alpha, e.beta || 0, e.gamma || 0);
+      }
+      if (heading !== null && !isNaN(heading)) {
+        compassHeading = heading;
+        updateCompass();
+      }
+    }
+
+    function updateCompass() {
+      const dial = document.getElementById('compass-dial');
+      if (!dial) return;
+      currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
+      dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
+    }
+  </script>
+  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
+  <audio id="azan-player" preload="none" playsinline></audio>
+  <audio id="sound-reader-player" preload="none" playsinline></audio>
+</body>
+</html>
+   dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
+    }
+  </script>
+  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
+  <audio id="azan-player" preload="none" playsinline></audio>
+  <audio id="sound-reader-player" preload="none" playsinline></audio>
+</body>
+</html>
+
     }
   </script>
   <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
