@@ -850,25 +850,6 @@
             <span id="dhikr-finish-btn-text" data-i18n="finishDhikrBtn">I Have Finished Reading — Complete Task</span>
           </button>
         </div>
-    :text-gray-100 mb-6 dir-rtl" dir="rtl"></div>
-          <div id="dhikr-reader-trans" class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed max-w-md mx-auto"></div>
-        </div>
-
-        <!-- Audio Reader Control in Dhikr Modal -->
-        <div class="my-3 flex items-center justify-center flex-shrink-0">
-          <button onclick="playDhikrReaderAudio()" id="dhikr-audio-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-sm">
-            <i class="fas fa-volume-up text-base"></i>
-            <span id="dhikr-audio-btn-text" data-i18n="listenDhikrBtn">Listen & Repeat (استماع وترديد)</span>
-          </button>
-        </div>
-
-        <!-- Action Button (Complete Task) -->
-        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <button onclick="finishDhikrReading()" id="dhikr-finish-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-base">
-            <i class="fas fa-check-circle text-lg"></i>
-            <span id="dhikr-finish-btn-text" data-i18n="finishDhikrBtn">I Have Finished Reading — Complete Task</span>
-          </button>
-        </div>
       </div>
     </div>
 
@@ -1729,7 +1710,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=19'; }, 400);
+      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=20'; }, 400);
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           return Promise.all(regs.map(r => r.update().catch(() => {})));
