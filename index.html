@@ -1665,7 +1665,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=14'; }, 400);
+      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=16'; }, 400);
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           return Promise.all(regs.map(r => r.update().catch(() => {})));
@@ -2392,14 +2392,22 @@
     }
 
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden) {
-        const now = new Date();
-        checkTaskReminders(now);
-        checkPrayerAzanNow(now);
-        if (Object.keys(prayerTimings).length > 0) {
-          updateNextPrayer();
-        }
+      const player = document.getElementById('sound-reader-player');
+      if (document.hidden) {
+        if (player) saveQuranAudioPosition(player);
+        return;
       }
+      restoreQuranAudioAfterReturn();
+      const now = new Date();
+      checkTaskReminders(now);
+      checkPrayerAzanNow(now);
+      if (Object.keys(prayerTimings).length > 0) {
+        updateNextPrayer();
+      }
+    });
+    window.addEventListener('pagehide', function() {
+      const player = document.getElementById('sound-reader-player');
+      if (player) saveQuranAudioPosition(player);
     });
 
     function testReminder() {
@@ -3122,8 +3130,15 @@
 
       updateBookmarkBar();
 
+      const saved = getSavedQuranAudioState();
+      if (saved && saved.reciter) selectedQuranReciter = saved.reciter;
+      const recSel = document.getElementById('quran-reciter-select');
+      if (recSel && selectedQuranReciter) recSel.value = selectedQuranReciter;
+
       if (surahNum) {
         loadSurahInReader(surahNum);
+      } else if (saved && saved.surah) {
+        loadSurahInReader(saved.surah);
       } else {
         const bm = getQuranBookmark();
         if (bm && bm.surah) {
@@ -3136,6 +3151,8 @@
     }
 
     function closeQuranReader() {
+      const player = document.getElementById('sound-reader-player');
+      if (player) saveQuranAudioPosition(player);
       quranReaderTaskIndex = -1;
       const modal = document.getElementById('quran-reader-modal');
       if (modal) modal.classList.add('hidden');
@@ -3325,6 +3342,16 @@
     let quranResumeTime = 0;
     let quranLoadedUrl = '';
 
+    function getQuranChapterReciterId(reciter) {
+      const map = {
+        'ar.alafasy': 7,
+        'ar.abdulbasitmurattal': 2,
+        'ar.husary': 6,
+        'ar.minshawi': 9
+      };
+      return map[reciter] || 7;
+    }
+
     function getQuranSurahUrl(reciter, surahNum) {
       const serverMap = {
         'ar.alafasy': 'https://server8.mp3quran.net/afs/',
@@ -3336,33 +3363,112 @@
       return baseUrl + ('00' + surahNum).slice(-3) + '.mp3';
     }
 
+    function getSavedQuranAudioState() {
+      try { return JSON.parse(localStorage.getItem('alfaz_quran_audio_pos') || 'null'); } catch (e) { return null; }
+    }
+
     function saveQuranAudioPosition(player) {
-      if (!player) return;
-      quranResumeTime = player.currentTime || 0;
+      const t = player && !isNaN(player.currentTime) ? player.currentTime : quranResumeTime;
+      if (t > 0.4) quranResumeTime = t;
       try {
         localStorage.setItem('alfaz_quran_audio_pos', JSON.stringify({
           surah: currentReaderSurah,
           reciter: selectedQuranReciter,
-          time: quranResumeTime,
+          time: quranResumeTime || 0,
+          ayah: currentRecitingIndex > 0 ? currentRecitingIndex : null,
           url: quranLoadedUrl
         }));
       } catch (e) {}
     }
 
     function loadSavedQuranAudioPosition(surahNum, reciter) {
-      try {
-        const s = JSON.parse(localStorage.getItem('alfaz_quran_audio_pos') || 'null');
-        if (s && s.surah === surahNum && s.reciter === reciter && s.time > 1) return s.time;
-      } catch (e) {}
+      const s = getSavedQuranAudioState();
+      if (s && Number(s.surah) === Number(surahNum) && s.reciter === reciter && s.time > 1) return s.time;
       return 0;
     }
 
+    function restoreQuranAudioAfterReturn() {
+      const player = document.getElementById('sound-reader-player');
+      const saved = getSavedQuranAudioState();
+      if (!player || !saved) return;
+      if (saved.time > 1 && (player.currentTime < 0.8 || player.ended) && saved.surah === currentReaderSurah) {
+        try { if (player.readyState >= 1) player.currentTime = saved.time; } catch (e) {}
+        quranResumeTime = saved.time;
+      }
+    }
+
+    let quranAyahTimestamps = [];
+    async function loadQuranAyahTimestamps(reciter, surahNum) {
+      quranAyahTimestamps = [];
+      const reciterId = getQuranChapterReciterId(reciter);
+      const cacheKey = 'alfaz_ayah_ts_' + reciterId + '_' + surahNum;
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length) {
+            quranAyahTimestamps = parsed;
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      try {
+        const res = await fetch('https://api.quran.com/api/v4/chapter_recitations/' + reciterId + '/' + surahNum + '?segments=true');
+        if (!res.ok) return [];
+        const json = await res.json();
+        const file = json.audio_file || {};
+        const ts = (file.timestamps || []).map(row => ({
+          ayah: parseInt(String(row.verse_key || '').split(':')[1], 10) || 1,
+          from: (row.timestamp_from || 0) / 1000,
+          to: (row.timestamp_to || 0) / 1000
+        })).filter(x => x.ayah);
+        quranAyahTimestamps = ts;
+        if (file.audio_url) quranChapterAudioUrl = file.audio_url;
+        try { localStorage.setItem(cacheKey, JSON.stringify(ts)); } catch (e) {}
+        return ts;
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function ayahFromTimestamps(currentTime) {
+      if (!quranAyahTimestamps.length) return 0;
+      let found = quranAyahTimestamps[0].ayah;
+      for (let i = 0; i < quranAyahTimestamps.length; i++) {
+        if (currentTime + 0.05 >= quranAyahTimestamps[i].from) found = quranAyahTimestamps[i].ayah;
+        else break;
+      }
+      return found;
+    }
+
+    function highlightRecitingAyah(ayahNum, totalAyahs) {
+      currentRecitingIndex = ayahNum;
+      const span = document.getElementById('ayah-span-' + ayahNum);
+      if (!span) return;
+      if (span.classList.contains('bg-emerald-200')) {
+        const statusEl = document.getElementById('quran-audio-ayah-status');
+        if (statusEl) statusEl.textContent = 'Ayah ' + ayahNum + ' / ' + totalAyahs;
+        return;
+      }
+      document.querySelectorAll('.quran-ayah-span').forEach(el => {
+        el.classList.remove('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
+      });
+      span.classList.add('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
+      try { span.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      const statusEl = document.getElementById('quran-audio-ayah-status');
+      if (statusEl) statusEl.textContent = 'Ayah ' + ayahNum + ' / ' + totalAyahs;
+    }
+
+    let quranChapterAudioUrl = '';
+
     function changeQuranReciter(rec) {
       const player = document.getElementById('sound-reader-player');
-      if (player && isRecitingQuran) saveQuranAudioPosition(player);
+      if (player) saveQuranAudioPosition(player);
       selectedQuranReciter = rec;
       quranResumeTime = 0;
       quranLoadedUrl = '';
+      quranChapterAudioUrl = '';
+      quranAyahTimestamps = [];
       if (isRecitingQuran) {
         isRecitingQuran = false;
         toggleQuranRecitation();
@@ -3378,8 +3484,8 @@
 
       if (!player) return;
 
-      const desiredUrl = getQuranSurahUrl(selectedQuranReciter, currentReaderSurah);
-      const sameTrack = quranLoadedUrl === desiredUrl && player.src && player.src.indexOf(('00' + currentReaderSurah).slice(-3) + '.mp3') !== -1;
+      const fallbackUrl = getQuranSurahUrl(selectedQuranReciter, currentReaderSurah);
+      const sameTrack = !!player.src && (quranLoadedUrl === player.src || player.src.indexOf(('00' + currentReaderSurah).slice(-3) + '.mp3') !== -1 || player.src.indexOf('/' + currentReaderSurah + '.mp3') !== -1);
 
       if (sameTrack && !player.paused && !player.ended) {
         saveQuranAudioPosition(player);
@@ -3390,9 +3496,9 @@
         return;
       }
 
-      if (sameTrack && (player.paused || isRecitingQuran) && !player.ended) {
+      if (sameTrack && player.paused && !player.ended && (player.currentTime > 0.8 || quranResumeTime > 0.8 || isRecitingQuran)) {
         const resumeAt = (player.currentTime > 1) ? player.currentTime : (quranResumeTime || loadSavedQuranAudioPosition(currentReaderSurah, selectedQuranReciter));
-        if (resumeAt > 1 && Math.abs((player.currentTime || 0) - resumeAt) > 1.5) {
+        if (resumeAt > 1 && Math.abs((player.currentTime || 0) - resumeAt) > 1) {
           try { player.currentTime = resumeAt; } catch (e) {}
         }
         isRecitingQuran = true;
@@ -3403,21 +3509,24 @@
         return;
       }
 
-      const fullSurahUrl = desiredUrl;
-
       isRecitingQuran = true;
       if (sBtn) sBtn.classList.remove('hidden');
       if (statusEl) statusEl.classList.remove('hidden');
-      if (statusEl) statusEl.textContent = `Surah ${currentReaderSurah} Playing`;
+      if (statusEl) statusEl.textContent = 'Surah ' + currentReaderSurah;
 
-      const resumeAt = loadSavedQuranAudioPosition(currentReaderSurah, selectedQuranReciter);
-      player.src = fullSurahUrl;
-      quranLoadedUrl = fullSurahUrl;
-      player.load();
+      await loadQuranAyahTimestamps(selectedQuranReciter, currentReaderSurah);
+      const fullSurahUrl = quranChapterAudioUrl || fallbackUrl;
+      const resumeAt = loadSavedQuranAudioPosition(currentReaderSurah, selectedQuranReciter) || quranResumeTime;
+
+      if (player.src !== fullSurahUrl) {
+        player.src = fullSurahUrl;
+        quranLoadedUrl = fullSurahUrl;
+        player.load();
+      }
       player.volume = 1.0;
       player.onloadedmetadata = () => {
         const t = resumeAt || quranResumeTime;
-        if (t > 1 && t < (player.duration || Infinity)) {
+        if (t > 1 && t < (player.duration || Infinity) - 0.5) {
           try { player.currentTime = t; } catch (e) {}
         }
       };
@@ -3425,46 +3534,35 @@
       if ('mediaSession' in navigator) {
         try {
           navigator.mediaSession.metadata = new MediaMetadata({
-            title: `سورة ${SURAH_NAMES_AR[currentReaderSurah - 1] || currentReaderSurah}`,
+            title: 'سورة ' + (SURAH_NAMES_AR[currentReaderSurah - 1] || currentReaderSurah),
             artist: selectedQuranReciter === 'ar.alafasy' ? 'مشاري راشد العفاسي' : 'تلاوة القرآن الكريم - Alfaz todo',
             album: 'Holy Quran',
             artwork: [{ src: './ALFA LOGO icon.jpg', sizes: '192x192', type: 'image/jpeg' }]
           });
           navigator.mediaSession.setActionHandler('play', () => { player.play(); });
-          navigator.mediaSession.setActionHandler('pause', () => { player.pause(); });
+          navigator.mediaSession.setActionHandler('pause', () => { saveQuranAudioPosition(player); player.pause(); });
           navigator.mediaSession.setActionHandler('nexttrack', () => { nextSurahInReader(); });
           navigator.mediaSession.setActionHandler('previoustrack', () => { prevSurahInReader(); });
         } catch(e) {}
       }
 
-      document.querySelectorAll('.quran-ayah-span').forEach(el => {
-        el.classList.remove('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
-      });
-      const firstSpan = document.getElementById('ayah-span-1');
-      if (firstSpan) firstSpan.classList.add('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
-
       if (pIcon) pIcon.className = 'fas fa-pause';
       if (pText) pText.textContent = (currentLang === 'ar' ? 'إيقاف مؤقت' : 'Pause');
 
-      player.play().catch(e => {
+      player.play().catch(() => {
         showToast('⚠️ Tap screen to enable audio', 'error');
       });
 
       player.ontimeupdate = () => {
         if (!player.duration || player.duration <= 0) return;
-        if (Math.floor(player.currentTime) % 5 === 0) saveQuranAudioPosition(player);
+        saveQuranAudioPosition(player);
         const totalAyahs = document.querySelectorAll('.quran-ayah-span').length || 1;
-        const ratio = player.currentTime / player.duration;
-        const approxAyah = Math.min(totalAyahs, Math.max(1, Math.ceil(ratio * totalAyahs)));
-        const span = document.getElementById(`ayah-span-${approxAyah}`);
-        if (span && !span.classList.contains('bg-emerald-200')) {
-          document.querySelectorAll('.quran-ayah-span').forEach(el => {
-            el.classList.remove('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
-          });
-          span.classList.add('bg-emerald-200','dark:bg-emerald-800/80','ring-2','ring-emerald-500','font-bold');
-          try { span.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
-          if (statusEl) statusEl.textContent = `Ayah ~${approxAyah} / ${totalAyahs}`;
+        let ayah = ayahFromTimestamps(player.currentTime);
+        if (!ayah) {
+          const ratio = player.currentTime / player.duration;
+          ayah = Math.min(totalAyahs, Math.max(1, Math.ceil(ratio * totalAyahs)));
         }
+        highlightRecitingAyah(ayah, totalAyahs);
       };
 
       player.onended = () => {
@@ -3482,6 +3580,7 @@
       isRecitingQuran = false;
       quranResumeTime = 0;
       quranLoadedUrl = '';
+      currentRecitingIndex = -1;
       try { localStorage.removeItem('alfaz_quran_audio_pos'); } catch (e) {}
 
       const pIcon = document.getElementById('quran-play-icon');
