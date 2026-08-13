@@ -116,6 +116,12 @@
     .dark .wkday.active { background-color: #1D4ED8; color: white; }
     .recurrence-opt.active { background-color: #DBEAFE; color: #1D4ED8; font-weight: 600; }
     .dark .recurrence-opt.active { background-color: rgba(30, 58, 138, 0.5); color: #93C5FD; }
+    .occ-day { min-height: 3.1rem; border-radius: 0.7rem; border: 1px solid #e5e7eb; background: #fff; padding: 0.25rem; font-size: 12px; }
+    .dark .occ-day { background: #1f2937; border-color: #374151; }
+    .occ-day.today { border-color: #2563eb; background: #eff6ff; }
+    .dark .occ-day.today { background: #1e3a5f; }
+    .occ-day.has-event { box-shadow: inset 0 -3px 0 #10b981; }
+    .occ-day.selected { outline: 2px solid #059669; }
   </style>
 </head>
 
@@ -236,19 +242,17 @@
         <i class="fas fa-book-quran text-emerald-500 w-5 text-center"></i>
         <span data-i18n="library">Library</span>
       </button>
+      <button onclick="switchView('calendar-view', this); openOccasionsCalendar();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-calendar-alt text-rose-500 w-5 text-center"></i>
+        <span data-i18n="occasionsCalendar">Occasions</span>
+      </button>
       <button onclick="switchView('groups-view', this); loadGroups();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
         <i class="fas fa-users text-cyan-500 w-5 text-center"></i>
         <span data-i18n="groups">Groups</span>
       </button>
     </nav>
 
-    <!-- Notification Button -->
-    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
-      <button onclick="requestNotificationPermission()" id="notif-btn" class="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
-        <i class="fas fa-bell"></i>
-        <span data-i18n="enableNotif">Enable Notifications</span>
-      </button>
-      <button onclick="checkForAppUpdate()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
+    <!-- Notification Butt <button onclick="checkForAppUpdate()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-sync-alt"></i>
         <span data-i18n="refreshAppBtn">Refresh / Update App</span>
       </button>
@@ -818,6 +822,25 @@
             <span id="dhikr-finish-btn-text" data-i18n="finishDhikrBtn">I Have Finished Reading — Complete Task</span>
           </button>
         </div>
+    :text-gray-100 mb-6 dir-rtl" dir="rtl"></div>
+          <div id="dhikr-reader-trans" class="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed max-w-md mx-auto"></div>
+        </div>
+
+        <!-- Audio Reader Control in Dhikr Modal -->
+        <div class="my-3 flex items-center justify-center flex-shrink-0">
+          <button onclick="playDhikrReaderAudio()" id="dhikr-audio-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-sm">
+            <i class="fas fa-volume-up text-base"></i>
+            <span id="dhikr-audio-btn-text" data-i18n="listenDhikrBtn">Listen & Repeat (استماع وترديد)</span>
+          </button>
+        </div>
+
+        <!-- Action Button (Complete Task) -->
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <button onclick="finishDhikrReading()" id="dhikr-finish-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-base">
+            <i class="fas fa-check-circle text-lg"></i>
+            <span id="dhikr-finish-btn-text" data-i18n="finishDhikrBtn">I Have Finished Reading — Complete Task</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1012,7 +1035,12 @@
         taskToneLabel: "Work & Personal Task Tone", toneTaskChime: "Modern Productivity Chime",
         toneTaskSpoken: "Spoken Reminder Voice", testTone: "Test",
         prayerAzanSetting: "Prayer Azan Sound: 13 MP3s", changeAzanBtn: "Change Azan",
-        audioSettingsSaved: "✅ Audio settings saved!"
+        audioSettingsSaved: "✅ Audio settings saved!",
+        occasionsCalendar: "Occasions", occasionsSubtitle: "Islamic occasions & Egypt official holidays",
+        noOccasionsDay: "No listed occasions on this day.",
+        addOccasionToDay: "Add to My Day",
+        todayOccasion: "Today",
+        occIslamic: "Islamic", occNational: "National", occFestival: "Festival"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -1085,7 +1113,12 @@
         taskToneLabel: "نغمة مهام العمل والحياة", toneTaskChime: "نغمة إنجاز عصرية",
         toneTaskSpoken: "نطق اسم المهمة صوتياً", testTone: "تجربة",
         prayerAzanSetting: "أذان الصلاة: ١٣ صوتاً", changeAzanBtn: "تغيير الأذان",
-        audioSettingsSaved: "✅ تم حفظ إعدادات الأصوات!"
+        audioSettingsSaved: "✅ تم حفظ إعدادات الأصوات!",
+        occasionsCalendar: "المناسبات", occasionsSubtitle: "مناسبات إسلامية وعطلات مصر الرسمية",
+        noOccasionsDay: "لا توجد مناسبات مدرجة في هذا اليوم.",
+        addOccasionToDay: "إضافة إلى يومي",
+        todayOccasion: "اليوم",
+        occIslamic: "إسلامي", occNational: "وطني", occFestival: "احتفال"
       }
     };
 
@@ -1483,6 +1516,9 @@
       noDate.forEach(t => { html += renderTaskRow(t); });
       if (!html) html = `<div class="text-center py-16"><i class="fas fa-clipboard-list text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noTasksToday}</p></div>`;
       list.innerHTML = html;
+      const oldB = document.getElementById('today-occ-banner');
+      if (oldB) oldB.remove();
+      renderTodayOccasionBanner();
     }
 
     function renderUpcomingView() {
@@ -1665,7 +1701,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=17'; }, 400);
+      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=18'; }, 400);
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           return Promise.all(regs.map(r => r.update().catch(() => {})));
@@ -1899,6 +1935,8 @@
         closeAudioStudioModal();
       } else if (azAlertModal && !azAlertModal.classList.contains('hidden')) {
         closeAzanAlertModal(false);
+      } else if (document.getElementById('calendar-view') && !document.getElementById('calendar-view').classList.contains('hidden')) {
+        switchView('tasks-view');
       } else {
         const tasksView = document.getElementById('tasks-view');
         if (tasksView && tasksView.classList.contains('hidden')) {
@@ -3732,6 +3770,218 @@
       renderActiveSmartList();
     }
 
+    // ===== OCCASIONS CALENDAR =====
+    let occYear = new Date().getFullYear();
+    let occMonth = new Date().getMonth(); // 0-11
+    let occSelectedIso = getTodayString();
+    let occHijriMonthCache = {};
+
+    const ISLAMIC_OCCASIONS = [
+      { hm: 1, hd: 1, id: 'newhijri', type: 'islamic', en: 'Islamic New Year', ar: 'رأس السنة الهجرية' },
+      { hm: 1, hd: 10, id: 'ashura', type: 'islamic', en: 'Day of Ashura', ar: 'يوم عاشوراء' },
+      { hm: 3, hd: 12, id: 'mawlid', type: 'islamic', en: "Mawlid al-Nabi ﷺ", ar: 'المولد النبوي الشريف' },
+      { hm: 7, hd: 27, id: 'isra', type: 'islamic', en: "Isra' and Mi'raj", ar: 'الإسراء والمعراج' },
+      { hm: 8, hd: 15, id: 'nisf', type: 'festival', en: 'Mid-Shaʿban', ar: 'ليلة النصف من شعبان' },
+      { hm: 9, hd: 1, id: 'ramadan', type: 'islamic', en: 'First day of Ramadan', ar: 'أول أيام رمضان' },
+      { hm: 9, hd: 27, id: 'qadr', type: 'islamic', en: 'Laylat al-Qadr (commonly observed)', ar: 'ليلة القدر (الليلة الشائعة)' },
+      { hm: 10, hd: 1, id: 'fitr', type: 'islamic', en: 'Eid al-Fitr', ar: 'عيد الفطر المبارك' },
+      { hm: 12, hd: 9, id: 'arafah', type: 'islamic', en: 'Day of Arafah', ar: 'يوم عرفة' },
+      { hm: 12, hd: 10, id: 'adha', type: 'islamic', en: 'Eid al-Adha', ar: 'عيد الأضحى المبارك' },
+      { hm: 12, hd: 11, id: 'tash1', type: 'islamic', en: 'Days of Tashreeq', ar: 'أيام التشريق' },
+      { hm: 12, hd: 12, id: 'tash2', type: 'islamic', en: 'Days of Tashreeq', ar: 'أيام التشريق' },
+      { hm: 12, hd: 13, id: 'tash3', type: 'islamic', en: 'Days of Tashreeq', ar: 'أيام التشريق' }
+    ];
+
+    const EGYPT_NATIONAL = [
+      { gm: 1, gd: 7, id: 'coptxmas', type: 'national', en: 'Coptic Christmas (Egypt)', ar: 'عيد الميلاد المجيد (عطلة رسمية)' },
+      { gm: 1, gd: 25, id: 'jan25', type: 'national', en: 'January 25 Revolution / Police Day', ar: 'عيد ثورة ٢٥ يناير / عيد الشرطة' },
+      { gm: 4, gd: 25, id: 'sinai', type: 'national', en: 'Sinai Liberation Day', ar: 'عيد تحرير سيناء' },
+      { gm: 5, gd: 1, type: 'national', id: 'labour', en: 'Labour Day', ar: 'عيد العمال' },
+      { gm: 6, gd: 30, type: 'national', id: 'june30', en: 'June 30 Revolution', ar: 'ثورة ٣٠ يونيو' },
+      { gm: 7, gd: 23, type: 'national', id: 'july23', en: 'July 23 Revolution Day', ar: 'عيد ثورة ٢٣ يوليو' },
+      { gm: 10, gd: 6, type: 'national', id: 'oct6', en: 'Armed Forces Day', ar: 'عيد القوات المسلحة' }
+    ];
+
+    function occTypeLabel(type) {
+      if (type === 'national') return i18n[currentLang].occNational || 'National';
+      if (type === 'festival') return i18n[currentLang].occFestival || 'Festival';
+      return i18n[currentLang].occIslamic || 'Islamic';
+    }
+
+    async function loadHijriMonth(y, m0) {
+      const key = y + '-' + (m0 + 1);
+      if (occHijriMonthCache[key]) return occHijriMonthCache[key];
+      const map = {};
+      try {
+        const res = await fetch('https://api.aladhan.com/v1/gToHCalendar/' + (m0 + 1) + '/' + y);
+        const json = await res.json();
+        (json.data || []).forEach(row => {
+          const g = row.gregorian || {};
+          const h = row.hijri || {};
+          const iso = (g.date || '').split('-').reverse().join('-'); // API is DD-MM-YYYY
+          let giso = '';
+          if (g.date && g.date.indexOf('-') > -1) {
+            const p = g.date.split('-');
+            if (p[0].length === 2) giso = p[2] + '-' + p[1] + '-' + p[0];
+            else giso = g.date;
+          }
+          map[giso] = {
+            hd: parseInt(h.day, 10),
+            hm: parseInt(h.month && h.month.number, 10),
+            hy: parseInt(h.year, 10),
+            hName: (h.month && (currentLang === 'ar' ? h.month.ar : h.month.en)) || ''
+          };
+        });
+      } catch (e) {}
+      occHijriMonthCache[key] = map;
+      return map;
+    }
+
+    function eventsForIso(iso, hijriMap) {
+      const out = [];
+      if (!iso) return out;
+      const parts = iso.split('-').map(Number);
+      const gm = parts[1], gd = parts[2];
+      EGYPT_NATIONAL.forEach(ev => {
+        if (ev.gm === gm && ev.gd === gd) out.push(ev);
+      });
+      const h = hijriMap && hijriMap[iso];
+      if (h) {
+        ISLAMIC_OCCASIONS.forEach(ev => {
+          if (ev.hm === h.hm && ev.hd === h.hd) out.push(ev);
+        });
+      }
+      return out;
+    }
+
+    function openOccasionsCalendar() {
+      renderOccasionsCalendar();
+    }
+
+    function shiftOccasionsMonth(delta) {
+      occMonth += delta;
+      if (occMonth < 0) { occMonth = 11; occYear--; }
+      if (occMonth > 11) { occMonth = 0; occYear++; }
+      renderOccasionsCalendar();
+    }
+
+    async function renderOccasionsCalendar() {
+      const grid = document.getElementById('occasions-grid');
+      const wd = document.getElementById('occasions-weekdays');
+      const title = document.getElementById('occasions-month-title');
+      const hTitle = document.getElementById('occasions-hijri-title');
+      if (!grid) return;
+
+      const names = currentLang === 'ar'
+        ? ['ح','ن','ث','ر','خ','ج','س']
+        : ['S','M','T','W','T','F','S'];
+      if (wd) wd.innerHTML = names.map(n => '<div>' + n + '</div>').join('');
+
+      const monthName = new Date(occYear, occMonth, 1).toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' });
+      if (title) title.textContent = monthName;
+
+      const hijriMap = await loadHijriMonth(occYear, occMonth);
+      const hijriNames = {};
+      Object.values(hijriMap).forEach(h => { if (h && h.hName) hijriNames[h.hName] = true; });
+      if (hTitle) hTitle.textContent = Object.keys(hijriNames).join(' / ');
+
+      const first = new Date(occYear, occMonth, 1);
+      const startPad = first.getDay();
+      const daysInMonth = new Date(occYear, occMonth + 1, 0).getDate();
+      const todayIso = getTodayString();
+      let html = '';
+      for (let i = 0; i < startPad; i++) html += '<div></div>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const iso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        const evs = eventsForIso(iso, hijriMap);
+        const h = hijriMap[iso];
+        const cls = ['occ-day', iso === todayIso ? 'today' : '', evs.length ? 'has-event' : '', iso === occSelectedIso ? 'selected' : ''].filter(Boolean).join(' ');
+        html += '<button type="button" class="' + cls + '" onclick="selectOccasionDay(\'' + iso + '\')">' +
+          '<div class="font-bold text-gray-800 dark:text-gray-100">' + d + '</div>' +
+          (h ? '<div class="text-[10px] text-emerald-600">' + h.hd + '</div>' : '') +
+          (evs.length ? '<div class="text-[9px] text-amber-600 truncate">' + (currentLang==='ar'?evs[0].ar:evs[0].en) + '</div>' : '') +
+          '</button>';
+      }
+      grid.innerHTML = html;
+      if (!occSelectedIso.startsWith(occYear + '-' + String(occMonth + 1).padStart(2, '0'))) {
+        occSelectedIso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-01';
+      }
+      renderOccasionDayPanel(occSelectedIso, hijriMap);
+    }
+
+    function selectOccasionDay(iso) {
+      occSelectedIso = iso;
+      renderOccasionsCalendar();
+    }
+
+    function renderOccasionDayPanel(iso, hijriMap) {
+      const panel = document.getElementById('occasions-day-panel');
+      if (!panel) return;
+      const evs = eventsForIso(iso, hijriMap || {});
+      const h = hijriMap && hijriMap[iso];
+      const dateLabel = new Date(iso + 'T00:00:00').toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+      const hijriLabel = h ? (h.hd + ' ' + h.hName + ' ' + h.hy) : '';
+      if (!evs.length) {
+        panel.innerHTML = '<p class="text-sm font-bold text-gray-800 dark:text-white">' + dateLabel + '</p>' +
+          (hijriLabel ? '<p class="text-xs text-emerald-600 mb-2">' + hijriLabel + '</p>' : '') +
+          '<p class="text-sm text-gray-500">' + (i18n[currentLang].noOccasionsDay || '') + '</p>';
+        return;
+      }
+      panel.innerHTML = '<p class="text-sm font-bold text-gray-800 dark:text-white mb-1">' + dateLabel + '</p>' +
+        (hijriLabel ? '<p class="text-xs text-emerald-600 mb-3">' + hijriLabel + '</p>' : '') +
+        evs.map((ev, i) => {
+          const name = currentLang === 'ar' ? ev.ar : ev.en;
+          return '<div class="flex items-start justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-700">' +
+            '<div><span class="text-[10px] uppercase font-bold text-emerald-600">' + occTypeLabel(ev.type) + '</span>' +
+            '<p class="font-bold text-gray-800 dark:text-white">' + name + '</p></div>' +
+            '<button type="button" onclick="addOccasionToMyDay(\'' + iso + '\',' + i + ')" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap">' +
+            (i18n[currentLang].addOccasionToDay || 'Add') + '</button></div>';
+        }).join('');
+    }
+
+    function addOccasionToMyDay(iso, idx) {
+      loadHijriMonth(parseInt(iso.slice(0,4),10), parseInt(iso.slice(5,7),10)-1).then(map => {
+        const evs = eventsForIso(iso, map);
+        const ev = evs[idx];
+        if (!ev) return;
+        const name = currentLang === 'ar' ? ev.ar : ev.en;
+        const task = {
+          text: '📅 ' + name,
+          done: false,
+          due_date: iso,
+          due_time: null,
+          priority: 1,
+          status: 'pending',
+          library_id: 'occ_' + ev.id,
+          reminder_minutes: null,
+          reminder_fired: false
+        };
+        tasks.unshift(task);
+        localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+        syncTask(task, 'insert');
+        renderActiveSmartList();
+        showToast(i18n[currentLang].addedToMyDay || '✅ Added to My Day!', 'success');
+      });
+    }
+
+    async function renderTodayOccasionBanner() {
+      const list = document.getElementById('task-list');
+      if (!list || activeSmartList !== 'today') return;
+      const today = getTodayString();
+      const d = new Date();
+      const map = await loadHijriMonth(d.getFullYear(), d.getMonth());
+      const evs = eventsForIso(today, map);
+      if (!evs.length) return;
+      if (document.getElementById('today-occ-banner')) return;
+      const names = evs.map(e => currentLang === 'ar' ? e.ar : e.en).join(' · ');
+      const bar = document.createElement('div');
+      bar.id = 'today-occ-banner';
+      bar.className = 'mb-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl px-4 py-2.5 text-sm text-rose-800 dark:text-rose-200 flex items-center justify-between gap-2';
+      bar.innerHTML = '<span><i class="fas fa-calendar-day me-2"></i><strong>' + (i18n[currentLang].todayOccasion || 'Today') + ':</strong> ' + names + '</span>' +
+        '<button type="button" onclick="switchView(\'calendar-view\'); openOccasionsCalendar();" class="text-xs font-bold underline">' + (i18n[currentLang].occasionsCalendar || 'Calendar') + '</button>';
+      list.parentNode.insertBefore(bar, list);
+    }
+
     // ===== COMPASS =====
     let compassHeading = 0, dragStartX = null, dragStartAngle = null, compassInitDone = false, compassSensorAbsolute = false;
 
@@ -3835,6 +4085,14 @@
       if (!dial) return;
       currentDisplayHeading = smoothAngle(currentDisplayHeading, compassHeading, 0.2);
       dial.style.transform = `rotate(${currentDisplayHeading}deg)`;
+    }
+  </script>
+  <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
+  <audio id="azan-player" preload="none" playsinline></audio>
+  <audio id="sound-reader-player" preload="none" playsinline></audio>
+</body>
+</html>
+(${currentDisplayHeading}deg)`;
     }
   </script>
   <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
