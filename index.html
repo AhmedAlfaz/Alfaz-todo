@@ -27,6 +27,15 @@
   <style>
     /* Fallback if Tailwind CDN fails on mobile PWA */
     .hidden { display: none !important; }
+    #dhikr-reader-modal.hidden,
+    #dhikr-reader-modal[hidden],
+    #quran-reader-modal.hidden,
+    #audio-studio-modal.hidden,
+    #azan-alert-modal.hidden,
+    #task-alarm-modal.hidden,
+    #edit-task-modal.hidden,
+    #custom-dua-modal.hidden,
+    #khatmah-modal.hidden { display: none !important; visibility: hidden !important; pointer-events: none !important; }
     html, body { margin: 0; min-height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -819,7 +828,7 @@
     </div>
 
     <!-- ===== DHIKR / DUA FULL-TEXT READER MODAL ===== -->
-    <div id="dhikr-reader-modal" class="hidden fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
+    <div id="dhikr-reader-modal" hidden class="hidden fixed inset-0 bg-black/80 z-[95] items-center justify-center p-4" style="display:none">
       <div class="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col max-h-[85vh] overflow-hidden">
         <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div class="flex items-center gap-2">
@@ -1710,12 +1719,15 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const finish = () => setTimeout(() => { window.location.href = window.location.pathname + '?v=20'; }, 400);
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          return Promise.all(regs.map(r => r.update().catch(() => {})));
-        }).finally(finish);
-      } else finish();
+      const go = () => { window.location.href = window.location.pathname + '?v=21&t=' + Date.now(); };
+      const wipe = (typeof caches !== 'undefined')
+        ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
+        : Promise.resolve();
+      wipe.then(() => {
+        if ('serviceWorker' in navigator) {
+          return navigator.serviceWorker.getRegistrations().then(regs => Promise.all(regs.map(r => r.unregister().catch(() => {}))));
+        }
+      }).finally(() => setTimeout(go, 400));
     }
 
     let audioSettings = {
@@ -2988,7 +3000,9 @@
 
       const modal = document.getElementById('dhikr-reader-modal');
       if (modal) {
+        modal.hidden = false;
         modal.classList.remove('hidden');
+        modal.style.display = 'flex';
         pushMobileHistoryState('dhikr-reader');
       }
     }
