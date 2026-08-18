@@ -1,8 +1,11 @@
-const CACHE_NAME = 'alfaz-todo-v22';
+const CACHE_NAME = 'alfaz-todo-v23';
 const SHELL = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './brand/abdo-icon-192-wb.png',
+  './brand/abdo-icon-512-wb.png',
+  './brand/abdo-icon-512-maskable-wb.png'
 ];
 
 self.addEventListener('install', event => {

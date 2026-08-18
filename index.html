@@ -11,8 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="Alfaz todo">
   <title>Alfaz todo - Islamic Tasks & Reminders</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="ALFA LOGO icon.jpg" type="image/jpeg">
-  <link rel="apple-touch-icon" href="ALFA LOGO icon.jpg">
+  <link rel="icon" href="brand/abdo-icon-192-wb.png" type="image/png">
+  <link rel="apple-touch-icon" href="brand/abdo-icon-192-wb.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -1721,7 +1721,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=21&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=23&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -1895,8 +1895,8 @@
           body,
           requireInteraction: true,
           tag,
-          badge: '/ALFA LOGO icon.jpg',
-          icon: '/ALFA LOGO icon.jpg',
+          badge: 'brand/abdo-icon-192-wb.png',
+          icon: 'brand/abdo-icon-192-wb.png',
           vibrate: tag === 'prayer' ? [300, 100, 300] : [200, 100, 200]
         };
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -3678,7 +3678,7 @@
             title: 'سورة ' + (SURAH_NAMES_AR[currentReaderSurah - 1] || currentReaderSurah),
             artist: selectedQuranReciter === 'ar.alafasy' ? 'مشاري راشد العفاسي' : 'تلاوة القرآن الكريم - Alfaz todo',
             album: 'Holy Quran',
-            artwork: [{ src: './ALFA LOGO icon.jpg', sizes: '192x192', type: 'image/jpeg' }]
+            artwork: [{ src: './brand/abdo-icon-192-wb.png', sizes: '192x192', type: 'image/png' }]
           });
           navigator.mediaSession.setActionHandler('play', () => { player.play(); });
           navigator.mediaSession.setActionHandler('pause', () => { saveQuranAudioPosition(player); player.pause(); });

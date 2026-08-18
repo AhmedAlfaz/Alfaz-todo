@@ -5,15 +5,27 @@
   "start_url": "/Alfaz-todo/",
   "scope": "/Alfaz-todo/",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#2563EB",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "orientation": "any",
   "icons": [
     {
-      "src": "ALFA%20LOGO%20icon.jpg",
-      "sizes": "any",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "src": "brand/abdo-icon-192-wb.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "brand/abdo-icon-512-wb.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "brand/abdo-icon-512-maskable-wb.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
