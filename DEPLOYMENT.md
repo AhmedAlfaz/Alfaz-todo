@@ -28,7 +28,10 @@ Upload these files to your Hostinger root folder:
 ├── index.html              ← Main app (all HTML/CSS/JS in one file)
 ├── manifest.json           ← PWA manifest (installable app)
 ├── sw.js                   ← Service Worker (offline, caching, notifications)
-├── ALFA LOGO icon.jpg      ← App icon (used for PWA & favicon)
+├── brand/                  ← ABDO app icons (favicon, PWA, notifications)
+    ├── abdo-icon-192-wb.png
+    ├── abdo-icon-512-wb.png
+    └── abdo-icon-512-maskable-wb.png
 └── audio/                  ← Azan MP3 audio files
     ├── makkah.mp3
     ├── madinah.mp3
@@ -59,7 +62,7 @@ Upload these files to your Hostinger root folder:
      - `index.html`
      - `manifest.json`
      - `sw.js`
-     - `ALFA LOGO icon.jpg`
+   - Upload the `brand/` folder (contains the ABDO app icons)
    - Create an `audio/` folder inside `public_html/` and upload all MP3s there
 
 4. **Verify Upload**
@@ -104,7 +107,7 @@ After deployment, test these:
 ✅ **Main App:** `https://your-domain.com/index.html` (or just `https://your-domain.com/`)  
 ✅ **Manifest:** `https://your-domain.com/manifest.json`  
 ✅ **Service Worker:** `https://your-domain.com/sw.js`  
-✅ **Icon:** `https://your-domain.com/ALFA LOGO icon.jpg`  
+✅ **Icon:** `https://your-domain.com/brand/abdo-icon-192-wb.png`  
 ✅ **Audio:** `https://your-domain.com/audio/makkah.mp3`  
 
 ---
@@ -175,7 +178,7 @@ After deployment, test on a real mobile device:
 - Try incognito/private mode
 
 ### **Manifest/Icons Not Working**
-- Verify `ALFA LOGO icon.jpg` is in `public_html/` root
+- Verify `brand/abdo-icon-192-wb.png` is in `public_html/brand/`
 - Check file name spelling (case-sensitive on Linux)
 - Verify `manifest.json` path in HTML matches deployment
 

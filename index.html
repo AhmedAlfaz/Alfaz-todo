@@ -8,8 +8,8 @@
   <meta name="description" content="Islamic tasks, prayer reminders, and Qibla direction">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Alfaz todo">
-  <title>Alfaz todo - Islamic Tasks & Reminders</title>
+  <meta name="apple-mobile-web-app-title" content="ABDO">
+  <title>ABDO - Islamic Tasks & Reminders</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="brand/abdo-icon-192-wb.png" type="image/png">
   <link rel="apple-touch-icon" href="brand/abdo-icon-192-wb.png">
@@ -141,7 +141,7 @@
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
         <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-2xl shadow-lg mx-auto mb-4">A</div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Alfaz todo</h1>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">ABDO</h1>
         <p class="text-gray-500 dark:text-gray-400 mt-2" data-i18n="authTagline">Islamic tasks, prayer reminders, and more</p>
       </div>
 
@@ -214,7 +214,7 @@
       <div class="flex items-center space-x-3">
         <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-lg shadow-md">A</div>
         <div>
-          <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400">Alfaz todo</h3>
+          <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400">ABDO</h3>
           <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" id="live-clock">00:00:00</p>
         </div>
       </div>
@@ -1721,7 +1721,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=23&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=24&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2427,7 +2427,7 @@
             : (i18n[currentLang].taskReminder || '⏰ Reminder: {task}').replace('{task}', t.text);
 
           showToast(msg, 'prayer');
-          showBrowserNotification('🔔 Alfaz todo', msg, 'alfaz-task-' + (t.id || idx));
+          showBrowserNotification('🔔 ABDO', msg, 'alfaz-task-' + (t.id || idx));
 
           const isSpiritual = !!t.library_id;
           const tone = isSpiritual ? audioSettings.adhkar_tone : audioSettings.task_tone;
@@ -2494,7 +2494,7 @@
     function testReminder() {
       const msg = i18n[currentLang].taskReminder.replace('{task}', 'Test Reminder');
       showToast(msg, 'prayer');
-      showBrowserNotification('🔔 Alfaz todo', msg);
+      showBrowserNotification('🔔 ABDO', msg);
       playAudioTone(audioSettings.task_tone, 'Test Reminder', false);
     }
 
@@ -2604,7 +2604,7 @@
       requestWakeLock();
 
       let msg = i18n[currentLang].prayerAlert.replace('{prayer}', pN);
-      showBrowserNotification('🕌 Alfaz todo', msg, 'prayer');
+      showBrowserNotification('🕌 ABDO', msg, 'prayer');
     }
 
     function startAzanAudio() {
@@ -3676,7 +3676,7 @@
         try {
           navigator.mediaSession.metadata = new MediaMetadata({
             title: 'سورة ' + (SURAH_NAMES_AR[currentReaderSurah - 1] || currentReaderSurah),
-            artist: selectedQuranReciter === 'ar.alafasy' ? 'مشاري راشد العفاسي' : 'تلاوة القرآن الكريم - Alfaz todo',
+            artist: selectedQuranReciter === 'ar.alafasy' ? 'مشاري راشد العفاسي' : 'تلاوة القرآن الكريم - ABDO',
             album: 'Holy Quran',
             artwork: [{ src: './brand/abdo-icon-192-wb.png', sizes: '192x192', type: 'image/png' }]
           });

@@ -118,5 +118,5 @@ Stop immediately and discuss with me when:
 
 ## 9. Project Context
 
-- **App name:** Alfaz todo
+- **App name:** ABDO
 - Full project details, stack, conventions, file boundaries → see `AGENTS.md`

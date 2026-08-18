@@ -2,14 +2,14 @@
 
 ## Project
 
-Static single-page PWA: **Alfaz todo** — Islamic tasks, prayer reminders, and Qibla compass. No build system, no bundler, no package manager. Plain HTML/CSS/JS served directly.
+Static single-page PWA: **ABDO** — Islamic tasks, prayer reminders, and Qibla compass. No build system, no bundler, no package manager. Plain HTML/CSS/JS served directly.
 
 ## Structure
 
 - `index.html` — main app (all HTML, CSS, JS in one file)
 - `manifest.json` — PWA manifest (app name, icons, theme)
 - `sw.js` — service worker (caching, offline, notifications)
-- `ALFA LOGO icon.jpg` — app logo used for favicon and PWA icon
+- `brand/` — ABDO app icons: `abdo-icon-192-wb.png`, `abdo-icon-512-wb.png`, `abdo-icon-512-maskable-wb.png` (favicon, PWA manifest, notifications)
 - `2/index2.html` — alternate/backup version of the same app
 
 ## Tech Stack
