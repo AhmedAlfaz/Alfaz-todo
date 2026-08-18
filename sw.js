@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alfaz-todo-v24';
+const CACHE_NAME = 'alfaz-todo-v25';
 const SHELL = [
   './',
   './index.html',
@@ -56,8 +56,9 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      const appPath = self.location.pathname;
       for (let client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
+        if (new URL(client.url).pathname === appPath && 'focus' in client) {
           return client.focus();
         }
       }
