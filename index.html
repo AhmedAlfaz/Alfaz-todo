@@ -100,6 +100,14 @@
     button { cursor: pointer; }
     .menu-fab { position: fixed; top: 1rem; left: 1rem; }
     [dir="rtl"] .menu-fab { left: auto; right: 1rem; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 35; display: flex; background: #fff; border-top: 1px solid #e5e7eb; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -2px 10px rgba(0,0,0,.05); }
+    .dark .bottom-nav { background: #1f2937; border-top-color: #374151; }
+    .bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 8px 0 6px; color: #9ca3af; font-size: 10px; font-weight: 600; }
+    .bnav-item i { font-size: 17px; }
+    .bnav-item.active { color: #2563eb; }
+    .dark .bnav-item.active { color: #93c5fd; }
+    main { padding-bottom: 68px; }
+    @media (min-width: 768px) { main { padding-bottom: 24px; } }
     #sidebar { width: 16rem; background: #fff; border-right: 1px solid #e5e7eb; }
     [dir="rtl"] #sidebar { border-right: none; border-left: 1px solid #e5e7eb; }
     main { flex: 1; background: #f9fafb; }
@@ -435,8 +443,6 @@
       <!-- Task List -->
       <div id="task-list" class="flex-1 overflow-y-auto space-y-1"></div>
 
-      <!-- Home Planner Card -->
-      <div id="home-planner-card" class="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm"></div>
     </div>
 
     <!-- ===== 2. PRAYER TIMES ===== -->
@@ -1279,11 +1285,13 @@
       document.getElementById('sidebar').classList.add('hidden');
       document.getElementById('mobile-overlay').classList.add('hidden');
       document.querySelector('main').classList.add('hidden');
+      const nav = document.getElementById('bottom-nav'); if (nav) nav.classList.add('hidden');
     }
     function showApp() {
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('sidebar').classList.remove('hidden');
       document.querySelector('main').classList.remove('hidden');
+      const nav = document.getElementById('bottom-nav'); if (nav) nav.classList.remove('hidden');
       updateUserUI();
     }
     function updateUserUI() {
@@ -1835,7 +1843,6 @@
       }
       checkSession();
       loadPlans();
-      renderHomePlannerCard();
       populatePlannerYearSelect();
       showInstallButtonAlways();
     });
@@ -2066,7 +2073,6 @@
       if (ameta) ameta.setAttribute('content', appDisplayName(lang));
       document.title = lang === 'ar' ? 'عبده - المهام والتذكيرات الإسلامية' : 'ABDO - Islamic Tasks & Reminders';
       document.getElementById('date-display').innerText = new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday:'long', month:'long', day:'numeric' });
-      if (typeof renderHomePlannerCard === 'function') renderHomePlannerCard();
     }
 
     // ===== MOBILE BACK BUTTON (HTML5 HISTORY API) =====
@@ -2121,10 +2127,10 @@
       if (target) target.classList.remove('hidden');
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (btn) btn.classList.add('active');
+      document.querySelectorAll('.bnav-item').forEach(el => el.classList.toggle('active', el.getAttribute('data-view') === viewId));
       if (sidebarOpen) toggleSidebar();
       if (viewId === 'qibla-view') initCompass();
       if (viewId === 'calendar-view') { openOccasionsCalendar(); populatePlannerYearSelect(); }
-      if (viewId === 'tasks-view' && typeof renderHomePlannerCard === 'function') renderHomePlannerCard();
       if (viewId !== 'tasks-view') pushMobileHistoryState(viewId);
     }
 
@@ -4366,7 +4372,6 @@
       savePlans();
       closePlanModal();
       renderOccasionsCalendar();
-      renderHomePlannerCard();
       showToast('✅ ' + (i18n[currentLang].planSaved || 'Plan saved!'), 'success');
     }
     function deletePlan(id) {
@@ -4374,62 +4379,8 @@
       userPlans = (userPlans || []).filter(p => p.id !== id);
       savePlans();
       renderOccasionsCalendar();
-      renderHomePlannerCard();
       showToast('🗑 ' + (i18n[currentLang].planDeleted || 'Plan deleted'), 'info');
     }
-    async function renderHomePlannerCard() {
-      const card = document.getElementById('home-planner-card');
-      if (!card) return;
-      const now = new Date();
-      const y = now.getFullYear(), m = now.getMonth();
-      const map = await loadHijriMonth(y, m);
-      const todayIso = getTodayString();
-      const monthName = now.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' });
-      const names = currentLang === 'ar' ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-      const first = new Date(y, m, 1);
-      const startPad = first.getDay();
-      const daysInMonth = new Date(y, m + 1, 0).getDate();
-      let cells = '';
-      for (let i = 0; i < startPad; i++) cells += '<div></div>';
-      for (let d = 1; d <= daysInMonth; d++) {
-        const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-        const evs = eventsForIso(iso, map);
-        const pls = plansForIso(iso);
-        const isToday = iso === todayIso;
-        cells += '<button type="button" onclick="switchView(\'calendar-view\');openOccasionsCalendar();selectOccasionDay(\'' + iso + '\')" class="h-8 rounded-lg flex flex-col items-center justify-center ' + (isToday ? 'bg-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700') + '">' +
-          '<span class="text-[11px] font-bold ' + (isToday ? 'text-white' : 'text-gray-700 dark:text-gray-300') + '">' + d + '</span>' +
-          ((evs.length || pls.length) ? '<span class="flex gap-0.5 mt-0.5">' + (evs.length ? '<span class="w-1 h-1 rounded-full bg-amber-500"></span>' : '') + (pls.length ? '<span class="w-1 h-1 rounded-full bg-blue-500"></span>' : '') + '</span>' : '<span class="h-1.5"></span>') +
-          '</button>';
-      }
-      let next = null, nextLabel = '';
-      const monthCache = {};
-      const d0 = new Date();
-      for (let i = 0; i <= 45 && !next; i++) {
-        const dd = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i);
-        const iso = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
-        const mk = dd.getFullYear() + '-' + (dd.getMonth() + 1);
-        if (!monthCache[mk]) monthCache[mk] = await loadHijriMonth(dd.getFullYear(), dd.getMonth());
-        const evs = eventsForIso(iso, monthCache[mk]);
-        const pls = plansForIso(iso);
-        const label = evs.length ? (currentLang === 'ar' ? evs[0].ar : evs[0].en) : (pls.length ? pls[0].title : '');
-        if (label) { next = dd; nextLabel = label; }
-      }
-      const upNextHtml = next
-        ? '<i class="fas fa-arrow-right me-1"></i>' + (i18n[currentLang].upNext || 'Up next') + ': <strong>' + escapeHtml(nextLabel) + '</strong> · ' + next.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' })
-        : (i18n[currentLang].noUpcomingPlans || 'Nothing planned ahead');
-      card.innerHTML =
-        '<div class="flex items-center justify-between mb-2">' +
-          '<h3 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-calendar-alt text-blue-500 me-2"></i>' + (i18n[currentLang].plannerTitle || 'Planner') + '</h3>' +
-          '<span class="text-xs text-gray-400">' + monthName + '</span>' +
-        '</div>' +
-        '<div class="grid grid-cols-7 gap-1 mb-1 text-center text-[10px] font-bold text-gray-400">' + names.map(n => '<div>' + n + '</div>').join('') + '</div>' +
-        '<div class="grid grid-cols-7 gap-1 mb-2">' + cells + '</div>' +
-        '<div class="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">' +
-          '<p class="text-xs text-gray-500 truncate">' + upNextHtml + '</p>' +
-          '<button type="button" onclick="switchView(\'calendar-view\');openOccasionsCalendar();" class="text-xs font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap flex-shrink-0">' + (i18n[currentLang].openPlanner || 'Open Planner') + ' <i class="fas fa-chevron-right"></i></button>' +
-        '</div>';
-    }
-
     async function renderTodayOccasionBanner() {
       const list = document.getElementById('task-list');
       if (!list || activeSmartList !== 'today') return;
@@ -4556,5 +4507,25 @@
   <!-- Permanent HTML Audio Elements for Mobile Autoplay & Recitation -->
   <audio id="azan-player" preload="none" playsinline></audio>
   <audio id="sound-reader-player" preload="none" playsinline></audio>
+
+  <!-- Bottom Navigation Bar -->
+  <nav id="bottom-nav" class="bottom-nav hidden">
+    <button type="button" data-view="tasks-view" onclick="switchView('tasks-view')" class="bnav-item active">
+      <i class="fas fa-sun text-amber-400"></i>
+      <span data-i18n="myDay">My Day</span>
+    </button>
+    <button type="button" data-view="calendar-view" onclick="switchView('calendar-view'); openOccasionsCalendar();" class="bnav-item">
+      <i class="fas fa-calendar-alt text-blue-500"></i>
+      <span data-i18n="plannerTitle">Planner</span>
+    </button>
+    <button type="button" data-view="prayers-view" onclick="switchView('prayers-view')" class="bnav-item">
+      <i class="fas fa-mosque text-green-500"></i>
+      <span data-i18n="prayerReminders">Prayers</span>
+    </button>
+    <button type="button" data-view="library-view" onclick="switchView('library-view'); renderLibrary('all');" class="bnav-item">
+      <i class="fas fa-book-quran text-emerald-500"></i>
+      <span data-i18n="library">Library</span>
+    </button>
+  </nav>
 </body>
 </html>
