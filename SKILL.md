@@ -90,6 +90,11 @@ Stop immediately and discuss with me when:
 - [2026-07-29] Lesson: When dynamically changing an HTML5 <audio> element src on mobile browsers (Android Chrome/Safari), calling .play() immediately without calling .load() first causes silent playback failures. Always call player.load() before player.play().
 - [2026-07-29] Lesson: JavaScript timers setInterval(..., 1000) checking minute rollovers miss reminders created for the current minute. Always run checkTaskReminders(now) immediately after saving a task and 3 seconds after page load.
 - [2026-07-29] Lesson: Web Speech API stops recognition by default after a pause (continuous = false) and setting input.value programmatically does not fire DOM oninput events. Always set recognition.continuous = true and explicitly invoke input change handlers on speech results.
+- [2026-08-18] Lesson: Mobile audio autoplay fails silently unless: (1) Web Audio Context is unlocked via a user gesture, (2) audio.muted = false before play(), (3) audio.currentTime is reset before each play(), (4) playPromise is awaited with .catch() to log errors. Always use Promise-based .play() not fire-and-forget, and provide fallback button.
+- [2026-08-18] Lesson: Screen Wake Lock API (navigator.wakeLock.request('screen')) is essential for locked-phone alerts. Add requestWakeLock() on alert trigger and releaseWakeLock() when closing. Transforms user experience on Android; iOS 16+ also supports it.
+- [2026-08-18] Lesson: Vibration patterns distinguish alerts: strong triple pulse [300,100,300] for prayers, gentler [200,100,200] for tasks. Users recognize alert type by vibration alone without looking at screen.
+- [2026-08-18] Lesson: Notification API vibrate option must match the alert pattern. Add badge and icon so notifications stand out on lock screen. Use requireInteraction: true to prevent auto-dismiss before user reads.
+- [2026-08-18] Lesson: Service Worker notification click should focus existing windows (includeUncontrolled: true) instead of opening duplicates. Better UX: single app instance persists state.
 
 ## 7. Infrastructure Constraints (Supabase Free Tier)
 

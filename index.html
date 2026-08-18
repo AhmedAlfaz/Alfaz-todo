@@ -1889,13 +1889,25 @@
         btn.disabled = true;
       }
     }
-    function showBrowserNotification(title, body) {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification(title, { body, requireInteraction: true, tag: 'alfaz-prayer', icon: '/ALFA LOGO icon.jpg' });
-        });
-      } else if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body, requireInteraction: true, tag: 'alfaz-prayer' });
+    function showBrowserNotification(title, body, tag = 'alfaz-alert') {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const options = {
+          body,
+          requireInteraction: true,
+          tag,
+          badge: '/ALFA LOGO icon.jpg',
+          icon: '/ALFA LOGO icon.jpg',
+          vibrate: tag === 'prayer' ? [300, 100, 300] : [200, 100, 200]
+        };
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification(title, options);
+          }).catch(() => {
+            if ('Notification' in window) new Notification(title, options);
+          });
+        } else {
+          try { new Notification(title, options); } catch(e) {}
+        }
       }
     }
 
@@ -2407,6 +2419,9 @@
             pushMobileHistoryState('task-alarm-modal');
           }
 
+          vibrate([200, 100, 200, 100, 200]);
+          requestWakeLock();
+
           const msg = remindMins === 0
             ? (i18n[currentLang].taskDueNow || '⏰ {task} is due now!').replace('{task}', t.text)
             : (i18n[currentLang].taskReminder || '⏰ Reminder: {task}').replace('{task}', t.text);
@@ -2516,6 +2531,27 @@
       } catch(e) {}
     }
 
+    let wakeLock = null;
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; });
+        } catch(e) {}
+      }
+    }
+    function releaseWakeLock() {
+      if (wakeLock) {
+        wakeLock.release().catch(() => {});
+        wakeLock = null;
+      }
+    }
+    function vibrate(pattern) {
+      if ('vibrate' in navigator) {
+        navigator.vibrate(pattern);
+      }
+    }
+
     document.addEventListener('touchstart', unlockMobileAudio, { once: true });
     document.addEventListener('click', unlockMobileAudio, { once: true });
 
@@ -2564,9 +2600,11 @@
       }
 
       startAzanAudio();
+      vibrate([300, 100, 300]);
+      requestWakeLock();
 
       let msg = i18n[currentLang].prayerAlert.replace('{prayer}', pN);
-      showBrowserNotification('🕌 Alfaz todo', msg);
+      showBrowserNotification('🕌 Alfaz todo', msg, 'prayer');
     }
 
     function startAzanAudio() {
@@ -2575,13 +2613,21 @@
       const src = azanSources[document.getElementById('azan-select')?.value || 0];
       azPlayer.src = src;
       azPlayer.volume = 1.0;
-      azPlayer.play().then(() => {
-        const lBtn = document.getElementById('azan-listen-btn');
-        if (lBtn) lBtn.classList.add('hidden');
-      }).catch(() => {
-        const lBtn = document.getElementById('azan-listen-btn');
-        if (lBtn) lBtn.classList.remove('hidden');
-      });
+      azPlayer.muted = false;
+      azPlayer.currentTime = 0;
+      requestWakeLock();
+      vibrate([200, 100, 200, 100, 200]);
+      const playPromise = azPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          const lBtn = document.getElementById('azan-listen-btn');
+          if (lBtn) lBtn.classList.add('hidden');
+        }).catch(err => {
+          const lBtn = document.getElementById('azan-listen-btn');
+          if (lBtn) lBtn.classList.remove('hidden');
+          console.warn('Audio autoplay failed:', err);
+        });
+      }
     }
 
     function silenceAzanAudio() {
@@ -2594,6 +2640,7 @@
         currentAudio.pause();
         currentAudio.currentTime = 0;
       }
+      releaseWakeLock();
       showToast('⏹ Azan silenced', 'info');
     }
 

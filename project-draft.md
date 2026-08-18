@@ -111,6 +111,7 @@
 - [2026-07-29] Phase 2.5 COMPLETE — Implemented 3-Tier Audio Suite with Spoken Adhkar/Quranic reminders via Web Speech API, harmonic chimes via Web Audio API, Audio Tones Studio modal, and 3-Layer Mobile Reminder Architecture.
 - [2026-07-29] Mobile Voice & Reminder Fix — Added Arabic-Indic numeral normalization for voice NLP date/time detection, continuous speech listening, and guaranteed task alert firing when due_time is set.
 - [2026-08-14] Phase 2.5 close-out — Real Hafs/Warsh/Qalun mushaf text (Quran Complex via quran-api), Quran pause/resume + ayah timestamps, Quranic Adhkar recitation audio. User will live-test azan + task reminders.
+- [2026-08-18] Phase 2.5 Step 5 COMPLETE — Mobile Alert System fully enhanced: (1) Screen Wake Lock API keeps screen ON during alerts on locked phones, (2) Vibration patterns distinguish alerts (strong triple pulse for prayer, gentler double for tasks), (3) Enhanced audio autoplay with Web Audio Context unlock + better error handling, (4) Service Worker notification improved with badge icons + smart window focusing, (5) Deployment package ready for Hostinger with comprehensive DEPLOYMENT.md guide. Ready to test on real mobile devices.
 
 ## Supabase Free Tier Constraints
 
