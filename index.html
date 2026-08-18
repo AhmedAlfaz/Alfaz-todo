@@ -280,10 +280,6 @@
         <i class="fas fa-mosque text-green-500 w-5 text-center"></i>
         <span data-i18n="prayerReminders">Prayer Reminders</span>
       </button>
-      <button onclick="switchView('qibla-view', this)" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-        <i class="fas fa-kaaba text-purple-500 w-5 text-center"></i>
-        <span data-i18n="qiblaNavigator">Qibla Navigator</span>
-      </button>
       <button onclick="switchView('library-view', this); renderLibrary('all');" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
         <i class="fas fa-book-quran text-emerald-500 w-5 text-center"></i>
         <span data-i18n="library">Library</span>
@@ -506,10 +502,9 @@
           <i class="fas fa-clock me-1"></i> Loading prayer times...
         </p>
       </div>
-    </div>
 
-    <!-- ===== 3. QIBLA NAVIGATOR ===== -->
-    <div id="qibla-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col items-center pt-14 md:pt-10">
+      <!-- Qibla Navigator (merged into Prayer Reminders) -->
+      <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 flex flex-col items-center">
       <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 text-center w-full" data-i18n="qiblaDir">Qibla Direction</h2>
       <p class="text-gray-500 dark:text-gray-400 text-center w-full mb-8" id="qibla-info" data-i18n="calculating">Calculating coordinates...</p>
 
@@ -548,6 +543,7 @@
       <button onclick="requestDeviceOrientation()" class="mt-8 bg-gray-800 dark:bg-gray-700 text-white px-6 py-3 rounded-xl shadow-md hover:bg-gray-900 dark:hover:bg-gray-600 transition flex items-center">
         <i class="fas fa-sync-alt me-2"></i> <span data-i18n="calibrateCompass">Calibrate Compass (Mobile)</span>
       </button>
+    </div>
     </div>
 
     <!-- ===== 3.5. LIBRARY ===== -->
@@ -1849,7 +1845,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=29&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=30&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2129,7 +2125,7 @@
       if (btn) btn.classList.add('active');
       document.querySelectorAll('.bnav-item').forEach(el => el.classList.toggle('active', el.getAttribute('data-view') === viewId));
       if (sidebarOpen) toggleSidebar();
-      if (viewId === 'qibla-view') initCompass();
+      if (viewId === 'prayers-view') initCompass();
       if (viewId === 'calendar-view') { openOccasionsCalendar(); populatePlannerYearSelect(); }
       if (viewId !== 'tasks-view') pushMobileHistoryState(viewId);
     }
