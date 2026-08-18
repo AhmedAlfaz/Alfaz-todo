@@ -22,7 +22,26 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  // Supabase loader with CDN fallback (jsdelivr is sometimes blocked/slow on mobile networks)
+  (function () {
+    function loadScript(src, onOk, onErr) {
+      var s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = onOk; s.onerror = onErr;
+      document.head.appendChild(s);
+    }
+    function tryLoad(i) {
+      var urls = [
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        'https://unpkg.com/@supabase/supabase-js@2'
+      ];
+      if (i >= urls.length) return;
+      loadScript(urls[i], function () { window.__supabaseReady = true; }, function () { tryLoad(i + 1); });
+    }
+    tryLoad(0);
+  })();
+</script>
 
   <style>
     /* Fallback if Tailwind CDN fails on mobile PWA */
@@ -170,6 +189,9 @@
           <span data-i18n="noAccount">Don't have an account?</span>
           <button onclick="showSignup()" class="text-blue-600 dark:text-blue-400 font-medium hover:underline" data-i18n="signUp">Sign Up</button>
         </p>
+        <p class="text-center mt-4">
+          <button onclick="continueAsGuest()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-sm font-medium underline" data-i18n="continueGuest">Continue without an account</button>
+        </p>
       </div>
 
       <!-- Signup Form -->
@@ -268,6 +290,10 @@
 
     <!-- Notification Button -->
     <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+      <button onclick="installApp()" id="install-app-btn" class="hidden w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-download"></i>
+        <span data-i18n="installApp">Install App</span>
+      </button>
       <button onclick="requestNotificationPermission()" id="notif-btn" class="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-bell"></i>
         <span data-i18n="enableNotif">Enable Notifications</span>
@@ -1063,7 +1089,13 @@
         noOccasionsDay: "No listed occasions on this day.",
         addOccasionToDay: "Add to My Day",
         todayOccasion: "Today",
-        occIslamic: "Islamic", occNational: "National", occFestival: "Festival"
+        occIslamic: "Islamic", occNational: "National", occFestival: "Festival",
+        installApp: "Install App", installIOSHint: "On iPhone/iPad: open in Safari, tap Share ⬆️, then 'Add to Home Screen'",
+        installBrowserHint: "Use your browser menu: 'Add to Home screen' / 'Install app'",
+        appInstalled: "App installed!",
+        continueGuest: "Continue without an account",
+        authNoNetwork: "Sign-in needs an internet connection. You can still use the app without an account.",
+        authOfflineHint: "App works offline without an account."
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -1141,7 +1173,14 @@
         noOccasionsDay: "لا توجد مناسبات مدرجة في هذا اليوم.",
         addOccasionToDay: "إضافة إلى يومي",
         todayOccasion: "اليوم",
-        occIslamic: "إسلامي", occNational: "وطني", occFestival: "احتفال"
+        occIslamic: "إسلامي", occNational: "وطني", occFestival: "احتفال",
+        installApp: "تثبيت التطبيق",
+        installIOSHint: "على الآيفون/الآيباد: افتح في سفاري، اضغط مشاركة ⬆️ ثم 'إضافة إلى الشاشة الرئيسية'",
+        installBrowserHint: "من قائمة المتصفح اختر: 'إضافة إلى الشاشة الرئيسية' / 'تثبيت التطبيق'",
+        appInstalled: "تم تثبيت التطبيق!",
+        continueGuest: "المتابعة بدون حساب",
+        authNoNetwork: "تسجيل الدخول يحتاج اتصالاً بالإنترنت. يمكنك استخدام التطبيق بدون حساب.",
+        authOfflineHint: "التطبيق يعمل دون اتصال بدون حساب."
       }
     };
 
@@ -1157,16 +1196,35 @@
     const SUPABASE_URL = 'https://fxceebqojhfupsmadswl.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4Y2VlYnFvamhmdXBzbWFkc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxOTMwNzgsImV4cCI6MjA5OTc2OTA3OH0.Rnp2ByI9FM8hrX0KqlftIvcpax8jFrI_dQcG3cq6io8';
     let db = null;
-    try {
-      if (typeof supabase !== 'undefined') {
-        db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      }
-    } catch (e) { db = null; }
     let currentUser = null;
+    function ensureSupabase(maxWaitMs) {
+      return new Promise(resolve => {
+        if (typeof supabase !== 'undefined') {
+          if (!db) { try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {} }
+          return resolve(!!db);
+        }
+        const start = Date.now();
+        const iv = setInterval(() => {
+          if (typeof supabase !== 'undefined') {
+            clearInterval(iv);
+            if (!db) { try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {} }
+            resolve(!!db);
+          } else if (Date.now() - start > maxWaitMs) {
+            clearInterval(iv);
+            resolve(false);
+          }
+        }, 100);
+      });
+    }
 
     async function checkSession() {
+      const ok = await ensureSupabase(6000);
+      if (!ok) {
+        showApp();
+        if (typeof showToast === 'function') setTimeout(() => showToast('ℹ️ ' + (i18n[currentLang].authOfflineHint || 'App works offline without an account.'), 'info'), 1200);
+        return;
+      }
       try {
-        if (!db) { showApp(); return; }
         const { data: { session } } = await db.auth.getSession();
         if (session) { currentUser = session.user; showApp(); loadUserTasks(); } else { showAuth(); }
       } catch (e) { showApp(); }
@@ -1192,6 +1250,7 @@
       document.getElementById('user-email').textContent = currentUser.email;
       document.getElementById('user-section').classList.remove('hidden');
     }
+    function continueAsGuest() { showApp(); }
     function showLogin() {
       document.getElementById('login-form').classList.remove('hidden');
       document.getElementById('signup-form').classList.add('hidden');
@@ -1201,6 +1260,10 @@
       document.getElementById('signup-form').classList.remove('hidden');
     }
     async function handleLogin() {
+      if (!db && !(await ensureSupabase(6000))) {
+        showToast('⚠️ ' + (i18n[currentLang].authNoNetwork || 'Sign-in needs an internet connection. You can still use the app without an account.'), 'error');
+        return;
+      }
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
       if (!email || !password) { showToast('⚠️ Please fill all fields', 'error'); return; }
@@ -1212,6 +1275,10 @@
       currentUser = data.user; showApp(); loadUserTasks();
     }
     async function handleSignup() {
+      if (!db && !(await ensureSupabase(6000))) {
+        showToast('⚠️ ' + (i18n[currentLang].authNoNetwork || 'Sign-up needs an internet connection. You can still use the app without an account.'), 'error');
+        return;
+      }
       const name = document.getElementById('signup-name').value.trim();
       const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value;
@@ -1722,11 +1789,12 @@
         }).catch(() => {});
       }
       checkSession();
+      showInstallButtonAlways();
     });
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=27&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=28&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2540,6 +2608,41 @@
           }).catch(() => {});
         }
       } catch(e) {}
+    }
+
+    let deferredInstallPrompt = null;
+    const isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const b = document.getElementById('install-app-btn');
+      if (b) b.classList.remove('hidden');
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      const b = document.getElementById('install-app-btn');
+      if (b) b.classList.add('hidden');
+      showToast('✅ ' + (i18n[currentLang].appInstalled || 'App installed!'), 'success');
+    });
+    function showInstallButtonAlways() {
+      if (isIOSDevice) {
+        const b = document.getElementById('install-app-btn');
+        if (b) b.classList.remove('hidden');
+      }
+    }
+    function installApp() {
+      const b = document.getElementById('install-app-btn');
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(choice => {
+          if (choice.outcome === 'accepted') { if (b) b.classList.add('hidden'); }
+          deferredInstallPrompt = null;
+        });
+      } else if (isIOSDevice) {
+        showToast('📲 ' + (i18n[currentLang].installIOSHint || 'iPhone/iPad: tap Share ⬆️ then "Add to Home Screen"'), 'info');
+      } else {
+        showToast('ℹ️ ' + (i18n[currentLang].installBrowserHint || 'Use your browser menu: Add to Home screen / Install app'), 'info');
+      }
     }
 
     let wakeLock = null;
