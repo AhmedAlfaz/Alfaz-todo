@@ -46,6 +46,8 @@
   <style>
     /* Fallback if Tailwind CDN fails on mobile PWA */
     .hidden { display: none !important; }
+    #plan-modal.hidden,
+    #plan-modal[hidden],
     #dhikr-reader-modal.hidden,
     #dhikr-reader-modal[hidden],
     #quran-reader-modal.hidden,
@@ -278,10 +280,6 @@
         <i class="fas fa-book-quran text-emerald-500 w-5 text-center"></i>
         <span data-i18n="library">Library</span>
       </button>
-      <button onclick="switchView('calendar-view', this); openOccasionsCalendar();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-        <i class="fas fa-calendar-alt text-rose-500 w-5 text-center"></i>
-        <span data-i18n="occasionsCalendar">Occasions</span>
-      </button>
       <button onclick="switchView('groups-view', this); loadGroups();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
         <i class="fas fa-users text-cyan-500 w-5 text-center"></i>
         <span data-i18n="groups">Groups</span>
@@ -436,6 +434,9 @@
 
       <!-- Task List -->
       <div id="task-list" class="flex-1 overflow-y-auto space-y-1"></div>
+
+      <!-- Home Planner Card -->
+      <div id="home-planner-card" class="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm"></div>
     </div>
 
     <!-- ===== 2. PRAYER TIMES ===== -->
@@ -578,8 +579,8 @@
     <div id="calendar-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-2">
         <div>
-          <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="occasionsCalendar">Occasions Calendar</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" data-i18n="occasionsSubtitle">Islamic occasions & Egypt official holidays</p>
+          <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="plannerTitle">Planner</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" data-i18n="plannerSubtitle">Islamic occasions, Egypt holidays & your plans</p>
         </div>
         <span class="text-4xl">📅</span>
       </div>
@@ -588,6 +589,10 @@
         <div class="text-center">
           <p id="occasions-month-title" class="font-bold text-gray-800 dark:text-white">Month</p>
           <p id="occasions-hijri-title" class="text-xs text-emerald-600 dark:text-emerald-400"></p>
+          <div class="flex items-center justify-center gap-2 mt-1">
+            <select id="planner-year-select" onchange="goToPlannerYear(this.value)" class="text-xs bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-gray-700 dark:text-gray-200 cursor-pointer"></select>
+            <button type="button" onclick="goToPlannerToday()" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" data-i18n="todayBtn">Today</button>
+          </div>
         </div>
         <button type="button" onclick="shiftOccasionsMonth(1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"><i class="fas fa-chevron-right"></i></button>
       </div>
@@ -595,6 +600,32 @@
       <div id="occasions-grid" class="grid grid-cols-7 gap-1 mb-4"></div>
       <div id="occasions-day-panel" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4 min-h-[100px]"></div>
       <div id="occasions-month-list" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-8"></div>
+    </div>
+
+    <!-- ===== PLANNER: ADD/EDIT PLAN MODAL ===== -->
+    <div id="plan-modal" hidden class="hidden fixed inset-0 z-[95] items-center justify-center p-4" style="display:none">
+      <div class="absolute inset-0 bg-black/60" onclick="closePlanModal()"></div>
+      <div class="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4" id="plan-modal-title">Add Plan</h3>
+        <input type="text" id="plan-title" data-i18n-placeholder="planTitlePlaceholder" placeholder="Plan title" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm mb-3 focus:outline-none focus:border-blue-500">
+        <div class="flex gap-2 mb-3">
+          <input type="date" id="plan-date" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200">
+          <input type="time" id="plan-time" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200">
+        </div>
+        <textarea id="plan-note" rows="2" data-i18n-placeholder="planNotePlaceholder" placeholder="Note (optional)" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm mb-3 focus:outline-none focus:border-blue-500"></textarea>
+        <select id="plan-repeat" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer">
+          <option value="none" data-i18n="repeatNone">No repeat</option>
+          <option value="daily" data-i18n="repeatDaily">Daily</option>
+          <option value="weekly" data-i18n="repeatWeekly">Weekly</option>
+          <option value="monthly" data-i18n="repeatMonthly">Monthly</option>
+          <option value="yearly" data-i18n="repeatYearly">Yearly</option>
+        </select>
+        <div class="flex gap-2 mb-4" id="plan-color-row"></div>
+        <div class="flex gap-2">
+          <button type="button" onclick="savePlanModal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium text-sm" data-i18n="save">Save</button>
+          <button type="button" onclick="closePlanModal()" class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 py-2.5 rounded-xl font-medium text-sm" data-i18n="cancel">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- ===== 4. GROUPS ===== -->
@@ -1095,7 +1126,14 @@
         appInstalled: "App installed!",
         continueGuest: "Continue without an account",
         authNoNetwork: "Sign-in needs an internet connection. You can still use the app without an account.",
-        authOfflineHint: "App works offline without an account."
+        authOfflineHint: "App works offline without an account.",
+        plannerTitle: "Planner", plannerSubtitle: "Islamic occasions, Egypt holidays & your plans",
+        openPlanner: "Open Planner", upNext: "Up next", noUpcomingPlans: "Nothing planned ahead",
+        todayBtn: "Today", addPlan: "Add Plan", editPlan: "Edit Plan", deletePlan: "Delete",
+        planTitlePlaceholder: "Plan title (e.g. Visit grandma)", planNotePlaceholder: "Note (optional)",
+        repeatNone: "No repeat", repeatDaily: "Daily", repeatWeekly: "Weekly", repeatMonthly: "Monthly", repeatYearly: "Yearly",
+        planSaved: "✅ Plan saved!", planDeleted: "🗑 Plan deleted", yourPlans: "Your plans",
+        noPlans: "No plans for this day", planTitleRequired: "Title and date are required"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -1180,7 +1218,14 @@
         appInstalled: "تم تثبيت التطبيق!",
         continueGuest: "المتابعة بدون حساب",
         authNoNetwork: "تسجيل الدخول يحتاج اتصالاً بالإنترنت. يمكنك استخدام التطبيق بدون حساب.",
-        authOfflineHint: "التطبيق يعمل دون اتصال بدون حساب."
+        authOfflineHint: "التطبيق يعمل دون اتصال بدون حساب.",
+        plannerTitle: "المخطط", plannerSubtitle: "المناسبات الإسلامية والعطلات المصرية وخططك",
+        openPlanner: "فتح المخطط", upNext: "القادم", noUpcomingPlans: "لا خطط قادمة",
+        todayBtn: "اليوم", addPlan: "إضافة خطة", editPlan: "تعديل الخطة", deletePlan: "حذف",
+        planTitlePlaceholder: "عنوان الخطة (مثال: زيارة الجدة)", planNotePlaceholder: "ملاحظة (اختياري)",
+        repeatNone: "بدون تكرار", repeatDaily: "يومي", repeatWeekly: "أسبوعي", repeatMonthly: "شهري", repeatYearly: "سنوي",
+        planSaved: "✅ تم حفظ الخطة!", planDeleted: "🗑 تم حذف الخطة", yourPlans: "خططك",
+        noPlans: "لا توجد خطط لهذا اليوم", planTitleRequired: "العنوان والتاريخ مطلوبان"
       }
     };
 
@@ -1789,12 +1834,15 @@
         }).catch(() => {});
       }
       checkSession();
+      loadPlans();
+      renderHomePlannerCard();
+      populatePlannerYearSelect();
       showInstallButtonAlways();
     });
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=28&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=29&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2018,6 +2066,7 @@
       if (ameta) ameta.setAttribute('content', appDisplayName(lang));
       document.title = lang === 'ar' ? 'عبده - المهام والتذكيرات الإسلامية' : 'ABDO - Islamic Tasks & Reminders';
       document.getElementById('date-display').innerText = new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday:'long', month:'long', day:'numeric' });
+      if (typeof renderHomePlannerCard === 'function') renderHomePlannerCard();
     }
 
     // ===== MOBILE BACK BUTTON (HTML5 HISTORY API) =====
@@ -2037,6 +2086,7 @@
       const cModal = document.getElementById('custom-dua-modal');
       const aModal = document.getElementById('audio-studio-modal');
       const azAlertModal = document.getElementById('azan-alert-modal');
+      const pModal = document.getElementById('plan-modal');
 
       if (qReader && !qReader.classList.contains('hidden')) {
         closeQuranReader();
@@ -2052,6 +2102,8 @@
         closeAudioStudioModal();
       } else if (azAlertModal && !azAlertModal.classList.contains('hidden')) {
         closeAzanAlertModal(false);
+      } else if (pModal && !pModal.classList.contains('hidden')) {
+        closePlanModal();
       } else if (document.getElementById('calendar-view') && !document.getElementById('calendar-view').classList.contains('hidden')) {
         switchView('tasks-view');
       } else {
@@ -2071,7 +2123,8 @@
       if (btn) btn.classList.add('active');
       if (sidebarOpen) toggleSidebar();
       if (viewId === 'qibla-view') initCompass();
-      if (viewId === 'calendar-view') openOccasionsCalendar();
+      if (viewId === 'calendar-view') { openOccasionsCalendar(); populatePlannerYearSelect(); }
+      if (viewId === 'tasks-view' && typeof renderHomePlannerCard === 'function') renderHomePlannerCard();
       if (viewId !== 'tasks-view') pushMobileHistoryState(viewId);
     }
 
@@ -4085,12 +4138,14 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const iso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
         const evs = eventsForIso(iso, hijriMap);
+        const pls = plansForIso(iso);
         const h = hijriMap[iso];
-        const cls = ['occ-day', iso === todayIso ? 'today' : '', evs.length ? 'has-event' : '', iso === occSelectedIso ? 'selected' : ''].filter(Boolean).join(' ');
+        const cls = ['occ-day', iso === todayIso ? 'today' : '', (evs.length || pls.length) ? 'has-event' : '', iso === occSelectedIso ? 'selected' : ''].filter(Boolean).join(' ');
+        const nameLine = evs.length ? (currentLang==='ar'?evs[0].ar:evs[0].en) : (pls.length ? pls[0].title : '');
         html += '<button type="button" class="' + cls + '" onclick="selectOccasionDay(\'' + iso + '\')">' +
           '<div class="font-bold text-gray-800 dark:text-gray-100">' + d + '</div>' +
           (h ? '<div class="text-[10px] text-emerald-600">' + h.hd + '</div>' : '') +
-          (evs.length ? '<div class="text-[9px] text-amber-600 truncate">' + (currentLang==='ar'?evs[0].ar:evs[0].en) + '</div>' : '') +
+          (nameLine ? '<div class="text-[9px] ' + (evs.length ? 'text-amber-600' : 'text-blue-600') + ' truncate">' + escapeHtml(nameLine) + '</div>' : '') +
           '</button>';
       }
       grid.innerHTML = html;
@@ -4128,18 +4183,17 @@
       const panel = document.getElementById('occasions-day-panel');
       if (!panel) return;
       const evs = eventsForIso(iso, hijriMap || {});
+      const pls = plansForIso(iso);
       const h = hijriMap && hijriMap[iso];
       const dateLabel = new Date(iso + 'T00:00:00').toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
       const hijriLabel = h ? (h.hd + ' ' + h.hName + ' ' + h.hy) : '';
-      if (!evs.length) {
-        panel.innerHTML = '<p class="text-sm font-bold text-gray-800 dark:text-white">' + dateLabel + '</p>' +
-          (hijriLabel ? '<p class="text-xs text-emerald-600 mb-2">' + hijriLabel + '</p>' : '') +
-          '<p class="text-sm text-gray-500">' + (i18n[currentLang].noOccasionsDay || '') + '</p>';
-        return;
-      }
-      panel.innerHTML = '<p class="text-sm font-bold text-gray-800 dark:text-white mb-1">' + dateLabel + '</p>' +
-        (hijriLabel ? '<p class="text-xs text-emerald-600 mb-3">' + hijriLabel + '</p>' : '') +
-        evs.map((ev, i) => {
+      let html = '<div class="flex items-start justify-between gap-2 mb-2">' +
+        '<div><p class="text-sm font-bold text-gray-800 dark:text-white">' + dateLabel + '</p>' +
+        (hijriLabel ? '<p class="text-xs text-emerald-600 mt-0.5">' + hijriLabel + '</p>' : '') + '</div>' +
+        '<button type="button" onclick="openPlanModal(\'' + iso + '\')" class="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap flex-shrink-0"><i class="fas fa-plus me-1"></i>' +
+        (i18n[currentLang].addPlan || 'Add Plan') + '</button></div>';
+      if (evs.length) {
+        html += evs.map((ev, i) => {
           const name = currentLang === 'ar' ? ev.ar : ev.en;
           return '<div class="flex items-start justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-700">' +
             '<div><span class="text-[10px] uppercase font-bold text-emerald-600">' + occTypeLabel(ev.type) + '</span>' +
@@ -4147,6 +4201,25 @@
             '<button type="button" onclick="addOccasionToMyDay(\'' + iso + '\',' + i + ')" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap">' +
             (i18n[currentLang].addOccasionToDay || 'Add') + '</button></div>';
         }).join('');
+      }
+      if (pls.length) {
+        html += '<p class="text-xs font-bold uppercase tracking-wide text-blue-500 mt-3 mb-1">' + (i18n[currentLang].yourPlans || 'Your plans') + '</p>';
+        html += pls.map(p => {
+          const repLabel = p.repeat && p.repeat !== 'none' ? ('<span class="text-[10px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded-full ms-1">' + (repeatLabel(p.repeat) || p.repeat) + '</span>') : '';
+          return '<div class="flex items-start justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-700">' +
+            '<div class="flex items-start gap-2"><span class="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style="background:' + planColor(p.color) + '"></span>' +
+            '<div><p class="font-bold text-gray-800 dark:text-white">' + escapeHtml(p.title) + ' ' + repLabel + '</p>' +
+            (p.note ? '<p class="text-xs text-gray-500 mt-0.5">' + escapeHtml(p.note) + '</p>' : '') +
+            (p.time ? '<p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-clock me-1"></i>' + p.time + '</p>' : '') + '</div></div>' +
+            '<div class="flex gap-1 flex-shrink-0">' +
+            '<button type="button" onclick="openPlanModal(\'' + iso + '\',\'' + p.id + '\')" class="text-blue-500 text-xs px-2 py-1" title="' + (i18n[currentLang].editPlan || 'Edit') + '"><i class="fas fa-pen"></i></button>' +
+            '<button type="button" onclick="deletePlan(\'' + p.id + '\')" class="text-red-500 text-xs px-2 py-1" title="' + (i18n[currentLang].deletePlan || 'Delete') + '"><i class="fas fa-trash"></i></button>' +
+            '</div></div>';
+        }).join('');
+      } else {
+        html += '<p class="text-xs text-gray-400 mt-3">' + (i18n[currentLang].noPlans || 'No plans for this day') + '</p>';
+      }
+      panel.innerHTML = html;
     }
 
     function addOccasionToMyDay(iso, idx) {
@@ -4172,6 +4245,189 @@
         renderActiveSmartList();
         showToast(i18n[currentLang].addedToMyDay || '✅ Added to My Day!', 'success');
       });
+    }
+
+    // ===== PLANNER (personal plans) =====
+    let userPlans = [];
+    const PLAN_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    let selectedPlanColor = 0;
+    let editingPlanId = null;
+    let planModalIso = null;
+    function loadPlans() {
+      try { userPlans = JSON.parse(localStorage.getItem('alfaz_plans') || '[]'); } catch (e) { userPlans = []; }
+      if (!Array.isArray(userPlans)) userPlans = [];
+    }
+    function savePlans() {
+      try { localStorage.setItem('alfaz_plans', JSON.stringify(userPlans)); } catch (e) {}
+    }
+    function planColor(i) { return PLAN_COLORS[Math.abs(parseInt(i, 10) || 0) % PLAN_COLORS.length]; }
+    function repeatLabel(r) {
+      const map = { daily: 'repeatDaily', weekly: 'repeatWeekly', monthly: 'repeatMonthly', yearly: 'repeatYearly' };
+      return map[r] ? (i18n[currentLang][map[r]] || r) : '';
+    }
+    function planMatchesDate(plan, iso) {
+      if (!plan || !plan.date || !iso) return false;
+      const pd = new Date(plan.date + 'T00:00:00');
+      const td = new Date(iso + 'T00:00:00');
+      if (isNaN(pd.getTime()) || isNaN(td.getTime())) return false;
+      if (td < pd) return false;
+      const days = Math.round((td - pd) / 86400000);
+      if (plan.repeat === 'daily') return true;
+      if (plan.repeat === 'weekly') return td.getDay() === pd.getDay();
+      if (plan.repeat === 'monthly') return td.getDate() === pd.getDate();
+      if (plan.repeat === 'yearly') return (td.getMonth() === pd.getMonth() && td.getDate() === pd.getDate());
+      return days === 0;
+    }
+    function plansForIso(iso) {
+      return (userPlans || []).filter(p => planMatchesDate(p, iso))
+        .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+    }
+    function openPlanner() { openOccasionsCalendar(); }
+    function goToPlannerYear(y) {
+      occYear = parseInt(y, 10) || new Date().getFullYear();
+      renderOccasionsCalendar();
+    }
+    function goToPlannerToday() {
+      const d = new Date();
+      occYear = d.getFullYear(); occMonth = d.getMonth(); occSelectedIso = getTodayString();
+      renderOccasionsCalendar();
+    }
+    function populatePlannerYearSelect() {
+      const sel = document.getElementById('planner-year-select');
+      if (!sel) return;
+      const y = new Date().getFullYear();
+      let opts = '';
+      for (let i = y - 2; i <= y + 2; i++) opts += '<option value="' + i + '">' + i + '</option>';
+      sel.innerHTML = opts;
+      sel.value = occYear;
+    }
+    function openPlanModal(iso, planId) {
+      planModalIso = iso;
+      editingPlanId = planId || null;
+      const modal = document.getElementById('plan-modal');
+      const p = planId ? (userPlans.find(x => x.id === planId) || null) : null;
+      const tEl = document.getElementById('plan-title');
+      const dEl = document.getElementById('plan-date');
+      const tmEl = document.getElementById('plan-time');
+      const nEl = document.getElementById('plan-note');
+      const rEl = document.getElementById('plan-repeat');
+      const titleEl = document.getElementById('plan-modal-title');
+      if (p) {
+        if (titleEl) titleEl.textContent = i18n[currentLang].editPlan || 'Edit Plan';
+        tEl.value = p.title || ''; dEl.value = p.date || iso; tmEl.value = p.time || ''; nEl.value = p.note || ''; rEl.value = p.repeat || 'none';
+        selectedPlanColor = p.color || 0;
+      } else {
+        if (titleEl) titleEl.textContent = i18n[currentLang].addPlan || 'Add Plan';
+        tEl.value = ''; dEl.value = iso; tmEl.value = ''; nEl.value = ''; rEl.value = 'none';
+        selectedPlanColor = userPlans.length % PLAN_COLORS.length;
+      }
+      renderPlanColorRow();
+      if (modal) { modal.hidden = false; modal.classList.remove('hidden'); modal.style.display = 'flex'; }
+      setTimeout(() => { try { tEl.focus(); } catch (e) {} }, 100);
+    }
+    function closePlanModal() {
+      const modal = document.getElementById('plan-modal');
+      if (modal) { modal.hidden = true; modal.classList.add('hidden'); modal.style.display = 'none'; }
+      editingPlanId = null; planModalIso = null;
+    }
+    function renderPlanColorRow() {
+      const row = document.getElementById('plan-color-row');
+      if (!row) return;
+      row.innerHTML = PLAN_COLORS.map((c, i) =>
+        '<button type="button" onclick="selectedPlanColor=' + i + ';renderPlanColorRow()" class="w-7 h-7 rounded-full border-2 transition ' + (i === selectedPlanColor ? 'border-gray-800 dark:border-white scale-110' : 'border-transparent') + '" style="background:' + c + '"></button>'
+      ).join('');
+    }
+    function savePlanModal() {
+      const tEl = document.getElementById('plan-title');
+      const dEl = document.getElementById('plan-date');
+      const tmEl = document.getElementById('plan-time');
+      const nEl = document.getElementById('plan-note');
+      const rEl = document.getElementById('plan-repeat');
+      if (!tEl || !dEl) return;
+      const title = tEl.value.trim();
+      const date = dEl.value;
+      if (!title || !date) { showToast('⚠️ ' + (i18n[currentLang].planTitleRequired || 'Title and date are required'), 'error'); return; }
+      const plan = {
+        id: editingPlanId || ('p' + Date.now() + Math.random().toString(36).slice(2, 7)),
+        title: title,
+        date: date,
+        time: (tmEl && tmEl.value) || '',
+        note: (nEl && nEl.value.trim()) || '',
+        repeat: (rEl && rEl.value) || 'none',
+        color: selectedPlanColor,
+        created: Date.now()
+      };
+      if (editingPlanId) {
+        const i = userPlans.findIndex(x => x.id === editingPlanId);
+        if (i > -1) userPlans[i] = plan; else userPlans.push(plan);
+      } else {
+        userPlans.push(plan);
+      }
+      savePlans();
+      closePlanModal();
+      renderOccasionsCalendar();
+      renderHomePlannerCard();
+      showToast('✅ ' + (i18n[currentLang].planSaved || 'Plan saved!'), 'success');
+    }
+    function deletePlan(id) {
+      if (!id) return;
+      userPlans = (userPlans || []).filter(p => p.id !== id);
+      savePlans();
+      renderOccasionsCalendar();
+      renderHomePlannerCard();
+      showToast('🗑 ' + (i18n[currentLang].planDeleted || 'Plan deleted'), 'info');
+    }
+    async function renderHomePlannerCard() {
+      const card = document.getElementById('home-planner-card');
+      if (!card) return;
+      const now = new Date();
+      const y = now.getFullYear(), m = now.getMonth();
+      const map = await loadHijriMonth(y, m);
+      const todayIso = getTodayString();
+      const monthName = now.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' });
+      const names = currentLang === 'ar' ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const first = new Date(y, m, 1);
+      const startPad = first.getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      let cells = '';
+      for (let i = 0; i < startPad; i++) cells += '<div></div>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        const evs = eventsForIso(iso, map);
+        const pls = plansForIso(iso);
+        const isToday = iso === todayIso;
+        cells += '<button type="button" onclick="switchView(\'calendar-view\');openOccasionsCalendar();selectOccasionDay(\'' + iso + '\')" class="h-8 rounded-lg flex flex-col items-center justify-center ' + (isToday ? 'bg-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700') + '">' +
+          '<span class="text-[11px] font-bold ' + (isToday ? 'text-white' : 'text-gray-700 dark:text-gray-300') + '">' + d + '</span>' +
+          ((evs.length || pls.length) ? '<span class="flex gap-0.5 mt-0.5">' + (evs.length ? '<span class="w-1 h-1 rounded-full bg-amber-500"></span>' : '') + (pls.length ? '<span class="w-1 h-1 rounded-full bg-blue-500"></span>' : '') + '</span>' : '<span class="h-1.5"></span>') +
+          '</button>';
+      }
+      let next = null, nextLabel = '';
+      const monthCache = {};
+      const d0 = new Date();
+      for (let i = 0; i <= 45 && !next; i++) {
+        const dd = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i);
+        const iso = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
+        const mk = dd.getFullYear() + '-' + (dd.getMonth() + 1);
+        if (!monthCache[mk]) monthCache[mk] = await loadHijriMonth(dd.getFullYear(), dd.getMonth());
+        const evs = eventsForIso(iso, monthCache[mk]);
+        const pls = plansForIso(iso);
+        const label = evs.length ? (currentLang === 'ar' ? evs[0].ar : evs[0].en) : (pls.length ? pls[0].title : '');
+        if (label) { next = dd; nextLabel = label; }
+      }
+      const upNextHtml = next
+        ? '<i class="fas fa-arrow-right me-1"></i>' + (i18n[currentLang].upNext || 'Up next') + ': <strong>' + escapeHtml(nextLabel) + '</strong> · ' + next.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' })
+        : (i18n[currentLang].noUpcomingPlans || 'Nothing planned ahead');
+      card.innerHTML =
+        '<div class="flex items-center justify-between mb-2">' +
+          '<h3 class="font-bold text-gray-800 dark:text-white"><i class="fas fa-calendar-alt text-blue-500 me-2"></i>' + (i18n[currentLang].plannerTitle || 'Planner') + '</h3>' +
+          '<span class="text-xs text-gray-400">' + monthName + '</span>' +
+        '</div>' +
+        '<div class="grid grid-cols-7 gap-1 mb-1 text-center text-[10px] font-bold text-gray-400">' + names.map(n => '<div>' + n + '</div>').join('') + '</div>' +
+        '<div class="grid grid-cols-7 gap-1 mb-2">' + cells + '</div>' +
+        '<div class="flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">' +
+          '<p class="text-xs text-gray-500 truncate">' + upNextHtml + '</p>' +
+          '<button type="button" onclick="switchView(\'calendar-view\');openOccasionsCalendar();" class="text-xs font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap flex-shrink-0">' + (i18n[currentLang].openPlanner || 'Open Planner') + ' <i class="fas fa-chevron-right"></i></button>' +
+        '</div>';
     }
 
     async function renderTodayOccasionBanner() {
