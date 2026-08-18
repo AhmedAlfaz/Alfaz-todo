@@ -1,8 +1,23 @@
-# 🚀 Hostinger Deployment Guide — Alfaz todo (ABDO)
+# 🚀 Hostinger Deployment Guide — ABDO (عبده)
 
-**App Name:** ABDO (Alfaz-todo Islamic Tasks & Reminders)  
-**Deploy Target:** Hostinger Free Hosting  
-**Date:** 2026-08-18  
+**App Name:** ABDO (عبده) — Islamic Tasks & Reminders
+**Deploy Target:** Hostinger Free Hosting
+**Date:** 2026-08-18
+
+---
+
+## ⚡ Quick Re-Deploy Checklist (every time we push an update)
+
+1. Open hPanel → **Files → File Manager** → your site → `public_html/`
+2. Upload these (overwrite existing):
+   - `index.html`  ← almost always
+   - `sw.js`       ← almost always
+   - `manifest.json` ← only if changed
+   - `brand/` folder (3 icons) ← only if changed
+   - `audio/` folder ← only if you changed azan sounds (rare)
+3. Done. Users just tap **Refresh / Update App (🔄)** inside the app to get the new version.
+
+> Tip: You never need to touch `audio/` unless we specifically say so.
 
 ---
 
