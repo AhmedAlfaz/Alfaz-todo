@@ -1,6 +1,6 @@
 {
-  "name": "ABDO - Islamic Tasks & Reminders",
-  "short_name": "ABDO",
+  "name": "عبده - المهام والتذكيرات الإسلامية",
+  "short_name": "عبده",
   "description": "Islamic tasks, prayer reminders, and Qibla direction",
   "start_url": "./",
   "scope": "./",

@@ -77,7 +77,10 @@
     .border { border: 1px solid #e5e7eb; }
     .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,.06); }
     button { cursor: pointer; }
+    .menu-fab { position: fixed; top: 1rem; left: 1rem; }
+    [dir="rtl"] .menu-fab { left: auto; right: 1rem; }
     #sidebar { width: 16rem; background: #fff; border-right: 1px solid #e5e7eb; }
+    [dir="rtl"] #sidebar { border-right: none; border-left: 1px solid #e5e7eb; }
     main { flex: 1; background: #f9fafb; }
     .dark body, .dark { background: #111827; color: #e5e7eb; }
     .dark #sidebar, .dark .bg-white { background: #1f2937; }
@@ -103,6 +106,8 @@
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); position: fixed; left: 0; top: 0; z-index: 50; height: 100vh; }
       .sidebar.open { transform: translateX(0); }
+      [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(100%); }
+      [dir="rtl"] .sidebar.open { transform: translateX(0); }
       .mobile-overlay.active { display: block; }
     }
     .toast {
@@ -140,8 +145,8 @@
   <div id="auth-screen" class="hidden fixed inset-0 bg-gray-50 dark:bg-gray-900 z-[80] flex items-center justify-center p-4">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
-        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-2xl shadow-lg mx-auto mb-4">A</div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">ABDO</h1>
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-2xl shadow-lg mx-auto mb-4" data-appletter>A</div>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white" data-appname>ABDO</h1>
         <p class="text-gray-500 dark:text-gray-400 mt-2" data-i18n="authTagline">Islamic tasks, prayer reminders, and more</p>
       </div>
 
@@ -196,7 +201,7 @@
   </div>
 
   <!-- Mobile Menu Button -->
-  <button onclick="toggleSidebar()" class="md:hidden fixed top-4 left-4 z-[60] bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition">
+  <button onclick="toggleSidebar()" class="md:hidden fixed top-4 left-4 z-[60] bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition menu-fab">
     <i class="fas fa-bars" id="menu-icon"></i>
   </button>
 
@@ -212,9 +217,9 @@
     <!-- Logo -->
     <div class="p-4 flex items-center justify-between mb-2 border-b border-gray-200 dark:border-gray-700 pb-4">
       <div class="flex items-center space-x-3">
-        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-lg shadow-md">A</div>
+        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center font-bold text-lg shadow-md" data-appletter>A</div>
         <div>
-          <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400">ABDO</h3>
+          <h3 class="font-bold text-lg text-blue-700 dark:text-blue-400" data-appname>ABDO</h3>
           <p class="text-xs text-gray-500 dark:text-gray-400 font-mono" id="live-clock">00:00:00</p>
         </div>
       </div>
@@ -1721,7 +1726,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=26&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=27&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -1933,11 +1938,17 @@
         renderOccasionsCalendar();
       }
     }
+    function appDisplayName(l) { return (l === 'ar') ? 'عبده' : 'ABDO'; }
     function applyLanguage(lang) {
       document.documentElement.lang = lang;
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
       document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.getAttribute('data-i18n'); if (i18n[lang][k]) el.innerHTML = i18n[lang][k]; });
       document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { const k = el.getAttribute('data-i18n-placeholder'); if (i18n[lang][k]) el.placeholder = i18n[lang][k]; });
+      document.querySelectorAll('[data-appname]').forEach(el => el.textContent = appDisplayName(lang));
+      document.querySelectorAll('[data-appletter]').forEach(el => el.textContent = lang === 'ar' ? 'ع' : 'A');
+      const ameta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (ameta) ameta.setAttribute('content', appDisplayName(lang));
+      document.title = lang === 'ar' ? 'عبده - المهام والتذكيرات الإسلامية' : 'ABDO - Islamic Tasks & Reminders';
       document.getElementById('date-display').innerText = new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { weekday:'long', month:'long', day:'numeric' });
     }
 
@@ -2427,7 +2438,7 @@
             : (i18n[currentLang].taskReminder || '⏰ Reminder: {task}').replace('{task}', t.text);
 
           showToast(msg, 'prayer');
-          showBrowserNotification('🔔 ABDO', msg, 'alfaz-task-' + (t.id || idx));
+          showBrowserNotification('🔔 ' + appDisplayName(currentLang), msg, 'alfaz-task-' + (t.id || idx));
 
           const isSpiritual = !!t.library_id;
           const tone = isSpiritual ? audioSettings.adhkar_tone : audioSettings.task_tone;
@@ -2494,7 +2505,7 @@
     function testReminder() {
       const msg = i18n[currentLang].taskReminder.replace('{task}', 'Test Reminder');
       showToast(msg, 'prayer');
-      showBrowserNotification('🔔 ABDO', msg);
+      showBrowserNotification('🔔 ' + appDisplayName(currentLang), msg);
       playAudioTone(audioSettings.task_tone, 'Test Reminder', false);
     }
 
@@ -2604,7 +2615,7 @@
       requestWakeLock();
 
       let msg = i18n[currentLang].prayerAlert.replace('{prayer}', pN);
-      showBrowserNotification('🕌 ABDO', msg, 'prayer');
+      showBrowserNotification('🕌 ' + appDisplayName(currentLang), msg, 'prayer');
     }
 
     function startAzanAudio() {
@@ -3676,7 +3687,7 @@
         try {
           navigator.mediaSession.metadata = new MediaMetadata({
             title: 'سورة ' + (SURAH_NAMES_AR[currentReaderSurah - 1] || currentReaderSurah),
-            artist: selectedQuranReciter === 'ar.alafasy' ? 'مشاري راشد العفاسي' : 'تلاوة القرآن الكريم - ABDO',
+            artist: selectedQuranReciter === 'ar.alafasy' ? 'مشاري راشد العفاسي' : 'تلاوة القرآن الكريم - ' + appDisplayName(currentLang),
             album: 'Holy Quran',
             artwork: [{ src: './brand/abdo-icon-192-wb.png', sizes: '192x192', type: 'image/png' }]
           });
