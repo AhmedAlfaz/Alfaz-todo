@@ -1721,7 +1721,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=25&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=26&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2273,7 +2273,7 @@
       );
     }
     function fetchPrayerTimes(lat, lng) {
-      const d = new Date(), ds = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+      const d = new Date(), dd = d.getDate().toString().padStart(2,'0'), mm = (d.getMonth()+1).toString().padStart(2,'0'), yyyy = d.getFullYear(), ds = `${dd}-${mm}-${yyyy}`;
       const cacheKey = `alfatore_prayers_${ds}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
