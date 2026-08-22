@@ -164,7 +164,11 @@
     .occ-day.today { border-color: #2563eb; background: #eff6ff; }
     .dark .occ-day.today { background: #1e3a5f; }
     .occ-day.has-event { box-shadow: inset 0 -3px 0 #10b981; }
-    .occ-day.selected { outline: 2px solid #059669; }
+.occ-day.selected { outline: 2px solid #059669; }
+    .planner-filter-chip { padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; cursor: pointer; }
+    .dark .planner-filter-chip { background: #374151; color: #d1d5db; border-color: #4b5563; }
+    .planner-filter-chip.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .plan-done { text-decoration: line-through; opacity: .55; }
   </style>
 </head>
 
@@ -586,6 +590,20 @@
         </div>
         <span class="text-4xl">📅</span>
       </div>
+
+      <!-- Planner filter chips -->
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <button type="button" onclick="setPlannerFilter('all')" id="pf-all" class="planner-filter-chip active" data-i18n="chipAll">All</button>
+        <button type="button" onclick="setPlannerFilter('plans')" id="pf-plans" class="planner-filter-chip" data-i18n="chipMyPlans">My Plans</button>
+        <button type="button" onclick="setPlannerFilter('occasions')" id="pf-occasions" class="planner-filter-chip" data-i18n="chipOccasions">Occasions</button>
+      </div>
+
+      <!-- Upcoming list -->
+      <div id="planner-upcoming" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-4"></div>
+
+      <!-- Year strip -->
+      <div id="planner-year-strip" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-4"></div>
+
       <div class="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 mb-4">
         <button type="button" onclick="shiftOccasionsMonth(-1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"><i class="fas fa-chevron-left"></i></button>
         <div class="text-center">
@@ -622,6 +640,7 @@
           <option value="monthly" data-i18n="repeatMonthly">Monthly</option>
           <option value="yearly" data-i18n="repeatYearly">Yearly</option>
         </select>
+        <select id="plan-category" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer"></select>
         <div class="flex gap-2 mb-4" id="plan-color-row"></div>
         <div class="flex gap-2">
           <button type="button" onclick="savePlanModal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium text-sm" data-i18n="save">Save</button>
@@ -1135,7 +1154,10 @@
         planTitlePlaceholder: "Plan title (e.g. Visit grandma)", planNotePlaceholder: "Note (optional)",
         repeatNone: "No repeat", repeatDaily: "Daily", repeatWeekly: "Weekly", repeatMonthly: "Monthly", repeatYearly: "Yearly",
         planSaved: "✅ Plan saved!", planDeleted: "🗑 Plan deleted", yourPlans: "Your plans",
-        noPlans: "No plans for this day", planTitleRequired: "Title and date are required"
+        noPlans: "No plans for this day", planTitleRequired: "Title and date are required",
+        chipAll: "All", chipMyPlans: "My Plans", chipOccasions: "Occasions",
+        upcomingPlans: "Upcoming", nothingUpcoming: "Nothing coming up",
+        yearlyOverview: "Year", done: "Done", category: "Category"
       },
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
@@ -1227,7 +1249,10 @@
         planTitlePlaceholder: "عنوان الخطة (مثال: زيارة الجدة)", planNotePlaceholder: "ملاحظة (اختياري)",
         repeatNone: "بدون تكرار", repeatDaily: "يومي", repeatWeekly: "أسبوعي", repeatMonthly: "شهري", repeatYearly: "سنوي",
         planSaved: "✅ تم حفظ الخطة!", planDeleted: "🗑 تم حذف الخطة", yourPlans: "خططك",
-        noPlans: "لا توجد خطط لهذا اليوم", planTitleRequired: "العنوان والتاريخ مطلوبان"
+        noPlans: "لا توجد خطط لهذا اليوم", planTitleRequired: "العنوان والتاريخ مطلوبان",
+        chipAll: "الكل", chipMyPlans: "خططي", chipOccasions: "المناسبات",
+        upcomingPlans: "القادمة", nothingUpcoming: "لا يوجد شيء قادم",
+        yearlyOverview: "السنة", done: "تم", category: "الفئة"
       }
     };
 
@@ -1845,7 +1870,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=30&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=31&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -4135,12 +4160,14 @@
       const startPad = first.getDay();
       const daysInMonth = new Date(occYear, occMonth + 1, 0).getDate();
       const todayIso = getTodayString();
+      renderPlannerYearStrip();
+      renderPlannerUpcoming();
       let html = '';
       for (let i = 0; i < startPad; i++) html += '<div></div>';
       for (let d = 1; d <= daysInMonth; d++) {
         const iso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-        const evs = eventsForIso(iso, hijriMap);
-        const pls = plansForIso(iso);
+        const evs = plannerFilter === 'plans' ? [] : eventsForIso(iso, hijriMap);
+        const pls = plannerFilter === 'occasions' ? [] : plansForIso(iso);
         const h = hijriMap[iso];
         const cls = ['occ-day', iso === todayIso ? 'today' : '', (evs.length || pls.length) ? 'has-event' : '', iso === occSelectedIso ? 'selected' : ''].filter(Boolean).join(' ');
         const nameLine = evs.length ? (currentLang==='ar'?evs[0].ar:evs[0].en) : (pls.length ? pls[0].title : '');
@@ -4160,17 +4187,22 @@
         const monthEvs = [];
         for (let d = 1; d <= daysInMonth; d++) {
           const iso = occYear + '-' + String(occMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-          eventsForIso(iso, hijriMap).forEach(ev => monthEvs.push({ iso: iso, ev: ev }));
+          if (plannerFilter !== 'plans') eventsForIso(iso, hijriMap).forEach(ev => monthEvs.push({ iso: iso, ev: ev, kind: 'occ' }));
+          if (plannerFilter !== 'occasions') plansForIso(iso).forEach(p => monthEvs.push({ iso: iso, ev: { en: p.title, ar: p.title }, kind: 'plan', plan: p }));
         }
+        monthEvs.sort((a, b) => a.iso.localeCompare(b.iso));
         if (!monthEvs.length) {
           listEl.innerHTML = '<p class="text-sm text-gray-500">' + (i18n[currentLang].noOccasionsDay || '') + '</p>';
         } else {
           listEl.innerHTML = '<p class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">' + monthName + '</p>' +
             monthEvs.map(row => {
               const name = currentLang === 'ar' ? row.ev.ar : row.ev.en;
+              const doneCls = (row.kind === 'plan' && row.plan && row.plan.status === 'done') ? ' plan-done text-gray-400' : ' text-gray-800 dark:text-white';
+              const icon = row.kind === 'plan' ? ('<i class="fas ' + planCat(row.plan).icon + ' me-2" style="color:' + planCat(row.plan).color + '"></i>') : '<i class="fas fa-mosque me-2 text-emerald-600"></i>';
+              const tag = row.kind === 'plan' ? (i18n[currentLang].yourPlans || 'Plan') : occTypeLabel(row.ev.type);
               return '<button type="button" onclick="selectOccasionDay(\'' + row.iso + '\')" class="w-full text-start flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">' +
-                '<span class="text-sm font-bold text-gray-800 dark:text-white">' + name + '</span>' +
-                '<span class="text-xs text-gray-400">' + row.iso + ' · ' + occTypeLabel(row.ev.type) + '</span></button>';
+                '<span class="text-sm font-bold' + doneCls + '">' + icon + name + '</span>' +
+                '<span class="text-xs text-gray-400">' + row.iso + ' · ' + tag + '</span></button>';
             }).join('');
         }
       }
@@ -4184,8 +4216,8 @@
     function renderOccasionDayPanel(iso, hijriMap) {
       const panel = document.getElementById('occasions-day-panel');
       if (!panel) return;
-      const evs = eventsForIso(iso, hijriMap || {});
-      const pls = plansForIso(iso);
+      const evs = plannerFilter === 'plans' ? [] : eventsForIso(iso, hijriMap || {});
+      const pls = plannerFilter === 'occasions' ? [] : plansForIso(iso);
       const h = hijriMap && hijriMap[iso];
       const dateLabel = new Date(iso + 'T00:00:00').toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
       const hijriLabel = h ? (h.hd + ' ' + h.hName + ' ' + h.hy) : '';
@@ -4207,18 +4239,21 @@
       if (pls.length) {
         html += '<p class="text-xs font-bold uppercase tracking-wide text-blue-500 mt-3 mb-1">' + (i18n[currentLang].yourPlans || 'Your plans') + '</p>';
         html += pls.map(p => {
+          const cat = planCat(p);
           const repLabel = p.repeat && p.repeat !== 'none' ? ('<span class="text-[10px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded-full ms-1">' + (repeatLabel(p.repeat) || p.repeat) + '</span>') : '';
+          const isDone = p.status === 'done';
           return '<div class="flex items-start justify-between gap-2 py-2 border-t border-gray-100 dark:border-gray-700">' +
-            '<div class="flex items-start gap-2"><span class="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style="background:' + planColor(p.color) + '"></span>' +
-            '<div><p class="font-bold text-gray-800 dark:text-white">' + escapeHtml(p.title) + ' ' + repLabel + '</p>' +
+            '<div class="flex items-start gap-2"><i class="fas ' + cat.icon + ' mt-1 w-3.5 text-center" style="color:' + cat.color + '"></i>' +
+            '<div><p class="font-bold ' + (isDone ? 'plan-done text-gray-400' : 'text-gray-800 dark:text-white') + '">' + escapeHtml(p.title) + ' ' + repLabel + '</p>' +
             (p.note ? '<p class="text-xs text-gray-500 mt-0.5">' + escapeHtml(p.note) + '</p>' : '') +
             (p.time ? '<p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-clock me-1"></i>' + p.time + '</p>' : '') + '</div></div>' +
             '<div class="flex gap-1 flex-shrink-0">' +
+            '<button type="button" onclick="togglePlanDone(\'' + p.id + '\')" class="' + (isDone ? 'text-green-600' : 'text-gray-400 hover:text-green-600') + ' text-xs px-2 py-1" title="' + (i18n[currentLang].done || 'Done') + '"><i class="fas ' + (isDone ? 'fa-check-circle' : 'fa-circle') + '"></i></button>' +
             '<button type="button" onclick="openPlanModal(\'' + iso + '\',\'' + p.id + '\')" class="text-blue-500 text-xs px-2 py-1" title="' + (i18n[currentLang].editPlan || 'Edit') + '"><i class="fas fa-pen"></i></button>' +
             '<button type="button" onclick="deletePlan(\'' + p.id + '\')" class="text-red-500 text-xs px-2 py-1" title="' + (i18n[currentLang].deletePlan || 'Delete') + '"><i class="fas fa-trash"></i></button>' +
             '</div></div>';
         }).join('');
-      } else {
+      } else if (plannerFilter !== 'occasions') {
         html += '<p class="text-xs text-gray-400 mt-3">' + (i18n[currentLang].noPlans || 'No plans for this day') + '</p>';
       }
       panel.innerHTML = html;
@@ -4252,7 +4287,34 @@
     // ===== PLANNER (personal plans) =====
     let userPlans = [];
     const PLAN_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    const PLAN_CATEGORIES = [
+      { id: 'goal', icon: 'fa-bullseye', color: '#2563eb', en: 'Goal', ar: 'هدف' },
+      { id: 'health', icon: 'fa-heart-pulse', color: '#ef4444', en: 'Health', ar: 'صحة' },
+      { id: 'work', icon: 'fa-briefcase', color: '#8b5cf6', en: 'Work', ar: 'عمل' },
+      { id: 'family', icon: 'fa-people-roof', color: '#10b981', en: 'Family', ar: 'عائلة' },
+      { id: 'travel', icon: 'fa-plane', color: '#f59e0b', en: 'Travel', ar: 'سفر' },
+      { id: 'worship', icon: 'fa-mosque', color: '#059669', en: 'Worship', ar: 'عبادة' },
+      { id: 'special', icon: 'fa-cake-candles', color: '#ec4899', en: 'Special', ar: 'مناسبة خاصة' },
+      { id: 'other', icon: 'fa-thumbtack', color: '#64748b', en: 'Other', ar: 'أخرى' }
+    ];
+    let plannerFilter = 'all';
     let selectedPlanColor = 0;
+    function catById(id) { return PLAN_CATEGORIES.find(c => c.id === id) || PLAN_CATEGORIES[0]; }
+    function planCat(p) { return p && p.category ? catById(p.category) : PLAN_CATEGORIES[0]; }
+    function setPlannerFilter(f) {
+      plannerFilter = f || 'all';
+      document.querySelectorAll('.planner-filter-chip').forEach(el => el.classList.remove('active'));
+      const el = document.getElementById('pf-' + plannerFilter);
+      if (el) el.classList.add('active');
+      renderOccasionsCalendar();
+    }
+    function togglePlanDone(id) {
+      const pl = (userPlans || []).find(x => x.id === id);
+      if (!pl) return;
+      pl.status = pl.status === 'done' ? '' : 'done';
+      savePlans();
+      renderOccasionsCalendar();
+    }
     let editingPlanId = null;
     let planModalIso = null;
     function loadPlans() {
@@ -4323,6 +4385,11 @@
         tEl.value = ''; dEl.value = iso; tmEl.value = ''; nEl.value = ''; rEl.value = 'none';
         selectedPlanColor = userPlans.length % PLAN_COLORS.length;
       }
+      const cEl = document.getElementById('plan-category');
+      if (cEl) {
+        cEl.innerHTML = PLAN_CATEGORIES.map(c => '<option value="' + c.id + '">' + (currentLang === 'ar' ? c.ar : c.en) + '</option>').join('');
+        cEl.value = (p && p.category) || 'goal';
+      }
       renderPlanColorRow();
       if (modal) { modal.hidden = false; modal.classList.remove('hidden'); modal.style.display = 'flex'; }
       setTimeout(() => { try { tEl.focus(); } catch (e) {} }, 100);
@@ -4356,6 +4423,7 @@
         time: (tmEl && tmEl.value) || '',
         note: (nEl && nEl.value.trim()) || '',
         repeat: (rEl && rEl.value) || 'none',
+        category: (document.getElementById('plan-category') && document.getElementById('plan-category').value) || 'goal',
         color: selectedPlanColor,
         created: Date.now()
       };
@@ -4377,6 +4445,71 @@
       renderOccasionsCalendar();
       showToast('🗑 ' + (i18n[currentLang].planDeleted || 'Plan deleted'), 'info');
     }
+    function renderPlannerYearStrip() {
+      const wrap = document.getElementById('planner-year-strip');
+      if (!wrap) return;
+      const now = new Date();
+      const todayY = now.getFullYear(), todayM = now.getMonth();
+      let html = '';
+      for (let m = 0; m < 12; m++) {
+        const y = occYear, m0 = m;
+        const first = new Date(y, m0, 1);
+        const daysInMonth = new Date(y, m0 + 1, 0).getDate();
+        let planCount = 0, natCount = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const iso = y + '-' + String(m0 + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+          if (plansForIso(iso).length) planCount++;
+          if (eventsForIso(iso, {}).some(e => e.type === 'national')) natCount++;
+        }
+        const isCur = (y === todayY && m0 === todayM);
+        const isSel = (y === occYear && m0 === occMonth);
+        html += '<button type="button" onclick="goToPlannerMonth(' + m0 + ')" class="rounded-xl border p-2 text-center transition ' +
+          (isSel ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800') + '">' +
+          '<p class="text-[10px] font-bold ' + (isCur ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400') + '">' +
+          first.toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short' }) + '</p>' +
+          '<div class="flex justify-center gap-1 mt-1 min-h-2">' +
+          (planCount ? '<span class="text-[9px] font-bold text-blue-600">' + planCount + '</span>' : '') +
+          (natCount ? '<span class="text-[9px] font-bold text-amber-600">•</span>' : '') +
+          '</div></button>';
+      }
+      wrap.innerHTML = '<p class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1 col-span-4 sm:col-span-6">' +
+        (i18n[currentLang].yearlyOverview || 'Year') + ' ' + occYear + '</p>' + html;
+    }
+    function goToPlannerMonth(m0) {
+      occMonth = m0;
+      renderOccasionsCalendar();
+    }
+    async function renderPlannerUpcoming() {
+      const wrap = document.getElementById('planner-upcoming');
+      if (!wrap) return;
+      const d0 = new Date();
+      const monthCache = {};
+      const items = [];
+      for (let i = 0; i <= 60 && items.length < 10; i++) {
+        const dd = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i);
+        const iso = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
+        const mk = dd.getFullYear() + '-' + (dd.getMonth() + 1);
+        if (!monthCache[mk]) monthCache[mk] = await loadHijriMonth(dd.getFullYear(), dd.getMonth());
+        const evs = eventsForIso(iso, monthCache[mk]);
+        const pls = plansForIso(iso);
+        if (plannerFilter !== 'occasions') pls.forEach(p => items.push({ iso: iso, label: p.title, icon: planCat(p).icon, color: planCat(p).color, done: p.status === 'done', type: 'plan', id: p.id }));
+        if (plannerFilter !== 'plans') evs.forEach(ev => items.push({ iso: iso, label: currentLang === 'ar' ? ev.ar : ev.en, icon: ev.type === 'national' ? 'fa-flag' : (ev.type === 'festival' ? 'fa-star' : 'fa-mosque'), color: ev.type === 'national' ? '#d97706' : (ev.type === 'festival' ? '#9333ea' : '#059669'), done: false, type: 'occ', id: null }));
+      }
+      items.sort((a, b) => a.iso.localeCompare(b.iso));
+      const head = '<p class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2"><i class="fas fa-list-ul me-1"></i>' + (i18n[currentLang].upcomingPlans || 'Upcoming') + '</p>';
+      if (!items.length) {
+        wrap.innerHTML = head + '<p class="text-sm text-gray-500">' + (i18n[currentLang].nothingUpcoming || 'Nothing coming up') + '</p>';
+        return;
+      }
+      wrap.innerHTML = head + items.map(it => {
+        const dat = new Date(it.iso + 'T00:00:00').toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' });
+        return '<button type="button" onclick="selectOccasionDay(\'' + it.iso + '\')" class="w-full text-start flex items-center gap-3 py-2 border-t border-gray-100 dark:border-gray-700">' +
+          '<i class="fas ' + it.icon + ' w-4 text-center" style="color:' + it.color + '"></i>' +
+          '<span class="text-sm font-medium ' + (it.done ? 'plan-done text-gray-400' : 'text-gray-800 dark:text-white') + '">' + escapeHtml(it.label) + '</span>' +
+          '<span class="ms-auto text-xs text-gray-400 whitespace-nowrap">' + dat + '</span></button>';
+      }).join('');
+    }
+
     async function renderTodayOccasionBanner() {
       const list = document.getElementById('task-list');
       if (!list || activeSmartList !== 'today') return;
