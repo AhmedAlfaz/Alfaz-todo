@@ -107,7 +107,8 @@
     .bnav-item.active { color: #2563eb; }
     .dark .bnav-item.active { color: #93c5fd; }
     main { padding-bottom: 68px; }
-    @media (min-width: 768px) { main { padding-bottom: 24px; } }
+    #task-list { padding-bottom: 76px; }
+    @media (min-width: 768px) { main { padding-bottom: 24px; } #task-list { padding-bottom: 24px; } }
     #sidebar { width: 16rem; background: #fff; border-right: 1px solid #e5e7eb; }
     [dir="rtl"] #sidebar { border-right: none; border-left: 1px solid #e5e7eb; }
     main { flex: 1; background: #f9fafb; }
@@ -1870,7 +1871,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=31&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=32&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();

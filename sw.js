@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alfaz-todo-v31';
+const CACHE_NAME = 'alfaz-todo-v32';
 const SHELL = [
   './',
   './index.html',
