@@ -11,13 +11,14 @@ QDIR = f'/tmp/abdo-push-test-{RUN}'
 os.makedirs(QDIR, exist_ok=True)
 CFG = f'{QDIR}/push-config.php'
 TOKEN_SECRET = 'test-secret-' + RUN
+CRON_KEY = 'cron-' + RUN
 
 with open(f'{REPO}/push/push-lib.php') as f: LIB = f.read()
 
 open(CFG, 'w').write(f"""<?php
 define('ONESIGNAL_APP_ID','test-app'); define('ONESIGNAL_REST_KEY','');
 define('PUSH_TRANSPORT','log'); define('PUSH_DIR','{QDIR}');
-define('PUSH_TOKEN_SECRET','{TOKEN_SECRET}'); define('PUSH_WINDOW_MIN',15);
+define('PUSH_TOKEN_SECRET','{TOKEN_SECRET}'); define('PUSH_CRON_KEY','{CRON_KEY}'); define('PUSH_WINDOW_MIN',15);
 define('PUSH_TZ','Africa/Cairo'); define('PUSH_MAX_EVENTS_PER_USER',120); define('PUSH_MAX_BODY',240);
 date_default_timezone_set(PUSH_TZ);
 """)
@@ -71,9 +72,13 @@ def post(uid, events, token=None, player='pl-test'):
     except urllib.error.HTTPError as e:
         return e.code, (json.loads(e.read().decode()) if e.headers.get('Content-Type','').startswith('application/json') else {})
 
-def cron():
-    r = urllib.request.urlopen(f'http://127.0.0.1:{PORT}/push-cron.php', timeout=30)
-    return r.read().decode().strip()
+def cron(key=CRON_KEY):
+    u = f'http://127.0.0.1:{PORT}/push-cron.php' + (f'?key={key}' if key is not None else '')
+    try:
+        r = urllib.request.urlopen(u, timeout=30)
+        return r.status, r.read().decode().strip()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode().strip()
 
 def queue(uid):
     p = f'{QDIR}/user-{uid}.json'
@@ -122,12 +127,14 @@ check('3b: re-sync keeps the same OneSignal id', q2 and [e for e in q2['events']
       json.dumps([e for e in q2['events'] if e['id']==ev_later['id']])[:160])
 
 # 4) cron dispatches due events exactly once
-out1 = cron()
+code1, out1 = cron()
 sent1 = int(re.search(r'sent=(\d+)', out1).group(1))
 check('4a: first cron run dispatches the two due events', sent1 == 2, out1)
-out2 = cron()
+code2, out2 = cron()
 sent2 = int(re.search(r'sent=(\d+)', out2).group(1))
 check('4b: second cron run sends nothing (no double alert ever)', sent2 == 0, out2)
+check('4c: cron refuses the unauthenticated public URL (403)', cron(key=None)[0] == 403, cron(key=None))
+check('4d: cron refuses a wrong key (403)', cron(key='not-it')[0] == 403, cron(key='not-it')[1][:60])
 
 # 5) cancel on drop: client removes the task event
 post(uid, [ev_soon, ev_later])
