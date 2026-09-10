@@ -511,6 +511,7 @@
         <p class="text-sm text-blue-600 dark:text-blue-400 font-medium" id="next-prayer-text">
           <i class="fas fa-clock me-1"></i> Loading prayer times...
         </p>
+        <p id="prayer-freshness" class="hidden mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium"></p>
       </div>
 
       <!-- Qibla Navigator (merged into Prayer Reminders) -->
@@ -1134,6 +1135,8 @@
         calibrateCompass: "Calibrate Compass (Mobile)",
         prayerAlert: "🕌 Time for {prayer} prayer!",
         enableNotif: "Enable Notifications", notifEnabled: "Notifications Enabled ✓",
+        prayerTimesStale: "These times are ~{h}h old — check your connection and refresh.",
+        prayerTimesStaleUnknown: "These times may be from an earlier day — refresh when online.",
         noTasks: "No tasks yet. Add one above! ☀️",
         tasksTotal: "{total} tasks", tasksDone: "{done} completed",
         darkMode: "Dark Mode", lightMode: "Light Mode",
@@ -1233,6 +1236,8 @@
         calibrateCompass: "معايرة البوصلة (الهاتف فقط)",
         prayerAlert: "🕌 حان الآن موعد أذان {prayer}!",
         enableNotif: "تفعيل الإشعارات", notifEnabled: "الإشعارات مفعلة ✓",
+        prayerTimesStale: "هذه الأوقات قديمة منذ نحو {h} ساعة — تأكد من الاتصال وحدّث.",
+        prayerTimesStaleUnknown: "ربما هذه الأوقات من يوم سابق — حدّثها عند توفر اتصال.",
         noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",
         tasksTotal: "{total} مهام", tasksDone: "{done} مكتملة",
         darkMode: "الوضع المظلم", lightMode: "الوضع الفاتح",
@@ -1327,7 +1332,7 @@
     // ===== STATE =====
     let tasks = []; try { tasks = JSON.parse(localStorage.getItem('alfatore_tasks')) || []; } catch(e) {}
     let currentLang = localStorage.getItem('alfatore_lang') || 'en';
-    let userLat = null, userLng = null, qiblaAngle = 0, prayerTimings = {}, currentAudio = null, sidebarOpen = false;
+    let userLat = null, userLng = null, qiblaAngle = 0, prayerTimings = {}, currentAudio = null, sidebarOpen = false, cachedAt = 0;
     let activeSmartList = localStorage.getItem('alfatore_smartlist') || 'today';
     let selectedPriority = 1;
     let pendingRecurrence = { type: null, weekdays: [], endDate: null };
@@ -1938,7 +1943,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=39&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=40&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2504,15 +2509,35 @@
       const cacheKey = `alfatore_prayers_${ds}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
-        try { prayerTimings = JSON.parse(cached); } catch(e) { prayerTimings = {}; }
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.v === 2 && parsed.timings) {
+            prayerTimings = parsed.timings; cachedAt = parsed.cached_at || 0;
+          } else {
+            prayerTimings = parsed || {};   // legacy v1: bare timings object
+          }
+        } catch(e) { prayerTimings = {}; }
         renderPrayerCards(); updateNextPrayer();
       }
       fetch(`https://api.aladhan.com/v1/timings/${ds}?latitude=${lat}&longitude=${lng}&method=5`)
         .then(r => r.json()).then(data => {
           prayerTimings = { Fajr: data.data.timings.Fajr, Dhuhr: data.data.timings.Dhuhr, Asr: data.data.timings.Asr, Maghrib: data.data.timings.Maghrib, Isha: data.data.timings.Isha };
-          localStorage.setItem(cacheKey, JSON.stringify(prayerTimings));
+          localStorage.setItem(cacheKey, JSON.stringify({ v: 2, cached_at: Date.now(), date_key: ds, timings: prayerTimings }));
+          cachedAt = Date.now();
           renderPrayerCards(); updateNextPrayer();
         }).catch(() => { if (!cached) showToast('❌ Failed to load prayer times', 'error'); });
+    }
+
+    function renderPrayerFreshness() {
+      const el = document.getElementById('prayer-freshness');
+      if (!el) return;
+      const t = i18n[currentLang];
+      if (!Object.keys(prayerTimings || {}).length) { el.classList.add('hidden'); return; }
+      const fresh = cachedAt && (Date.now() - cachedAt) < 12 * 3600 * 1000;
+      if (fresh) { el.classList.add('hidden'); return; }
+      el.classList.remove('hidden');
+      const ago = cachedAt ? Math.max(0, Math.round((Date.now() - cachedAt) / 3600000)) : null;
+      el.innerHTML = `<i class="fas fa-triangle-exclamation me-1"></i> ${ago === null ? t.prayerTimesStaleUnknown : t.prayerTimesStale.replace('{h}', ago)}`;
     }
 
     function renderPrayerCards() {
@@ -2542,6 +2567,7 @@
             <p class="text-xl font-bold text-gray-800 dark:text-white mt-1" dir="ltr">${h12}:${String(m).padStart(2,'0')} <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">${ampm}</span></p>
           </div>`;
       }
+      renderPrayerFreshness();
     }
 
     function updateNextPrayer() {

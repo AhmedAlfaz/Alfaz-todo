@@ -216,6 +216,21 @@ anyone it's done.
 4. Tell me the **minimum cron interval** hPanel offers you (commonly 5 or 15 min) — decides
    whether Tier 3 uses exact `send_at` scheduling (preferred) or a sweep.
 
+## 6b. Status — 2026-09-10, after "why don't you just do the move?"
+
+| Item | State |
+|---|---|
+| Hostinger storefront on v39 | **verified live** (`sw.js` → `CACHE_NAME = 'alfaz-todo-v39'`, 200) — no manual redeploy was needed, my earlier assumption was stale |
+| Stale prayer-times fix + dead `alfaz-prayer-v1` cleanup | **built as v40**, `tools/test_v40_stale.py` 10/10 in real Chromium (EN + AR + RTL + legacy-cache + online paths) |
+| Sender: `push/push-lib.php`, `push-sync.php`, `push-cron.php`, `push-config.example.php`, `.htaccess`, `README.md` | **built and tested**, `tools/test_push_php.py` 16/16 against the real PHP endpoints (auth, idempotency, cancel-on-drop, retry-once, path traversal, opt-out) |
+| Tier 1 client wiring (`index.html`, `sw.js`, soft-ask UI) | **not written on purpose** — needs a real OneSignal `appId` + their SDK worker; anything else is untestable code that looks finished |
+
+Two things that came out of building rather than planning:
+- `mb_substr()` **fatals** when PHP lacks mbstring, which would have taken the whole endpoint
+  down on a shared host. Now `push_cut()` with a `preg_split('//u')` fallback.
+- Re-syncing the same schedule must reuse OneSignal's `name` (idempotency key) or every daily
+  app open would create a **second** Fajr alert. Covered by test 3a/3b.
+
 ## 7. Open questions I will verify during build, not assume
 
 - OneSignal `send_at` + per-player targeting from the REST API on the **free** web plan (docs

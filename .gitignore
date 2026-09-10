@@ -1,0 +1,6 @@
+
+# real config holds the REST key + device token secret - never commit
+Alfaz-todo/push/push-config.php
+Alfaz-todo/push/queue/
+push/push-config.php
+push/queue/

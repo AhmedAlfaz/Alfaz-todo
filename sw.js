@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alfaz-todo-v39';
+const CACHE_NAME = 'alfaz-todo-v40';
 const SHELL = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE_NAME && k !== 'alfaz-prayer-v1').map(k => caches.delete(k)));
+    await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
     await self.clients.claim();
   })());
 });
