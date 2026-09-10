@@ -9,7 +9,21 @@
 require_once __DIR__ . '/push-lib.php';
 @set_time_limit(50);
 header('Content-Type: text/plain; charset=utf-8');
+
 $cfg = push_config();
+
+// Refuse strangers. No key configured -> only the CLI (php push-cron.php) may run, which is
+// the safer default: a forgotten PUSH_CRON_KEY must not silently leave a public trigger.
+// NOTE: push_config() must run first - it is what defines PUSH_CRON_KEY.
+$key = defined('PUSH_CRON_KEY') ? (string)PUSH_CRON_KEY : '';
+if (PHP_SAPI !== 'cli') {
+    $given = isset($_GET['key']) ? (string)$_GET['key'] : '';
+    if ($key === '' || !hash_equals($key, $given)) {
+        http_response_code(403);
+        echo "forbidden\n";
+        exit;
+    }
+}
 
 $glob = glob($cfg['dir'] . '/user-*.json') ?: [];
 $now = time();

@@ -80,10 +80,12 @@ itself on next open. It is not a password and it unlocks nothing on your account
 1. hPanel → search for **Cron Jobs** (it's under *Advanced* in most layouts).
 2. Add a cron job:
    - **Interval:** every 15 minutes
-   - **Command:**
+   - **Command:** (replace `YOUR_KEY` with the same random string you put in `PUSH_CRON_KEY`)
      ```
-     wget -q -O - "https://firebrick-sardine-612688.hostingersite.com/push/push-cron.php" >/dev/null 2>&1
+     wget -q -O - "https://firebrick-sardine-612688.hostingersite.com/push/push-cron.php?key=YOUR_KEY" >/dev/null 2>&1
      ```
+   And open `.../push/push-cron.php?key=YOUR_KEY` when testing — without the key you should get
+   `forbidden`, which is the correct answer for a stranger.
 3. Save, then open `https://firebrick-sardine-612688.hostingersite.com/push/push-cron.php` in your
    browser and tell me the single line it prints. It should look like:
    `abdo-push-cron 2026-09-10T… files=0 sent=0 failed=0 pruned=0 transport=log`

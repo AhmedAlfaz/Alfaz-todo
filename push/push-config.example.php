@@ -30,6 +30,12 @@ define('PUSH_DIR', __DIR__ . '/queue');
 // queue (they re-sync on next open, so it is survivable).
 define('PUSH_TOKEN_SECRET', '');      // any long random string, e.g. 40 chars
 
+// ---- Cron guard ----
+// GitHub Pages serves .php as plain text, and a public host is a public host: without this,
+// anyone can GET push-cron.php as fast as they like. Set this to any random string and give
+// cron the URL with ?key=<that string>. Requests without it are refused before any work.
+define('PUSH_CRON_KEY', '');
+
 // ---- Behaviour ----
 define('PUSH_WINDOW_MIN', 15);        // cron sends anything due in the next N minutes.
                                       // Must be >= your cron interval. 15 covers a 5- or 15-min cron.
