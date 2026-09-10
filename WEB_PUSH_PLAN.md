@@ -183,15 +183,38 @@ one outcome worse than no alerts.
 **Nothing here touches the working v39 behaviour.** Worst case (vendor, Hostinger, keys) we
 leave exactly where we are today and keep the in-app alarms.
 
-## 6. Decisions I need from you
+## 6. Decisions — 4 of 6 locked by CEO on 2026-09-10
 
-1. **Delivery:** OneSignal web push (recommended) or pure DIY VAPID (no vendor, ~3× the work)?
-2. **Sender:** confirm Hostinger has **Cron Jobs + PHP** in hPanel. If not → Cloudflare Worker.
-3. **Domain:** keep the free Hostinger subdomain, or connect your own domain first (recommended)?
-4. **First events:** prayer/azan only, or prayer + task/plan reminders together (Tier 3+4)?
-5. **Consent style:** soft-ask banner (recommended) or the native prompt straight away?
-6. **Kill switch:** default **off until the user opts in** (recommended, and the honest answer
-   for a privacy-selling point) — confirm.
+| # | Question | Decision |
+|---|---|---|
+| 1 | Delivery | **OneSignal web push** (DIY VAPID kept as documented escape hatch) |
+| 2 | Sender | **Hostinger PHP + Cron Jobs — CEO confirms both exist on the plan** |
+| 4 | First events | **Prayers + tasks + plan reminders** (Tier 3 + Tier 4). Occasions/“tomorrow is…” and daily digest **deferred** to a later tier, opt-in |
+| 5 | Consent | **Soft-ask banner, native prompt only after the user taps it** |
+| 6 | Kill switch | **Push OFF by default** until the user opts in; visible toggle in Settings |
+
+**Still open (does not block Tier 1/2):**
+
+3. **Domain:** keep the free `…hostingersite.com` subdomain or connect your own domain before
+   we ship push? OneSignal's own web-push guidance is to **use your own domain** — free
+   shared subdomains are where web push gets flaky (verification, shared-IP sender reputation,
+   and any other tenant on that subdomain). Affects Tier 3+ rollout, not the pipe.
+
+### Build order now that scope is decided
+**Tier 0 (you) → 1 → 2 → 3 → 4 → 5 → 6** — Tier 4 moved ahead of 5 only because you asked for
+task/plan reminders in the first batch; Tier 5 (no double-notify) still lands **before** we tell
+anyone it's done.
+
+### What Tier 0 needs from you, concretely
+1. OneSignal → **Create Web Push app** → name it `ABDO-Hostinger` → note the **appId**
+   (public, safe in `index.html`).
+2. Settings for that app: *Service Worker* → path `onesignal/OneSignalSDKWorker.js`,
+   scope `/Alfaz-todo/` on Pages, `/` on Hostinger. Site URL: the exact origin.
+3. From **Credentials & Keys**: the **REST API key** → paste it into the Hostinger file
+   `push-config.php` (chmod 640). **Not into chat** — same reason as the GitHub token; a REST
+   key can send to every subscriber we have.
+4. Tell me the **minimum cron interval** hPanel offers you (commonly 5 or 15 min) — decides
+   whether Tier 3 uses exact `send_at` scheduling (preferred) or a sweep.
 
 ## 7. Open questions I will verify during build, not assume
 
