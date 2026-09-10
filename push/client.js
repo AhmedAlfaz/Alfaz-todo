@@ -84,6 +84,9 @@
           // We own the prompt (soft-ask only, never on load) and we do not want a "thanks for
           // subscribing" message landing on top of a real prayer alert.
           autoPrompt: false,
+          // Off by default and it counts page views in localStorage (os_pageViews). An Islamic
+          // app that advertises privacy has no business measuring browsing without asking.
+          pageViewsEnabled: false,
           welcomeNotification: { disable: true },
           notify: true
         });

@@ -1383,6 +1383,12 @@
     }
 
     async function checkSession() {
+      // Guest mode is a standing choice, not a one-off dismissal: no sign-in wall on the next
+      // launch, and no Supabase round-trip paid by someone who already declined an account.
+      // Data is already device-local in this mode (alfatore_tasks), so nothing is newly at risk.
+      let guestMode = false;
+      try { guestMode = localStorage.getItem('alfaz_guest') === '1'; } catch (e) {}
+      if (guestMode) { showApp(); return; }
       const ok = await ensureSupabase(6000);
       if (!ok) {
         showApp();
@@ -1417,7 +1423,10 @@
       document.getElementById('user-email').textContent = currentUser.email;
       document.getElementById('user-section').classList.remove('hidden');
     }
-    function continueAsGuest() { showApp(); }
+    function continueAsGuest() {
+      try { localStorage.setItem('alfaz_guest', '1'); } catch (e) {}
+      showApp();
+    }
     function showLogin() {
       document.getElementById('login-form').classList.remove('hidden');
       document.getElementById('signup-form').classList.add('hidden');
@@ -1460,7 +1469,7 @@
     }
     async function handleLogout() {
       await db.auth.signOut();
-      currentUser = null; tasks = []; localStorage.removeItem('alfatore_tasks');
+      currentUser = null; tasks = []; localStorage.removeItem('alfatore_tasks'); localStorage.removeItem('alfaz_guest');
       renderActiveSmartList(); showAuth();
     }
 
@@ -1963,7 +1972,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=42&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=43?v=42&t=t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
