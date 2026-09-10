@@ -106,8 +106,9 @@
     .bnav-item i { font-size: 17px; }
     .bnav-item.active { color: #2563eb; }
     .dark .bnav-item.active { color: #93c5fd; }
-    #app-main { padding-bottom: 96px; }
-    #task-list { padding-bottom: 76px; }
+    #app-main { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+    #task-list { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+    #occasions-month-list { margin-bottom: 24px; }
     @media (min-width: 768px) { #app-main { padding-bottom: 32px; } #task-list { padding-bottom: 24px; } }
     #sidebar { width: 16rem; background: #fff; border-right: 1px solid #e5e7eb; }
     [dir="rtl"] #sidebar { border-right: none; border-left: 1px solid #e5e7eb; }
@@ -447,7 +448,7 @@
     </div>
 
     <!-- ===== 2. PRAYER TIMES ===== -->
-    <div id="prayers-view" class="view-section hidden max-w-4xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+    <div id="prayers-view" class="view-section hidden max-w-4xl mx-auto flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="prayerReminders">Prayer Reminders</h2>
         <span class="text-4xl">🕌</span>
@@ -552,7 +553,7 @@
     </div>
 
     <!-- ===== 3.5. LIBRARY ===== -->
-    <div id="library-view" class="view-section hidden max-w-4xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+    <div id="library-view" class="view-section hidden max-w-4xl mx-auto flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-6">
         <div>
           <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="library">Library</h2>
@@ -583,7 +584,7 @@
       <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12"></div>
     </div>
 
-    <div id="calendar-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+    <div id="calendar-view" class="view-section hidden max-w-3xl mx-auto flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-2">
         <div>
           <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="plannerTitle">Planner</h2>
@@ -651,7 +652,7 @@
     </div>
 
     <!-- ===== 4. GROUPS ===== -->
-    <div id="groups-view" class="view-section hidden max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
+    <div id="groups-view" class="view-section hidden max-w-3xl mx-auto flex flex-col pt-10 md:pt-0">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="groups">Groups</h2>
         <span class="text-4xl">👥</span>
@@ -1871,7 +1872,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=33&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=34&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
