@@ -3,7 +3,7 @@
 Covers: inert-by-default, enabled:false never touches OneSignal, no auto-prompt, the earned
 one-shot soft-ask, schedule building for prayers/tasks/plans, the sync POST, the shared link,
 and config resolution across navigations/offline via our own service worker cache."""
-import json, sys, time, subprocess, signal
+import json, re, sys, time, subprocess, signal
 from playwright.sync_api import sync_playwright
 
 REPO, PORT = '/home/user/Alfaz-todo', 8099
@@ -260,8 +260,13 @@ check('13b: committed config is deployable as-is: enabled, canonical link, real 
       json.dumps({k: committed.get(k) for k in ('installUrl',)})[:110] if committed else b2[:80])
 check('13g: nothing host-specific left behind at the web root', get('/push-config.json')[0] == 404)
 c3, b3 = get('/sw.js')
-check('13c: our own worker still owns the root scope, and caches the config',
-      c3 == 200 and b'alfaz-todo-v42' in b3 and b'site-config.json' in b3, f"HTTP {c3}")
+# version number deliberately not asserted here: it changes every release and a test that
+# fails because of a correct release is a test people start ignoring.
+m_ver = re.search(rb"CACHE_NAME = 'alfaz-todo-v(\d+)'", b3)
+idx_ver = re.search(rb"\?v=(\d+)&t=", open(f'{REPO}/index.html','rb').read())
+check('13c: our own worker still owns the root scope, caches the config, and matches index.html',
+      c3 == 200 and b'site-config.json' in b3 and m_ver and idx_ver and m_ver.group(1) == idx_ver.group(1),
+      f"sw=v{m_ver.group(1).decode() if m_ver else '?'} index=v{idx_ver.group(1).decode() if idx_ver else '?'}")
 src_txt = open(f'{REPO}/index.html', encoding='utf-8').read()
 check('13d: index.html loads OneSignal + client, both deferred (no render block)',
       'OneSignalSDK.page.js" defer' in src_txt and 'push/client.js" defer' in src_txt)
