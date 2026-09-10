@@ -675,13 +675,17 @@
           <input type="time" id="plan-time" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200">
         </div>
         <textarea id="plan-note" rows="2" data-i18n-placeholder="planNotePlaceholder" placeholder="Note (optional)" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm mb-3 focus:outline-none focus:border-blue-500"></textarea>
-        <select id="plan-repeat" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer">
+        <select id="plan-repeat" onchange="updatePlanIntervalOptions(this.value)" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer">
           <option value="none" data-i18n="repeatNone">No repeat</option>
           <option value="daily" data-i18n="repeatDaily">Daily</option>
           <option value="weekly" data-i18n="repeatWeekly">Weekly</option>
           <option value="monthly" data-i18n="repeatMonthly">Monthly</option>
           <option value="yearly" data-i18n="repeatYearly">Yearly</option>
         </select>
+        <div id="plan-repeat-extra" class="hidden flex gap-2 mb-3">
+          <select id="plan-interval" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 cursor-pointer"></select>
+          <input type="date" id="plan-until" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200" title="Ends on">
+        </div>
         <select id="plan-reminder" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer">
           <option value="" data-i18n="noReminder">No reminder</option>
           <option value="0" data-i18n="reminderAtTime">At time</option>
@@ -1207,6 +1211,7 @@
         chipAll: "All", chipMyPlans: "My Plans", chipOccasions: "Occasions",
         viewMonth: "Month", viewWeek: "Week", viewYear: "Year",
         planReminder: "📅 Reminder: {task}", planDueNow: "📅 {task} — now", rem15: "15 min before", rem60: "1 hour before", rem1440: "1 day before",
+        everyN: "Every", intervalDays: "days", intervalWeeks: "weeks", intervalMonths: "months", intervalYears: "years",
         upcomingPlans: "Upcoming", nothingUpcoming: "Nothing coming up",
         yearlyOverview: "Year", done: "Done", category: "Category"
       },
@@ -1304,6 +1309,7 @@
         chipAll: "الكل", chipMyPlans: "خططي", chipOccasions: "المناسبات",
         viewMonth: "شهر", viewWeek: "أسبوع", viewYear: "سنة",
         planReminder: "📅 تذكير: {task}", planDueNow: "📅 {task} — الآن", rem15: "قبل ١٥ دقيقة", rem60: "قبل ساعة", rem1440: "قبل يوم",
+        everyN: "كل", intervalDays: "أيام", intervalWeeks: "أسابيع", intervalMonths: "أشهر", intervalYears: "سنوات",
         upcomingPlans: "القادمة", nothingUpcoming: "لا يوجد شيء قادم",
         yearlyOverview: "السنة", done: "تم", category: "الفئة"
       }
@@ -1923,7 +1929,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=36&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=37&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -4358,6 +4364,18 @@
     let selectedPlanColor = 0;
     function catById(id) { return PLAN_CATEGORIES.find(c => c.id === id) || PLAN_CATEGORIES[0]; }
     function planCat(p) { return p && p.category ? catById(p.category) : PLAN_CATEGORIES[0]; }
+    function updatePlanIntervalOptions(repeat) {
+      const el = document.getElementById('plan-interval');
+      const extra = document.getElementById('plan-repeat-extra');
+      if (!el || !extra) return;
+      extra.classList.toggle('hidden', !repeat || repeat === 'none');
+      const unitKey = repeat === 'daily' ? 'intervalDays' : (repeat === 'weekly' ? 'intervalWeeks' : (repeat === 'monthly' ? 'intervalMonths' : 'intervalYears'));
+      const unit = i18n[currentLang][unitKey] || (repeat === 'daily' ? 'days' : repeat === 'weekly' ? 'weeks' : repeat === 'monthly' ? 'months' : 'years');
+      let opts = '';
+      for (let i = 1; i <= 6; i++) opts += '<option value="' + i + '">' + (i18n[currentLang].everyN || 'Every') + ' ' + i + ' ' + unit + '</option>';
+      el.innerHTML = opts;
+      el.value = '1';
+    }
     function setPlannerView(v) {
       plannerView = ['month', 'week', 'year'].indexOf(v) > -1 ? v : 'month';
       try { localStorage.setItem('alfaz_planner_view', plannerView); } catch (e) {}
@@ -4523,11 +4541,24 @@
       const td = new Date(iso + 'T00:00:00');
       if (isNaN(pd.getTime()) || isNaN(td.getTime())) return false;
       if (td < pd) return false;
+      // stop repeating after repeat_until (inclusive)
+      if (plan.repeat && plan.repeat !== 'none' && plan.repeat_until) {
+        const until = new Date(plan.repeat_until + 'T23:59:59');
+        if (!isNaN(until.getTime()) && td > until) return false;
+      }
       const days = Math.round((td - pd) / 86400000);
-      if (plan.repeat === 'daily') return true;
-      if (plan.repeat === 'weekly') return td.getDay() === pd.getDay();
-      if (plan.repeat === 'monthly') return td.getDate() === pd.getDate();
-      if (plan.repeat === 'yearly') return (td.getMonth() === pd.getMonth() && td.getDate() === pd.getDate());
+      const n = Math.max(1, parseInt(plan.repeat_interval, 10) || 1);
+      if (plan.repeat === 'daily') return days % n === 0;
+      if (plan.repeat === 'weekly') return td.getDay() === pd.getDay() && Math.round(days / 7) % n === 0;
+      if (plan.repeat === 'monthly') {
+        if (td.getDate() !== pd.getDate()) return false;
+        const diff = (td.getFullYear() - pd.getFullYear()) * 12 + (td.getMonth() - pd.getMonth());
+        return diff % n === 0;
+      }
+      if (plan.repeat === 'yearly') {
+        if (td.getMonth() !== pd.getMonth() || td.getDate() !== pd.getDate()) return false;
+        return (td.getFullYear() - pd.getFullYear()) % n === 0;
+      }
       return days === 0;
     }
     function plansForIso(iso) {
@@ -4613,6 +4644,12 @@
         tEl.value = ''; dEl.value = iso; tmEl.value = ''; nEl.value = ''; rEl.value = 'none';
         selectedPlanColor = userPlans.length % PLAN_COLORS.length;
       }
+      const repEl0 = document.getElementById('plan-repeat');
+      updatePlanIntervalOptions((p && p.repeat) || 'none');
+      const ivEl = document.getElementById('plan-interval');
+      if (ivEl) ivEl.value = String((p && p.repeat_interval) || 1);
+      const unEl = document.getElementById('plan-until');
+      if (unEl) unEl.value = (p && p.repeat_until) || '';
       const rmEl = document.getElementById('plan-reminder');
       if (rmEl) rmEl.value = (p && p.reminder_minutes !== null && p.reminder_minutes !== undefined) ? String(p.reminder_minutes) : '';
       const cEl = document.getElementById('plan-category');
@@ -4653,6 +4690,8 @@
         time: (tmEl && tmEl.value) || '',
         note: (nEl && nEl.value.trim()) || '',
         repeat: (rEl && rEl.value) || 'none',
+        repeat_interval: (function(){ const el=document.getElementById('plan-interval'); return el ? (parseInt(el.value,10)||1) : 1; })(),
+        repeat_until: (function(){ const el=document.getElementById('plan-until'); return (el && el.value) || ''; })(),
         category: (document.getElementById('plan-category') && document.getElementById('plan-category').value) || 'goal',
         reminder_minutes: (function(){ const el=document.getElementById('plan-reminder'); return (el && el.value !== '') ? parseInt(el.value,10) : null; })(),
         reminder_fired: false,
