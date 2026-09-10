@@ -671,9 +671,10 @@
         <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4" id="plan-modal-title">Add Plan</h3>
         <input type="text" id="plan-title" data-i18n-placeholder="planTitlePlaceholder" placeholder="Plan title" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm mb-3 focus:outline-none focus:border-blue-500">
         <div class="flex gap-2 mb-3">
-          <input type="date" id="plan-date" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200">
+          <input type="date" id="plan-date" onchange="updatePlanHijriLabel()" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200">
           <input type="time" id="plan-time" class="w-1/2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200">
         </div>
+        <p id="plan-hijri" class="text-xs text-emerald-600 dark:text-emerald-400 -mt-2 mb-3"></p>
         <textarea id="plan-note" rows="2" data-i18n-placeholder="planNotePlaceholder" placeholder="Note (optional)" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm mb-3 focus:outline-none focus:border-blue-500"></textarea>
         <select id="plan-repeat" onchange="updatePlanIntervalOptions(this.value)" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer">
           <option value="none" data-i18n="repeatNone">No repeat</option>
@@ -694,6 +695,10 @@
           <option value="1440" data-i18n="rem1440">1 day before</option>
         </select>
         <select id="plan-category" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer"></select>
+        <label class="flex items-center gap-2 mb-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+          <input type="checkbox" id="plan-link-task" class="w-4 h-4 accent-blue-600 cursor-pointer">
+          <span data-i18n="alsoAddToMyDay">Also add to My Day as a task</span>
+        </label>
         <div class="flex gap-2 mb-4" id="plan-color-row"></div>
         <div class="flex gap-2">
           <button type="button" onclick="savePlanModal()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium text-sm" data-i18n="save">Save</button>
@@ -1212,6 +1217,8 @@
         viewMonth: "Month", viewWeek: "Week", viewYear: "Year",
         planReminder: "📅 Reminder: {task}", planDueNow: "📅 {task} — now", rem15: "15 min before", rem60: "1 hour before", rem1440: "1 day before",
         everyN: "Every", intervalDays: "days", intervalWeeks: "weeks", intervalMonths: "months", intervalYears: "years",
+        moveTo: "Move to", hijriLabel: "Hijri",
+        alsoAddToMyDay: "Also add to My Day as a task",
         upcomingPlans: "Upcoming", nothingUpcoming: "Nothing coming up",
         yearlyOverview: "Year", done: "Done", category: "Category"
       },
@@ -1310,6 +1317,8 @@
         viewMonth: "شهر", viewWeek: "أسبوع", viewYear: "سنة",
         planReminder: "📅 تذكير: {task}", planDueNow: "📅 {task} — الآن", rem15: "قبل ١٥ دقيقة", rem60: "قبل ساعة", rem1440: "قبل يوم",
         everyN: "كل", intervalDays: "أيام", intervalWeeks: "أسابيع", intervalMonths: "أشهر", intervalYears: "سنوات",
+        moveTo: "نقل إلى", hijriLabel: "هجري",
+        alsoAddToMyDay: "أضف أيضاً إلى يومي كمهمة",
         upcomingPlans: "القادمة", nothingUpcoming: "لا يوجد شيء قادم",
         yearlyOverview: "السنة", done: "تم", category: "الفئة"
       }
@@ -1929,7 +1938,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=37&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=39&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -4310,6 +4319,7 @@
             (p.time ? '<p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-clock me-1"></i>' + p.time + '</p>' : '') + '</div></div>' +
             '<div class="flex gap-1 flex-shrink-0">' +
             '<button type="button" onclick="togglePlanDone(\'' + p.id + '\')" class="' + (isDone ? 'text-green-600' : 'text-gray-400 hover:text-green-600') + ' text-xs px-2 py-1" title="' + (i18n[currentLang].done || 'Done') + '"><i class="fas ' + (isDone ? 'fa-check-circle' : 'fa-circle') + '"></i></button>' +
+            '<button type="button" onclick="quickMovePlan(\'' + p.id + '\')" class="text-amber-500 text-xs px-2 py-1" title="' + (i18n[currentLang].moveTo || 'Move to') + '"><i class="fas fa-arrows-left-right"></i></button>' +
             '<button type="button" onclick="openPlanModal(\'' + iso + '\',\'' + p.id + '\')" class="text-blue-500 text-xs px-2 py-1" title="' + (i18n[currentLang].editPlan || 'Edit') + '"><i class="fas fa-pen"></i></button>' +
             '<button type="button" onclick="deletePlan(\'' + p.id + '\')" class="text-red-500 text-xs px-2 py-1" title="' + (i18n[currentLang].deletePlan || 'Delete') + '"><i class="fas fa-trash"></i></button>' +
             '</div></div>';
@@ -4364,6 +4374,25 @@
     let selectedPlanColor = 0;
     function catById(id) { return PLAN_CATEGORIES.find(c => c.id === id) || PLAN_CATEGORIES[0]; }
     function planCat(p) { return p && p.category ? catById(p.category) : PLAN_CATEGORIES[0]; }
+    async function updatePlanHijriLabel() {
+      const el = document.getElementById('plan-hijri');
+      const dEl = document.getElementById('plan-date');
+      if (!el || !dEl || !dEl.value) { if (el) el.textContent = ''; return; }
+      const parts = dEl.value.split('-').map(Number);
+      if (parts.length !== 3) { el.textContent = ''; return; }
+      try {
+        const map = await loadHijriMonth(parts[0], parts[1] - 1);
+        const h = map[dEl.value];
+        if (h && h.hd) {
+          const monthName = h.hName || '';
+          el.textContent = (currentLang === 'ar')
+            ? ('الموافق ' + h.hd + ' ' + monthName + ' ' + h.hy + ' هـ')
+            : (h.hd + ' ' + monthName + ' ' + h.hy + ' AH');
+        } else {
+          el.textContent = '';
+        }
+      } catch (e) { el.textContent = ''; }
+    }
     function updatePlanIntervalOptions(repeat) {
       const el = document.getElementById('plan-interval');
       const extra = document.getElementById('plan-repeat-extra');
@@ -4644,12 +4673,15 @@
         tEl.value = ''; dEl.value = iso; tmEl.value = ''; nEl.value = ''; rEl.value = 'none';
         selectedPlanColor = userPlans.length % PLAN_COLORS.length;
       }
+      updatePlanHijriLabel();
       const repEl0 = document.getElementById('plan-repeat');
       updatePlanIntervalOptions((p && p.repeat) || 'none');
       const ivEl = document.getElementById('plan-interval');
       if (ivEl) ivEl.value = String((p && p.repeat_interval) || 1);
       const unEl = document.getElementById('plan-until');
       if (unEl) unEl.value = (p && p.repeat_until) || '';
+      const lkEl = document.getElementById('plan-link-task');
+      if (lkEl) lkEl.checked = !!(p && (tasks || []).some(x => x.plan_id === p.id));
       const rmEl = document.getElementById('plan-reminder');
       if (rmEl) rmEl.value = (p && p.reminder_minutes !== null && p.reminder_minutes !== undefined) ? String(p.reminder_minutes) : '';
       const cEl = document.getElementById('plan-category');
@@ -4704,14 +4736,67 @@
       } else {
         userPlans.push(plan);
       }
+      // link / unlink a task in My Day (opt-in) — source of truth is task.plan_id
+      try {
+        const wantLink = !!(document.getElementById('plan-link-task') && document.getElementById('plan-link-task').checked);
+        const hasLinked = (tasks || []).some(x => x.plan_id === plan.id);
+        if (wantLink) {
+          const existing = (tasks || []).find(x => x.plan_id === plan.id);
+          const remVal = (plan.reminder_minutes === null || plan.reminder_minutes === undefined) ? null : plan.reminder_minutes;
+          if (existing) {
+            existing.text = plan.title;
+            existing.due_date = plan.date;
+            existing.due_time = plan.time || null;
+            existing.reminder_minutes = remVal;
+            existing.reminder_fired = false;
+            if (!existing.id) existing.plan_id = plan.id;
+            localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+            try { syncTask(existing, 'update'); } catch (e) {}
+          } else {
+            const newTask = {
+              text: plan.title, done: false, due_date: plan.date, due_time: plan.time || null,
+              priority: 1, status: 'pending', library_id: null,
+              reminder_minutes: remVal, reminder_fired: false, plan_id: plan.id
+            };
+            tasks.unshift(newTask);
+            localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+            try { syncTask(newTask, 'insert'); } catch (e) {}
+          }
+        } else if (hasLinked) {
+          tasks = (tasks || []).filter(x => x.plan_id !== plan.id);
+          localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+        }
+        try { renderActiveSmartList(); } catch (e) {}
+      } catch (e) {}
       savePlans();
       try { if (editingPlanId) localStorage.removeItem(planReminderFiredKey(plan, date)); } catch (e) {}
       closePlanModal();
       renderOccasionsCalendar();
       showToast('✅ ' + (i18n[currentLang].planSaved || 'Plan saved!'), 'success');
     }
+    function quickMovePlan(id) {
+      const pl = (userPlans || []).find(x => x.id === id);
+      if (!pl) return;
+      const modal = document.getElementById('plan-modal');
+      const isOpen = modal && !modal.classList.contains('hidden');
+      if (!isOpen) {
+        openPlanModal(pl.date || getTodayString(), id);
+        setTimeout(() => {
+          showToast('⏩ ' + (i18n[currentLang].moveTo || 'Change the date to move this plan'), 'info');
+          try { document.getElementById('plan-date').focus(); } catch (e) {}
+        }, 350);
+      }
+    }
     function deletePlan(id) {
       if (!id) return;
+      try {
+        const linked = (tasks || []).filter(x => x.plan_id === id);
+        if (linked.length) {
+          tasks = (tasks || []).filter(x => x.plan_id !== id);
+          localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+          renderActiveSmartList();
+        }
+      } catch (e) {}
       userPlans = (userPlans || []).filter(p => p.id !== id);
       savePlans();
       renderOccasionsCalendar();
