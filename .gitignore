@@ -1,6 +1,3 @@
-
-# real config holds the REST key + device token secret - never commit
-Alfaz-todo/push/push-config.php
-Alfaz-todo/push/queue/
+# local push secrets - the REST key and the device-token secret live here on the server only
 push/push-config.php
 push/queue/
