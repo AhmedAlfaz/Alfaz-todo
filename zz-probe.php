@@ -1,0 +1,1 @@
+<?php header("Content-Type: text/plain"); echo "PHP-EXECUTES ", PHP_VERSION, "\n"; echo "curl_init=", function_exists("curl_init")?"yes":"no", " mbstring=", function_exists("mb_substr")?"yes":"no", " phar_ok=\n"; echo "DOCROOT=", $_SERVER["DOCUMENT_ROOT"] ?? "?", "\n"; echo "SOCKET=", getcwd(), "\n";
