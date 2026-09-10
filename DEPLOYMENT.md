@@ -9,11 +9,15 @@
 ## ⚡ Quick Re-Deploy Checklist (every time we push an update)
 
 1. Open hPanel → **Files → File Manager** → your site → `public_html/`
-2. Upload these (overwrite existing):
+0. **Say the link out loud once: Hostinger is the app.** GitHub Pages is a workshop copy for
+   testing on a phone; it is never the install link, and it can never deliver reminders (no PHP).
+1. Upload these (overwrite existing):
    - `index.html`  ← almost always
    - `sw.js`       ← almost always
+   - `site-config.json` ← always (it is what makes push + the share link work; missing = silent no-push)
    - `manifest.json` ← only if changed
    - `brand/` folder (3 icons) ← only if changed
+   - `push/` folder ← only when push code changed
    - `audio/` folder ← only if you changed azan sounds (rare)
 3. Done. Users just tap **Refresh / Update App (🔄)** inside the app to get the new version.
 

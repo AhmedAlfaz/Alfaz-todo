@@ -1,0 +1,16 @@
+{
+  "installUrl": "https://firebrick-sardine-612688.hostingersite.com/",
+  "push": {
+    "enabled": true,
+    "appId": "1d96cd6b-a496-4572-adfa-e3e35fde235b",
+    "swPath": "push/onesignal/OneSignalSDKWorker.js",
+    "swParam": {
+      "scope": "push/onesignal/"
+    },
+    "syncUrl": "push/push-sync.php",
+    "writeToken": "",
+    "leadMinutes": 0,
+    "note": "GitHub Pages reuses this file, and OneSignal binds an appId to ONE origin: on Pages their SDK logs a refusal and our client swallows it, so the app is unaffected and push simply stays off there. Flip to false here if that console line ever bothers someone."
+  },
+  "notes": "The ONLY file that differs per origin, and it is not edited per origin: the same copy works on both, and is simply inert where the appId does not belong. installUrl is the link users are asked to share so every install lands on the push-capable origin. writeToken must match PUSH_TOKEN_SECRET in push/push-config.php; leave it empty until the sender is switched on."
+}

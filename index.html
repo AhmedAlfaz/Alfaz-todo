@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-title" content="ABDO">
   <title>ABDO - Islamic Tasks & Reminders</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="canonical" href="https://firebrick-sardine-612688.hostingersite.com/">
   <link rel="icon" href="brand/abdo-icon-192-wb.png" type="image/png">
   <link rel="apple-touch-icon" href="brand/abdo-icon-192-wb.png">
 
@@ -313,6 +314,14 @@
         <i class="fas fa-bell"></i>
         <span data-i18n="enableNotif">Enable Notifications</span>
       </button>
+      <div id="workshop-flag" class="hidden w-full text-center text-[11px] font-bold uppercase tracking-wide bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg py-1.5 mb-2">
+        <i class="fas fa-flask me-1"></i><span data-i18n="workshopFlag">Workshop copy — not the real app</span>
+      </div>
+      <button onclick="shareApp()" id="share-app-btn" class="w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-share-nodes"></i>
+        <span data-i18n="shareAppBtn">Share ABDO</span>
+      </button>
+      <p id="noncanonical-warn" class="hidden text-xs text-amber-600 dark:text-amber-400 font-medium px-1 cursor-pointer"></p>
       <button onclick="checkForAppUpdate()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-sync-alt"></i>
         <span data-i18n="refreshAppBtn">Refresh / Update App</span>
@@ -1139,6 +1148,8 @@
         prayerAlert: "🕌 Time for {prayer} prayer!",
         enableNotif: "Enable Notifications", notifEnabled: "Notifications Enabled ✓",
         prayerTimesStale: "These times are ~{h}h old — check your connection and refresh.",
+        shareAppBtn: "Share ABDO", copiedLink: "Link copied \u2014 send it to a friend",
+        workshopFlag: "Workshop copy \u2014 not the real app",
         pushOnToast: "🔔 Alerts are on — we will nudge you at prayer time and for tasks.",
         pushFailToast: "Could not turn on alerts. They still work while the app is open.",
         prayerTimesStaleUnknown: "These times may be from an earlier day — refresh when online.",
@@ -1245,6 +1256,8 @@
         pushOnToast: "🔔 تم تفعيل التنبيهات — نذكّرك بوقت الصلاة وبمهامك.",
         pushFailToast: "لم نستطع تفعيل التنبيهات. التذكيرات تعمل طالما التطبيق مفتوح.",
         prayerTimesStaleUnknown: "ربما هذه الأوقات من يوم سابق — حدّثها عند توفر اتصال.",
+        shareAppBtn: "مشاركة عبده", copiedLink: "تم نسخ الرابط",
+        workshopFlag: "\u0646\u0633\u062e\u0629 \u0627\u0644\u062a\u062c\u0631\u0628\u0629 \u2014 \u0644\u064a\u0633\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0627\u0644\u062d\u0642\u064a\u0642\u064a",
         noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",
         tasksTotal: "{total} مهام", tasksDone: "{done} مكتملة",
         darkMode: "الوضع المظلم", lightMode: "الوضع الفاتح",
@@ -1950,7 +1963,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=41&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=42&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();

@@ -89,6 +89,16 @@
         });
         osReady = true;
       } catch (e) { osReady = false; return; }   // a broken SDK must never surface as an ABDO error
+      // OneSignal reports a wrong-origin appId with a page error. That is our own doing (one file
+      // serves both origins), so contain it: no red console line for the user, no ABDO breakage.
+      window.addEventListener('error', function (ev) {
+        var m = ev && ev.message || '';
+        if (/Can only be used on|AppID doesn't match existing apps|OneSignal/i.test(m)) {
+          osReady = false;
+          try { if (window.__abdoTrace) window.__abdoTrace.push(['onesignal refused', m.slice(0, 60)]); } catch (e2) {}
+          ev.preventDefault();
+        }
+      }, true);
       if (state() === 'on') { try { enable(true).catch(function () {}); } catch (e) {} }
       else maybeAsk();
     });
@@ -265,27 +275,123 @@
 
   window.abdoPushDisable = disable;   // Settings toggle can call this later
 
+  // ---- config load, with fallbacks the app's own service worker cannot break ----
+  // `cache: 'no-store'` guarantees a miss never lands in HTTP cache; offline, it simply fails.
+  // So we also try the shell copy our sw.js pre-caches, then the plain cached response.
+  // Without this, an offline launch would quietly lose push while keeping the UI that claims it.
+  function loadSiteConfig(cb) {
+    // Trace only where a developer can see it: never for real users, and only on loopback.
+    var trace = null;
+    try {
+      var h = location.hostname;
+      if (h === 'localhost' || h === '127.0.0.1') {
+        trace = window.__abdoTrace = window.__abdoTrace || [];
+        trace.push(['start', Date.now()]);
+      }
+    } catch (e) {}
+    var done = function (j) { try { if (trace) trace.push(['resolved', j ? 'ok' : 'null']); } catch (e) {} cb(j); };
+    var settled = false;
+    var finish = function (j) { if (!settled) { settled = true; done(j); } };
+    void trace;
+    var fromCache = function () {
+      try {
+        if (!('caches' in window)) return fetch('site-config.json').then(function (r) { return r.ok ? r.json() : null; });
+        return caches.match('site-config.json').then(function (hit) {
+          if (hit) return hit.json();
+          return fetch('site-config.json').then(function (r) { return r.ok ? r.json() : null; });
+        });
+      } catch (e) { return Promise.resolve(null); }
+    };
+    fetch('site-config.json', { cache: 'no-store' })
+      .then(function (r) { try { if (trace) trace.push(['no-store', r.status]); } catch (e) {} return r.ok ? r.json() : null; })
+      .then(function (j) { if (j) { finish(j); return; } return fromCache().then(function (k) { try { if (trace) trace.push(['fallback', k ? 'hit' : 'miss']); } catch (e) {} finish(k); }); })
+      .catch(function (e) { try { if (trace) trace.push(['no-store threw', String(e && e.name || e)]); } catch (e2) {} fromCache().then(finish); });
+  }
+
+  // ---- canonical install link ----
+  // Two hosting links = two apps as far as the browser (and push) is concerned. Rather than
+  // pretend, one link is declared canonical and everything users are asked to share uses it.
+  function canonicalUrl(j) {
+    var here = location.origin + location.pathname.replace(/[^/]*$/, '');
+    return (j && j.installUrl) || here;
+  }
+  function showWorkshopFlag() {
+    try {
+      var f = document.getElementById('workshop-flag');
+      if (f) f.classList.remove('hidden');
+    } catch (e) {}
+  }
+
+  function setupShare() {
+    loadSiteConfig(function (j) {
+      var url = canonicalUrl(j);
+      try { window.__abdoSite = { installUrl: url, canonical: sameOrigin(url) }; } catch (e) {}
+      var btn = document.getElementById('share-app-btn');
+      if (btn) btn.addEventListener('click', function () { shareApp(); });
+      // On a non-canonical origin, send installs to the one that can do push - as one button,
+      // not a banner, so nobody is nagged on open.
+      var nonCanonical = !!j.installUrl && !sameOrigin(j.installUrl);
+      // On the canonical origin a "share this app" button is pointless - you are already there.
+      var sb = document.getElementById('share-app-btn');
+      if (sb && !nonCanonical) sb.classList.add('hidden');
+      if (nonCanonical) showWorkshopFlag();
+      var warn = document.getElementById('noncanonical-warn');
+      if (warn && nonCanonical) {
+        warn.innerHTML = '<i class="fas fa-info-circle me-1"></i>' +
+          (currentLang === 'ar' ? 'لأفضل تجربة وللتذكيرات، ثبّت من الرابط الرئيسي' : 'For install prompts and reminders, use the main link');
+        warn.classList.remove('hidden');
+        warn.addEventListener('click', function () { shareApp(); });
+      }
+    });
+  }
+  function sameOrigin(u) {
+    try { return new URL(u, location.href).origin === location.origin; } catch (e) { return true; }
+  }
+  window.shareApp = function () {
+    var fire = function (u) {
+      if (navigator.share) { navigator.share({ title: appDisplayName(currentLang), url: u }).catch(function () {}); return; }
+      var done = function () { try { showToast('🔗 ' + (i18n[currentLang].copiedLink || 'Link copied'), 'success'); } catch (e) {} };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, function () { fallbackCopy(u); done(); });
+      else { fallbackCopy(u); done(); }
+    };
+    if (window.__abdoSite && window.__abdoSite.installUrl) return fire(window.__abdoSite.installUrl);
+    loadSiteConfig(function (j) { fire(canonicalUrl(j)); });
+  };
+  function fallbackCopy(u) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = u; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    } catch (e) {}
+  }
+
   // ---- boot ----
+  function bootPush(pc) {
+    try { if (window.__abdoTrace) window.__abdoTrace.push(['bootPush', pc ? (pc.enabled === false ? 'disabled' : 'enabled') : 'no-push-node']); } catch (e) {}
+    // Disabled here (e.g. GitHub Pages reusing the Hostinger appId) must not even load
+    // OneSignal: their SDK would throw a visible console error for zero benefit.
+    if (!pc || !pc.appId || pc.enabled === false) return;
+    cfg = pc;
+    try {
+      window.__abdoPush = { cfg: cfg, state: state, decided: decided, buildEvents: buildEvents,
+                            sync: syncPush, uid: pushUid, markInterested: markInterested,
+                            maybeAsk: maybeAsk, enable: enable, disable: disable };
+    } catch (e) {}
+    initOneSignal();
+  }
+
   function start() {
-    if (!canPush() || pushLooksImpossible()) return;   // no request paid by devices that cannot use it
+    try { if (window.__abdoTrace) window.__abdoTrace.push(['gates', canPush() ? 'canPush' : 'no-push', pushLooksImpossible() ? 'impossible' : 'possible']); } catch (e) {}
+    if (!canPush() || pushLooksImpossible()) { setupShare(); return; }   // no config paid for by devices that cannot use it
     var host = location.hostname || '';
     if (host === 'localhost' || host === '127.0.0.1') {
       var q = new URLSearchParams(location.search);
       if (!q.get('pushApp')) return;                   // local dev opts in explicitly
     }
-    fetch('push-config.json', { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (!j || !j.appId || j.enabled === false) return;   // no config -> nothing changes at all
-        cfg = j;
-        try {
-          window.__abdoPush = { cfg: cfg, state: state, decided: decided, buildEvents: buildEvents,
-                                sync: syncPush, uid: pushUid, markInterested: markInterested,
-                                maybeAsk: maybeAsk, enable: enable, disable: disable };
-        } catch (e) {}
-        initOneSignal();
-      })
-      .catch(function () {});
+    loadSiteConfig(function (j) {
+      setupShare();
+      bootPush(j && j.push ? j.push : null);
+    });
   }
 
   window.addEventListener('load', function () {

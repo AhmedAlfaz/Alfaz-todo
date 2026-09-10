@@ -40,11 +40,31 @@ python3 -m http.server 8080
 # then open http://localhost:8080
 ```
 
-## 🚀 Deploy
+## 🚀 One app, one link
 
-- **GitHub Pages:** push to `main` → site auto-builds at
-  `https://ahmedalfaz.github.io/Alfaz-todo/`
-- **Hostinger:** upload `index.html`, `manifest.json`, `sw.js`, `brand/`, `audio/` into `public_html` — see **[DEPLOYMENT.md](DEPLOYMENT.md)** for the quick re-deploy checklist.
+**Canonical (the only link to share):** `https://firebrick-sardine-612688.hostingersite.com/`
+
+There used to be two live copies — this repo's GitHub Pages build and the Hostinger site. That was a
+mistake, not a feature: a PWA is defined by its **origin**, so two links meant two separate installed
+apps, two offline caches, two sets of user data, and only one of them able to do push (OneSignal binds
+an app id to a single origin, and only Hostinger can run the PHP sender). Users installing from the
+"same" app were not getting the same app.
+
+**The GitHub Pages URL is a workshop copy, not a product.** Any copy served from a non-canonical
+origin labels itself on every load ("Workshop copy — not the real app"), so nobody mistakes it, and it
+hides the Share button because sharing a copy is how we got here in the first place. Use it to check
+work on a phone before it ships; never send it as the install link.
+
+| | Hostinger | GitHub Pages |
+|---|---|---|
+| Purpose | the app users install | preview/testing only |
+| Push reminders | yes | no (needs the PHP sender, which Pages cannot run) |
+| Update path | upload to `public_html` | automatic on push to `main` |
+
+Deploy to production = upload these to `public_html`: `index.html`, `sw.js`, `manifest.json`,
+`site-config.json`, `brand/`, `push/`. See **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+`site-config.json` is the only file whose contents differ per host, and it is not edited per host:
+it names the canonical link and the OneSignal app id, and is simply inert where that id does not belong.
 
 ---
 
