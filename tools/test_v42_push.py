@@ -209,7 +209,7 @@ with sync_playwright() as pw:
           isinstance(cap, dict) and cap.get('url') == CANON and bool(cap.get('title')), cap)
 
     # 10) canonical origin: no notice at all
-    pg4, e6 = make_page(b, cfg={**CFG, 'installUrl': 'http://127.0.0.1:8099/'}, mock=True)
+    pg4, e6 = make_page(b, cfg={**CFG, 'installUrl': f"http://127.0.0.1:{PORT}/"}, mock=True)
     same = pg4.evaluate("""() => ({ canonical: (window.__abdoSite||{}).canonical,
         warn: (() => { const w=document.getElementById('noncanonical-warn'); return w ? !w.classList.contains('hidden') : null; })() })""")
     check('10a: on the canonical origin the notice stays hidden', same['canonical'] is True and same['warn'] is False, same)
@@ -262,8 +262,17 @@ check('13g: nothing host-specific left behind at the web root', get('/push-confi
 c3, b3 = get('/sw.js')
 # version number deliberately not asserted here: it changes every release and a test that
 # fails because of a correct release is a test people start ignoring.
+# The refresh URL has been corrupted by a careless version bump before now ('?v=43?v=42&t=t='),
+# which silently breaks cache-busting: an empty t= makes the URL identical on every tap.
+# Assert the whole shape, not just the number.
+idx_txt = open(f'{REPO}/index.html','rb').read()
+occ = re.findall(rb"\?v=\d+&t=", idx_txt)
+junk = re.findall(rb"\?v=", idx_txt)
+check('13c2: refresh URL well-formed - exactly one ?v=N&t=, no doubled version, no empty t=',
+      len(occ) == 1 and len(junk) == 1 and (b'?v=' + re.search(rb"CACHE_NAME = 'alfaz-todo-v(\d+)'", b3).group(1) + b'&t=') in idx_txt,
+      f'?v= count={len(junk)}, well-formed={len(occ)}')
 m_ver = re.search(rb"CACHE_NAME = 'alfaz-todo-v(\d+)'", b3)
-idx_ver = re.search(rb"\?v=(\d+)&t=", open(f'{REPO}/index.html','rb').read())
+idx_ver = re.search(rb"\?v=(\d+)&t=", idx_txt)
 check('13c: our own worker still owns the root scope, caches the config, and matches index.html',
       c3 == 200 and b'site-config.json' in b3 and m_ver and idx_ver and m_ver.group(1) == idx_ver.group(1),
       f"sw=v{m_ver.group(1).decode() if m_ver else '?'} index=v{idx_ver.group(1).decode() if idx_ver else '?'}")
