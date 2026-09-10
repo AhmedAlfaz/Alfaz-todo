@@ -32,9 +32,15 @@ before any client code is wired to it.
    ```
    wget -q -O - "https://YOUR-DOMAIN/push/push-cron.php" >/dev/null 2>&1
    ```
-4. Smoke test in order: `curl -d '{}' https://YOUR-DOMAIN/push/push-sync.php` must answer
-   `{"ok":false,"error":"bad token"}` (proves the endpoint is live **and** closed to strangers) →
-   then `curl https://YOUR-DOMAIN/push/push-cron.php` must print `abdo-push-cron … sent=0`.
+4. Smoke test in order — and note what each answer *means*, because the previous version of this
+   file hid a real failure behind a "looks protected" 403:
+   - `curl -I https://YOUR-DOMAIN/push/onesignal/OneSignalSDKWorker.js` → **must be 200**. OneSignal's
+     browser code fetches this; if it 403s, web push cannot register and every user silently keeps
+     no reminders. (A blanket `Require all denied` in `push/.htaccess` caused exactly that.)
+   - `curl https://YOUR-DOMAIN/push/push-lib.php` → must be **403** (source must not be downloadable)
+   - `curl -d '{}' https://YOUR-DOMAIN/push/push-sync.php` → must be **403 from Apache** (blocked path)
+     or `bad token` if you un-block it; either way strangers cannot write.
+   - `curl 'https://YOUR-DOMAIN/push/push-cron.php?key=YOUR_KEY'` → prints `abdo-push-cron … sent=0`.
 
 ## Design rules this code enforces (each has a test)
 

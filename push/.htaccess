@@ -1,9 +1,27 @@
-# ABDO push sender internals - never serve over http
+# ABDO push folder — selective access.
+#
+# OneSignal MUST be able to fetch push/onesignal/OneSignalSDKWorker.js from the browser,
+# so a blanket deny here silently kills web push (that is exactly what an earlier version of
+# this file did). Blocking is therefore scoped to what must not be read:
+#   - .php executed or downloaded directly by a visitor (cron uses an authenticated URL instead)
+#   - the queue, which holds user notification copy
 <IfModule mod_authz_core.c>
-  Require all denied
+  Require all granted
 </IfModule>
 <IfModule !mod_authz_core.c>
   Order allow,deny
-  Deny from all
+  Allow from all
 </IfModule>
+
+<FilesMatch "\.(php|phar|ini|log|json)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+RedirectMatch 403 ^/push/queue(/|$)
+RedirectMatch 403 ^/push/.*\.php$
 Options -Indexes

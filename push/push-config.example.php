@@ -17,12 +17,14 @@ define('ONESIGNAL_REST_KEY', '');    // server-side only. Creating it = acceptin
 define('PUSH_TRANSPORT', 'log');
 
 // ---- Storage ----
-// Put this OUTSIDE public_html if your plan gives you a home dir (recommended):
-//   /home/u123456/abdo-push
-// If it must live inside the web root, every file is guarded and the dir ships a
-// deny rule — but "outside" is the honest answer, since the queue holds notification
-// copy for your users.
-define('PUSH_DIR', __DIR__ . '/queue');
+// Keep this OUTSIDE the web root: the queue holds your users' notification copy.
+// Verified doc root on this host is
+//   /home/u136736209/domains/firebrick-sardine-612688.hostingersite.com/public_html
+// so a sibling directory is one ../ away and unreachable over HTTP:
+define('PUSH_DIR', dirname(__DIR__, 2) . '/abdo-push/queue');
+// dirname(__DIR__, 2) from public_html/push = the domain folder. If that ever resolves
+// somewhere unwritable, push-check.php will say so; fall back to __DIR__ . '/queue'
+// only if you must (push/.htaccess denies that path over HTTP as a second line).
 
 // ---- Per-device write token ----
 // The client proves it owns its schedule queue with a token issued once per device.

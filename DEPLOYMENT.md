@@ -9,6 +9,14 @@
 ## ⚡ Quick Re-Deploy Checklist (every time we push an update)
 
 1. Open hPanel → **Files → File Manager** → your site → `public_html/`
+0. **You may not need this checklist at all.** Verified 2026-09-10: this Hostinger site auto-syncs
+   from the GitHub repo — a file pushed to `main` appeared at the Hostinger root within ~20-30s
+   (probe: a text file, then `PHP-EXECUTES 8.3.33` from a temporary script since deleted). So
+   **pushing to GitHub is the deploy**; the upload steps below are the fallback if that sync is
+   ever turned off. Confirm what you actually have: hPanel → search "Git" (a Git/Deploy feature
+   with an auto-deploy branch) and hPanel → **Cron Jobs** (a sync job would appear there).
+   ⚠️ One consequence: **anything in this repo is published to the live app within ~30 seconds.**
+   Never commit a secret, a debug toggle, or a half-finished feature to `main` on this repo.
 0. **Say the link out loud once: Hostinger is the app.** GitHub Pages is a workshop copy for
    testing on a phone; it is never the install link, and it can never deliver reminders (no PHP).
 1. Upload these (overwrite existing):
