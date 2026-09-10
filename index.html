@@ -106,9 +106,9 @@
     .bnav-item i { font-size: 17px; }
     .bnav-item.active { color: #2563eb; }
     .dark .bnav-item.active { color: #93c5fd; }
-    main { padding-bottom: 68px; }
+    #app-main { padding-bottom: 96px; }
     #task-list { padding-bottom: 76px; }
-    @media (min-width: 768px) { main { padding-bottom: 24px; } #task-list { padding-bottom: 24px; } }
+    @media (min-width: 768px) { #app-main { padding-bottom: 32px; } #task-list { padding-bottom: 24px; } }
     #sidebar { width: 16rem; background: #fff; border-right: 1px solid #e5e7eb; }
     [dir="rtl"] #sidebar { border-right: none; border-left: 1px solid #e5e7eb; }
     main { flex: 1; background: #f9fafb; }
@@ -332,7 +332,7 @@
   </aside>
 
   <!-- ==================== MAIN CONTENT ==================== -->
-  <main class="flex-1 bg-gray-50 dark:bg-gray-900 p-4 md:p-8 overflow-y-auto transition-colors">
+  <main id="app-main" class="flex-1 bg-gray-50 dark:bg-gray-900 p-4 md:p-8 overflow-y-auto transition-colors">
 
     <!-- ===== 1. MY DAY / TASKS ===== -->
     <div id="tasks-view" class="view-section max-w-3xl mx-auto h-full flex flex-col pt-10 md:pt-0">
@@ -1871,7 +1871,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=32&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=33&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
