@@ -23,5 +23,10 @@
 </FilesMatch>
 
 RedirectMatch 403 ^/push/queue(/|$)
+# Both rules below block .php; keep the RedirectMatch, but when we turn the sender on you must
+# delete the <FilesMatch> deny for push-sync.php only, otherwise the client's schedule POST gets
+# a 403 from Apache and no reminder is ever queued - silently. The endpoint is safe to expose:
+# it requires a per-device HMAC token and refuses everything else.
+#   allow:  <Files push-sync.php> Require all granted </Files>
 RedirectMatch 403 ^/push/.*\.php$
 Options -Indexes
