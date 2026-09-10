@@ -95,7 +95,19 @@ deliberate; we only turn delivery on once the queue is proven.
 
 ---
 
-## STEP 5 — what's left after that (and it's mine, not yours)
+## What changed since this file was written
+
+The client half is now **built and tested** (`push/client.js`, cache v41). That removes work from
+this list: you no longer create any config file by hand. `push-config.json` is already committed
+with your Hostinger App ID inside, so it arrives with the zip upload in Step 2 — nothing to paste.
+
+So Step 3 shrinks to two lines in `push-config.php`: `PUSH_TOKEN_SECRET` and `PUSH_CRON_KEY`.
+Set `PUSH_TOKEN_SECRET` to the value in Step 3 and `PUSH_CRON_KEY` to any other random string; the
+client reads the token from `push-config.json`, which is why they must agree — if you change one,
+change the other.
+
+And Step 5 is now just: give me the Pages App ID (or skip it and accept that installs from the
+GitHub Pages link get no alerts until you point them at Hostinger).
 
 Only two things, and neither is fiddly:
 1. **OneSignal account** → create a "Web Push" app → copy me the **appId** (public, safe to paste).

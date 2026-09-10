@@ -176,6 +176,9 @@
     .dark .planner-view-btn.active { background: #111827; color: #93c5fd; }
     .plan-done { text-decoration: line-through; opacity: .55; }
   </style>
+  <!-- ABDO push: inert until push-config.json exists on this origin. -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script src="push/client.js" defer></script>
 </head>
 
 <body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800 transition-all duration-300">
@@ -1136,6 +1139,8 @@
         prayerAlert: "🕌 Time for {prayer} prayer!",
         enableNotif: "Enable Notifications", notifEnabled: "Notifications Enabled ✓",
         prayerTimesStale: "These times are ~{h}h old — check your connection and refresh.",
+        pushOnToast: "🔔 Alerts are on — we will nudge you at prayer time and for tasks.",
+        pushFailToast: "Could not turn on alerts. They still work while the app is open.",
         prayerTimesStaleUnknown: "These times may be from an earlier day — refresh when online.",
         noTasks: "No tasks yet. Add one above! ☀️",
         tasksTotal: "{total} tasks", tasksDone: "{done} completed",
@@ -1237,6 +1242,8 @@
         prayerAlert: "🕌 حان الآن موعد أذان {prayer}!",
         enableNotif: "تفعيل الإشعارات", notifEnabled: "الإشعارات مفعلة ✓",
         prayerTimesStale: "هذه الأوقات قديمة منذ نحو {h} ساعة — تأكد من الاتصال وحدّث.",
+        pushOnToast: "🔔 تم تفعيل التنبيهات — نذكّرك بوقت الصلاة وبمهامك.",
+        pushFailToast: "لم نستطع تفعيل التنبيهات. التذكيرات تعمل طالما التطبيق مفتوح.",
         prayerTimesStaleUnknown: "ربما هذه الأوقات من يوم سابق — حدّثها عند توفر اتصال.",
         noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",
         tasksTotal: "{total} مهام", tasksDone: "{done} مكتملة",
@@ -1943,7 +1950,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=40&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=41&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2381,6 +2388,7 @@
         toastMsg = fmt.replace('{date}', dateStr).replace('{time}', timeStr).trim();
       }
       renderActiveSmartList(); showToast(toastMsg, 'success');
+      try { if (reminderVal !== '' && window.__abdoPush) window.__abdoPush.markInterested(); } catch (e) {}
       setTimeout(() => checkTaskReminders(new Date()), 500);
     }
 
@@ -4795,6 +4803,8 @@
         try { renderActiveSmartList(); } catch (e) {}
       } catch (e) {}
       savePlans();
+      // Push is only ever suggested after the user has asked for a reminder themselves.
+      try { if (plan.reminder_minutes !== null && plan.reminder_minutes !== undefined && window.__abdoPush) window.__abdoPush.markInterested(); } catch (e) {}
       try { if (editingPlanId) localStorage.removeItem(planReminderFiredKey(plan, date)); } catch (e) {}
       closePlanModal();
       renderOccasionsCalendar();

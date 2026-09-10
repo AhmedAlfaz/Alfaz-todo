@@ -1,8 +1,9 @@
-const CACHE_NAME = 'alfaz-todo-v40';
+const CACHE_NAME = 'alfaz-todo-v41';
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
+  './push-config.json',
   './brand/abdo-icon-192-wb.png',
   './brand/abdo-icon-512-wb.png',
   './brand/abdo-icon-512-maskable-wb.png'
