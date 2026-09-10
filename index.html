@@ -682,6 +682,13 @@
           <option value="monthly" data-i18n="repeatMonthly">Monthly</option>
           <option value="yearly" data-i18n="repeatYearly">Yearly</option>
         </select>
+        <select id="plan-reminder" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer">
+          <option value="" data-i18n="noReminder">No reminder</option>
+          <option value="0" data-i18n="reminderAtTime">At time</option>
+          <option value="15" data-i18n="rem15">15 min before</option>
+          <option value="60" data-i18n="rem60">1 hour before</option>
+          <option value="1440" data-i18n="rem1440">1 day before</option>
+        </select>
         <select id="plan-category" class="w-full text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2.5 text-gray-700 dark:text-gray-200 mb-3 cursor-pointer"></select>
         <div class="flex gap-2 mb-4" id="plan-color-row"></div>
         <div class="flex gap-2">
@@ -1199,6 +1206,7 @@
         noPlans: "No plans for this day", planTitleRequired: "Title and date are required",
         chipAll: "All", chipMyPlans: "My Plans", chipOccasions: "Occasions",
         viewMonth: "Month", viewWeek: "Week", viewYear: "Year",
+        planReminder: "📅 Reminder: {task}", planDueNow: "📅 {task} — now", rem15: "15 min before", rem60: "1 hour before", rem1440: "1 day before",
         upcomingPlans: "Upcoming", nothingUpcoming: "Nothing coming up",
         yearlyOverview: "Year", done: "Done", category: "Category"
       },
@@ -1295,6 +1303,7 @@
         noPlans: "لا توجد خطط لهذا اليوم", planTitleRequired: "العنوان والتاريخ مطلوبان",
         chipAll: "الكل", chipMyPlans: "خططي", chipOccasions: "المناسبات",
         viewMonth: "شهر", viewWeek: "أسبوع", viewYear: "سنة",
+        planReminder: "📅 تذكير: {task}", planDueNow: "📅 {task} — الآن", rem15: "قبل ١٥ دقيقة", rem60: "قبل ساعة", rem1440: "قبل يوم",
         upcomingPlans: "القادمة", nothingUpcoming: "لا يوجد شيء قادم",
         yearlyOverview: "السنة", done: "تم", category: "الفئة"
       }
@@ -1914,7 +1923,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=35&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=36&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2553,6 +2562,7 @@
     let lastCheckedMinute = '';
     function initClock() {
       setTimeout(() => checkTaskReminders(new Date()), 3000);
+      setTimeout(() => checkPlanReminders(new Date()), 3500);
       setInterval(() => {
         const now = new Date();
         document.getElementById('live-clock').innerText = now.toLocaleTimeString(currentLang==='ar'?'ar-EG':'en-US');
@@ -2561,6 +2571,7 @@
           lastCheckedMinute = hhmm;
           checkPrayerAzanNow(now);
           checkTaskReminders(now);
+          checkPlanReminders(now);
           if (Object.keys(prayerTimings).length>0) updateNextPrayer();
         }
       }, 1000);
@@ -4523,6 +4534,36 @@
       return (userPlans || []).filter(p => planMatchesDate(p, iso))
         .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     }
+    function planOccursOnDate(plan, iso) { return planMatchesDate(plan, iso); }
+    function planReminderFiredKey(plan, iso) { return 'alfaz_plan_rem_' + plan.id + '_' + iso; }
+    function checkPlanReminders(now) {
+      if (!userPlans || !userPlans.length) return;
+      const today = getTodayString();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      userPlans.forEach(pl => {
+        if (!planOccursOnDate(pl, today)) return;
+        if (pl.status === 'done') return;
+        const rm = (pl.reminder_minutes === null || pl.reminder_minutes === undefined) ? null : pl.reminder_minutes;
+        if (rm === null) return;
+        let key = '';
+        try { key = planReminderFiredKey(pl, today); if (localStorage.getItem(key) === '1') return; } catch (e) { return; }
+        const timeStr = pl.time && /^\d{1,2}:\d{2}/.test(pl.time) ? pl.time : '09:00';
+        const parts = timeStr.split(':').map(Number);
+        const dueMins = parts[0] * 60 + parts[1];
+        const remindAt = Math.max(0, dueMins - rm);
+        if (nowMins >= remindAt && nowMins <= remindAt + 60) {
+          try { localStorage.setItem(key, '1'); } catch (e) {}
+          const msg = (rm === 0
+            ? (i18n[currentLang].planDueNow || '📅 {task} is now')
+            : (i18n[currentLang].planReminder || '📅 Reminder: {task}')).replace('{task}', pl.title);
+          showToast(msg, 'prayer');
+          vibrate([200, 100, 200, 100, 200]);
+          showBrowserNotification('📅 ' + appDisplayName(currentLang), msg, 'alfaz-plan-' + pl.id);
+          try { playAudioTone(audioSettings.task_tone, pl.title, false); } catch (e) {}
+        }
+      });
+    }
+
     function openPlanner() {
       openOccasionsCalendar();
       try {
@@ -4572,6 +4613,8 @@
         tEl.value = ''; dEl.value = iso; tmEl.value = ''; nEl.value = ''; rEl.value = 'none';
         selectedPlanColor = userPlans.length % PLAN_COLORS.length;
       }
+      const rmEl = document.getElementById('plan-reminder');
+      if (rmEl) rmEl.value = (p && p.reminder_minutes !== null && p.reminder_minutes !== undefined) ? String(p.reminder_minutes) : '';
       const cEl = document.getElementById('plan-category');
       if (cEl) {
         cEl.innerHTML = PLAN_CATEGORIES.map(c => '<option value="' + c.id + '">' + (currentLang === 'ar' ? c.ar : c.en) + '</option>').join('');
@@ -4611,6 +4654,8 @@
         note: (nEl && nEl.value.trim()) || '',
         repeat: (rEl && rEl.value) || 'none',
         category: (document.getElementById('plan-category') && document.getElementById('plan-category').value) || 'goal',
+        reminder_minutes: (function(){ const el=document.getElementById('plan-reminder'); return (el && el.value !== '') ? parseInt(el.value,10) : null; })(),
+        reminder_fired: false,
         color: selectedPlanColor,
         created: Date.now()
       };
@@ -4621,6 +4666,7 @@
         userPlans.push(plan);
       }
       savePlans();
+      try { if (editingPlanId) localStorage.removeItem(planReminderFiredKey(plan, date)); } catch (e) {}
       closePlanModal();
       renderOccasionsCalendar();
       showToast('✅ ' + (i18n[currentLang].planSaved || 'Plan saved!'), 'success');
