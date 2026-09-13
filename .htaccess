@@ -1,0 +1,41 @@
+# ABDO web root — what may be fetched over HTTP.
+#
+# WHY THIS EXISTS: the Hostinger site auto-syncs the WHOLE GitHub repo into public_html, so
+# anything committed here is readable on the live app domain. Internal plans, agent rules and
+# test files were being served to anyone who guessed the filename. Code must stay reachable
+# (the service worker and OneSignal fetch it); narrative and tooling must not.
+# Allow-by-default, deny-by-extension, so app code (js/css/html/json/png/mp3) is never blocked.
+
+<FilesMatch "\.(md|py|sh|log|bak|old|sql|lock|tsbuildinfo|map|ini|env|ya?ml|lock)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<Files ".gitignore">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</Files>
+
+<Files ".htaccess">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</Files>
+
+# Repo scaffolding that must never be web-served. The leading-slash forms are what Apache
+# matches for a file at the web root; push/ keeps its own, stricter rule for .php and queue/.
+RedirectMatch 403 ^/tools(/|$)
+RedirectMatch 403 ^/2(/|$)
+RedirectMatch 403 ^/docs(/|$)
+Options -Indexes

@@ -53,7 +53,7 @@ if _w['dir'] != QDIR:
 print(f"  harness bound to its own server")
 
 def tok(uid):
-    out = subprocess.run(['php','-r',f"require '{QDIR}/push-lib.php'; echo push_token_for({json.dumps(uid)}, {json.dumps(TOKEN_SECRET)});"],
+    out = subprocess.run(['php','-r',f"require '{QDIR}/push-lib.php'; echo push_token_for({json.dumps(uid)}, {json.dumps(TOKEN_SECRET)}, 'test-app');"],
                          capture_output=True, text=True, env=ENV)
     if os.environ.get('PUSH_TEST_DEBUG'):
         print(f"    [tok {uid}] rc={out.returncode} out={out.stdout[:80]!r} err={out.stderr[:200]!r}")
@@ -101,6 +101,17 @@ ev_task   = {'id': f'{uid}:task:abc', 'send_at': now + 7*60, 'title': '✅ Task'
 # 1) auth
 code, body = post(uid, [ev_soon], token='wrong')
 check('1a: forged write token rejected (401)', code == 401, f'{code} {body}')
+derived = subprocess.run(['node','-e', f'''
+const {{createHmac}}=require("crypto");const uid="{uid}",app="test-app",secret="{TOKEN_SECRET}";
+const mac=encodeURIComponent(Buffer.from(createHmac("sha256",app).update(uid+":"+secret).digest()).toString("base64"));
+process.stdout.write(Buffer.from(uid+":"+app+":"+mac).toString("base64").replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""));
+'''],capture_output=True,text=True).stdout
+check('1a2: a token the CLIENT derived (same recipe, no server secret exposure) is accepted',
+      post(uid, [], token=derived)[0] == 200, derived[:24])
+other = subprocess.run(['php','-r',f"require '{QDIR}/push-lib.php'; echo push_token_for('somevictim', {json.dumps(TOKEN_SECRET)}, 'test-app');"],
+                       capture_output=True, text=True, env=ENV).stdout.strip()
+check('1a3: the attacker-derivable variant (no secret) cannot sign for a different uid',
+      post(uid, [], token=other)[0] == 401, 'cross-uid token')
 code, body = post('../../etc/passwd', [ev_soon])
 check('1b: path-traversal uid rejected', code == 400, f'{code} {body}')
 code, body = post(uid, 'notalist')

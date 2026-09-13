@@ -14,7 +14,7 @@ if (!is_array($in)) { http_response_code(400); echo json_encode(['ok'=>false,'er
 
 $uid = (string)($in['uid'] ?? '');
 if (!preg_match('/^[A-Za-z0-9_-]{6,64}$/', $uid)) { http_response_code(400); echo json_encode(['ok'=>false,'error'=>'bad uid']); exit; }
-if (!push_token_ok($uid, $in['token'] ?? null, $cfg['secret'])) { http_response_code(401); echo json_encode(['ok'=>false,'error'=>'bad token']); exit; }
+if (!push_token_ok($uid, $in['token'] ?? null, $cfg['secret'], $cfg['app_id'])) { http_response_code(401); echo json_encode(['ok'=>false,'error'=>'bad token']); exit; }
 
 $path = push_queue_path($uid);
 if (!$path) { http_response_code(400); echo json_encode(['ok'=>false,'error'=>'bad path']); exit; }

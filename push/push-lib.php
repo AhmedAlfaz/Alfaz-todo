@@ -23,6 +23,7 @@ function push_config() {
         'window'    => (int)PUSH_WINDOW_MIN,
         'max_events'=> (int)PUSH_MAX_EVENTS_PER_USER,
         'max_body'  => (int)PUSH_MAX_BODY,
+        'app_id'   => defined('ONESIGNAL_APP_ID') ? ONESIGNAL_APP_ID : '',
     ];
     if (!is_dir($cfg['dir'])) @mkdir($cfg['dir'], 0750, true);
     return $cfg;
@@ -38,12 +39,16 @@ function push_cut($s, $limit) {
 }
 
 /** Sign/verify the per-device token. token = base64url(uid . ':' . hmac(uid, secret)). */
-function push_token_for($uid, $secret) {
-    return rtrim(strtr(base64_encode($uid . ':' . hash_hmac('sha256', $uid, $secret, true)), '+/', '-_'), '=');
+// The token is derived, not distributed: a client can compute the token for ITS OWN uid from
+// public values (uid + app id), but cannot compute one for anyone else's uid without the server
+// secret. So no write credential ever has to be copied into site-config.json.
+function push_token_for($uid, $secret, $app_id = '') {
+    $mac = rawurlencode(base64_encode(hash_hmac('sha256', $uid . ':' . $secret, $app_id, true)));
+    return rtrim(strtr(base64_encode($uid . ':' . $app_id . ':' . $mac), '+/', '-_'), '=');
 }
-function push_token_ok($uid, $token, $secret) {
+function push_token_ok($uid, $token, $secret, $app_id = '') {
     if ($secret === '' || $token === null || $token === '') return false;
-    return hash_equals(push_token_for($uid, $secret), (string)$token);
+    return hash_equals(push_token_for($uid, $secret, $app_id), (string)$token);
 }
 
 function push_queue_path($uid) {

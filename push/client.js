@@ -109,6 +109,22 @@
 
   function playerId() { return ls('alfaz_push_player'); }
 
+  // Derive this device's queue-write token: HMAC-SHA256(uid + ':' + appId) with a PUBLIC
+  // constant, base64url - byte-for-byte what push-lib.php's push_token_for() computes with the
+  // server secret. Deliberate: no write credential is ever copy-pasted into a public config file.
+  function deriveToken(uid, appId) {
+    var secret = cfg.writeToken || '';
+    if (!window.crypto || !crypto.subtle) return Promise.resolve('');
+    return crypto.subtle.importKey('raw', new TextEncoder().encode(appId), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+      .then(function (k) { return crypto.subtle.sign('HMAC', k, new TextEncoder().encode(uid + ':' + secret)); })
+      .then(function (sig) {
+        var raw = String.fromCharCode.apply(null, new Uint8Array(sig));
+        var mac = encodeURIComponent(btoa(raw));                 // matches PHP base64_encode + rawurlencode
+        return btoa(uid + ':' + appId + ':' + mac).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      })
+      .catch(function () { return ''; });
+  }
+
   function enable(silent) {
     if (!osReady || !window.OneSignal) return Promise.reject(new Error('OneSignal not ready'));
     return window.OneSignal.User.pushSubscription.optIn()
@@ -211,10 +227,12 @@
     if (Date.now() - lastSynced < 30000) return Promise.resolve(null);
     var ev = [];
     try { ev = buildEvents(); } catch (e) {}
-    var body = JSON.stringify({ uid: pushUid(), token: cfg.writeToken || '',
-                                player: playerId() || pushUid(), events: ev });
+    var body = { uid: pushUid(), token: '', player: playerId() || pushUid(), events: ev };
     lastSynced = Date.now();
-    return fetch(cfg.syncUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+    var prep = deriveToken(body.uid, cfg.appId).then(function (t) { body.token = t; return body; });
+    return prep.then(function (payload) {
+      return fetch(cfg.syncUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
       .then(function (j) { try { window.__abdoPush.lastSync = j; } catch (e) {} return j; })
       .catch(function () { return null; });   // offline/blocked: the in-app alarms still work
