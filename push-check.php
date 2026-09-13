@@ -10,6 +10,7 @@ header('Content-Type: text/plain; charset=utf-8');
 echo "ABDO push diagnostics\n=====================\n\n";
 
 $dir = __DIR__ . '/push';
+@require_once $dir . '/push-lib.php';   // gives us push_config(), i.e. the same PUSH_DIR cron uses
 echo "push/ directory : " . (is_dir($dir) ? "found" : "MISSING <- the sync did not create it") . "\n";
 foreach (['push-lib.php', 'push-sync.php', 'push-cron.php', 'push-config.php', 'push-config.example.php'] as $f) {
     printf("  %-24s %s\n", $f, is_readable($dir . '/' . $f) ? "readable" : "absent");
@@ -48,20 +49,25 @@ if (function_exists('curl_init')) {
 }
 echo "PHP               : " . PHP_VERSION . "\n";
 
-// Last delivery attempts, reason only - no uid, no token, no player id.
-$qdir = defined('PUSH_DIR_OK') ? '' : (is_dir($dir . '/queue') ? $dir . '/queue' : dirname($dir) . '/abdo-push/queue');
-$files = is_dir($qdir) ? glob($qdir . '/user-*.json') : [];
-echo "\nqueue: " . count($files) . " device file(s)\n";
-$shown = 0;
-foreach ($files as $f) {
-    $j = json_decode((string)file_get_contents($f), true);
-    foreach ((array)($j['events'] ?? []) as $e) {
-        if (empty($e['error'])) continue;
-        $http = preg_match('/http (\d+)/', (string)$e['error'], $m) ? 'HTTP ' . $m[1] : 'no response';
-        echo "  last send: " . $http;
-        if (preg_match('/\{"errors[^}]{0,120}/', (string)$e['error'], $mm)) echo "  " . substr($mm[0], 0, 120);
-        echo "\n  attempts: " . (int)($e['attempts'] ?? 0) . "\n";
-        if (++$shown >= 3) break 2;
+// Use the loader's own PUSH_DIR - guessing the path here is how a check reports an empty queue
+// while cron is reading a populated one two folders away.
+if (isset($_GET['queue']) && function_exists('push_config')) {
+    $cfg = push_config();
+    $qd = (string)$cfg['dir'];
+    echo "\nqueue dir    : $qd " . (is_dir($qd) ? "" : "(MISSING)") . "\n";
+    $files = is_dir($qd) ? (glob($qd . '/user-*.json') ?: []) : [];
+    echo "queue files  : " . count($files) . "\n";
+    foreach ($files as $f) {
+        $j = json_decode((string)file_get_contents($f), true);
+        foreach ((array)($j['events'] ?? []) as $e) {
+            echo "  event " . substr((string)($e['id'] ?? ''), 0, 18) . ": sent=" . (int)($e['sent'] ?? 0)
+               . " attempts=" . (int)($e['attempts'] ?? 0)
+               . " nid=" . (empty($e['nid']) ? 'none' : 'set')
+               . (empty($e['error']) ? "" : "  ERROR: " . substr((string)$e['error'], 0, 200)) . "\n";
+        }
     }
+} elseif (is_dir($dir . '/queue') || is_dir(dirname($dir) . '/abdo-push/queue')) {
+    echo "\nqueue present : yes (use ?queue=1 to read it)\n";
+} else {
+    echo "\nqueue present : not created yet\n";
 }
-if (!$shown) echo "  no recorded send failures\n";
