@@ -17,6 +17,12 @@ define('ONESIGNAL_REST_KEY', '');    // server-side only. Creating it = acceptin
 define('PUSH_TRANSPORT', 'log');
 
 // ---- Storage ----
+// Inside push/ on purpose: this host will not serve or execute anything here, and guessing
+// dirname() levels to reach "outside the web root" is how you end up with an unwritable path
+// that fails quietly. push-check.php prints the absolute path in use.
+$_q = __DIR__ . '/queue';
+if (!is_dir($_q)) { @mkdir($_q, 0750, true); }
+define('PUSH_DIR', $_q);
 
 // ---- Per-device write token ----
 // The client proves it owns its schedule queue with a token issued once per device.

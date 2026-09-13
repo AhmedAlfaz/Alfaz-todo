@@ -7,30 +7,43 @@
 function push_config() {
     static $cfg = null;
     if ($cfg !== null) return $cfg;
+
     // ABDO_PUSH_CONFIG lets a host (or a test harness) point at a config outside the web root.
     $env = getenv('ABDO_PUSH_CONFIG');
-    $candidates = array_values(array_filter([$env, __DIR__ . '/push-config.php', __DIR__ . '/push-config.example.php'], 'is_readable'));
+    $candidates = array_values(array_filter(
+        [$env, __DIR__ . '/push-config.php', __DIR__ . '/push-config.example.php'], 'is_readable'));
     if (!$candidates) {
         throw new RuntimeException('ABDO push: no config found (copy push-config.example.php to push-config.php)');
     }
     $cfg_file = $candidates[0];
-    // Silently running on the example template is how a mis-deploy looks like "no errors,
-    // no notifications". Say which file is live so push-check.php and the cron log both show it.
+    // Running on the example template is how a mis-deploy looks like "no errors, no notifications".
+    // Record which file is live so push-check.php and the cron line both show it.
     $is_template = basename($cfg_file) === 'push-config.example.php';
     require_once $cfg_file;
+
+    // Queue path is never left to a hand-edited value: a wrong one makes every write fail quietly
+    // (a guessed dirname() level pointed the first deploy outside the site, and nothing complained).
+    $dir = defined('PUSH_DIR') ? (string)PUSH_DIR : __DIR__ . '/queue';
+    if (!is_dir($dir) && !@mkdir($dir, 0750, true)) {
+        $dir = __DIR__ . '/queue';
+        if (!is_dir($dir)) @mkdir($dir, 0750, true);
+    }
+    if (!is_dir($dir) || !is_writable($dir)) {
+        throw new RuntimeException('ABDO push: queue directory is not writable: ' . $dir);
+    }
+
     $cfg = [
-        'app_id'    => ONESIGNAL_APP_ID,
-        'rest_key'  => ONESIGNAL_REST_KEY,
-        'transport' => PUSH_TRANSPORT,
-        'dir'       => PUSH_DIR,
-        'secret'    => PUSH_TOKEN_SECRET,
-        'window'    => (int)PUSH_WINDOW_MIN,
-        'max_events'=> (int)PUSH_MAX_EVENTS_PER_USER,
-        'max_body'  => (int)PUSH_MAX_BODY,
-        'app_id'   => defined('ONESIGNAL_APP_ID') ? ONESIGNAL_APP_ID : '',
+        'app_id'      => defined('ONESIGNAL_APP_ID') ? ONESIGNAL_APP_ID : '',
+        'rest_key'    => defined('ONESIGNAL_REST_KEY') ? ONESIGNAL_REST_KEY : '',
+        'transport'   => defined('PUSH_TRANSPORT') ? PUSH_TRANSPORT : 'log',
+        'dir'         => $dir,
+        'secret'      => defined('PUSH_TOKEN_SECRET') ? PUSH_TOKEN_SECRET : '',
+        'window'      => defined('PUSH_WINDOW_MIN') ? (int)PUSH_WINDOW_MIN : 15,
+        'max_events'  => defined('PUSH_MAX_EVENTS_PER_USER') ? (int)PUSH_MAX_EVENTS_PER_USER : 120,
+        'max_body'    => defined('PUSH_MAX_BODY') ? (int)PUSH_MAX_BODY : 240,
+        'cron_key'    => defined('PUSH_CRON_KEY') ? (string)PUSH_CRON_KEY : '',
         'config_file' => $cfg_file . ($is_template ? '  <-- TEMPLATE: copy to push-config.php' : ''),
     ];
-    if (!is_dir($cfg['dir'])) @mkdir($cfg['dir'], 0750, true);
     return $cfg;
 }
 
