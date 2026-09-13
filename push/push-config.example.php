@@ -21,7 +21,7 @@ define('PUSH_TRANSPORT', 'log');
 // Verified doc root on this host is
 //   /home/u136736209/domains/firebrick-sardine-612688.hostingersite.com/public_html
 // so a sibling directory is one ../ away and unreachable over HTTP:
-define('PUSH_DIR', dirname(__DIR__, 2) . '/abdo-push/queue');
+define('PUSH_DIR', dirname(dirname(__DIR__)) . '/abdo-push/queue');  // nested dirname, not dirname(x,2): works on every PHP 5/7/8
 // dirname(__DIR__, 2) from public_html/push = the domain folder. If that ever resolves
 // somewhere unwritable, push-check.php will say so; fall back to __DIR__ . '/queue'
 // only if you must (push/.htaccess denies that path over HTTP as a second line).
