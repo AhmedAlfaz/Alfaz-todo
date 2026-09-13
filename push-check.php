@@ -70,4 +70,20 @@ if (isset($_GET['queue']) && function_exists('push_config')) {
     echo "\nqueue present : yes (use ?queue=1 to read it)\n";
 } else {
     echo "\nqueue present : not created yet\n";
+
+// One read-only call, and the only thing we print is the verdict - never the key.
+if (function_exists('curl_init') && isset($_GET['auth'])) {
+    $cfgx = push_config();
+    $ch = curl_init('https://onesignal.com/api/v1/apps/' . rawurlencode((string)$cfgx['app_id']));
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 12,
+        CURLOPT_HTTPHEADER => ['Authorization: Basic ' . (string)$cfgx['rest_key']]]);
+    $body = (string)curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    echo "\nOneSignal auth  : ";
+    if ($cfgx['rest_key'] === '') echo "NO REST KEY SET (line is empty in push-config.php)\n";
+    elseif ($code === 200) echo "REST key is VALID (HTTP 200)\n";
+    else echo "REJECTED (HTTP $code) - " . (strpos($body, 'Access denied') !== false ? 'wrong or truncated key'
+        : substr(preg_replace('/[^A-Za-z0-9 .]/', '', (string)json_decode($body, true)['errors'][0] ?? $body), 0, 90)) . "\n";
+} elseif (isset($_GET['auth'])) {
+    echo "\nOneSignal auth  : cannot check, curl extension unavailable\n";
+}
 }
