@@ -13,7 +13,11 @@ function push_config() {
     if (!$candidates) {
         throw new RuntimeException('ABDO push: no config found (copy push-config.example.php to push-config.php)');
     }
-    require_once $candidates[0];
+    $cfg_file = $candidates[0];
+    // Silently running on the example template is how a mis-deploy looks like "no errors,
+    // no notifications". Say which file is live so push-check.php and the cron log both show it.
+    $is_template = basename($cfg_file) === 'push-config.example.php';
+    require_once $cfg_file;
     $cfg = [
         'app_id'    => ONESIGNAL_APP_ID,
         'rest_key'  => ONESIGNAL_REST_KEY,
@@ -24,6 +28,7 @@ function push_config() {
         'max_events'=> (int)PUSH_MAX_EVENTS_PER_USER,
         'max_body'  => (int)PUSH_MAX_BODY,
         'app_id'   => defined('ONESIGNAL_APP_ID') ? ONESIGNAL_APP_ID : '',
+        'config_file' => $cfg_file . ($is_template ? '  <-- TEMPLATE: copy to push-config.php' : ''),
     ];
     if (!is_dir($cfg['dir'])) @mkdir($cfg['dir'], 0750, true);
     return $cfg;

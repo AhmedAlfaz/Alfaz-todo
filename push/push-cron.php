@@ -58,4 +58,4 @@ foreach ($glob as $file) {
         @file_put_contents($file, json_encode($snap), LOCK_EX);
     }
 }
-echo "abdo-push-cron " . date('c') . " files=" . count($glob) . " sent=$sent failed=$failed pruned=$pruned skipped=$skipped transport=" . $cfg['transport'] . "\n";
+echo "abdo-push-cron " . date('c') . " cfg=" . basename((string)($cfg["config_file"] ?? "?")) . " files=" . count($glob) . " sent=$sent failed=$failed pruned=$pruned skipped=$skipped transport=" . $cfg['transport'] . "\n";

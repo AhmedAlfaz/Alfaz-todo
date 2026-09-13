@@ -50,7 +50,7 @@ echo "Config: ";
 $env = getenv('ABDO_PUSH_CONFIG');
 $own = __DIR__ . '/push-config.php';
 if (is_readable($own)) {
-    echo "push-config.php found\n";
+    echo basename($own), "\n";
     $c = (function () { include $own; return ['transport' => PUSH_TRANSPORT, 'dir' => PUSH_DIR,
         'appid' => ONESIGNAL_APP_ID, 'rest' => ONESIGNAL_REST_KEY !== '', 'secret' => PUSH_TOKEN_SECRET !== '']; })();
     echo "  PUSH_TRANSPORT : {$c['transport']}" . ($c['transport'] === 'log' ? "   (dry run, nothing is delivered yet)\n" : "\n");
