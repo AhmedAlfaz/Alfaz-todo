@@ -13,7 +13,7 @@
   Allow from all
 </IfModule>
 
-<FilesMatch "\.(php|phar|ini|log|json)$">
+<FilesMatch "\.(phar|ini|log)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
@@ -21,6 +21,11 @@
     Deny from all
   </IfModule>
 </FilesMatch>
+<Files "site-config.json">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+</Files>
 
 RedirectMatch 403 ^/push/queue(/|$)
 # Both rules below block .php; keep the RedirectMatch, but when we turn the sender on you must
