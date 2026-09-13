@@ -14,7 +14,13 @@ Hostinger, so **you never upload anything** — the files are already live:
 hPanel → Files → **File manager** → open `public_html/push/` → **New file** named `push-config.php`.
 Open it, delete any placeholder content, and paste **exactly** this file's contents:
 
-`handoff/push-config.php` (in this workspace — it already contains your cron key).
+`tools/handoff/push-config.php`. If it is not there yet, create it with one command, run inside
+the `Alfaz-todo` folder:
+```bash
+php tools/handoff/make-config.php
+```
+It is generated rather than committed because a key in a public repo that also mirrors to your
+live site is a published key — exactly the mistake I made and then fixed the same day.
 
 Then change **one line only** — the REST key, which I cannot see and must never appear in chat:
 
@@ -36,7 +42,7 @@ php -f $HOME/domains/firebrick-sardine-612688.hostingersite.com/public_html/push
 
 If your panel rejects `php -f`, use this instead (it works, it just also opens an HTTP URL):
 ```
-wget -q -O - "https://firebrick-sardine-612688.hostingersite.com/abdo-cron.php?key=mmvwwgqp0aqclnd71c099uidl08ehu32" >/dev/null 2>&1
+wget -q -O - "https://firebrick-sardine-612688.hostingersite.com/abdo-cron.php?key=YOUR_KEY" >/dev/null 2>&1
 ```
 
 ## Then tell me "done" — nothing else

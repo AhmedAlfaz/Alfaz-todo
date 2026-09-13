@@ -1,3 +1,6 @@
 # push secrets live on the server only (this repo is published to the web root by auto-sync)
 push/push-config.php
 push/queue/
+
+# generated locally by make-config.php - never commit (public repo mirrors to the web root)
+tools/handoff/push-config.php

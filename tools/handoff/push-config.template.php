@@ -46,7 +46,7 @@ define('PUSH_TOKEN_SECRET', '');   // OPTIONAL strict mode. Empty = the default,
 // GitHub Pages serves .php as plain text, and a public host is a public host: without this,
 // anyone can GET push-cron.php as fast as they like. Set this to any random string and give
 // cron the URL with ?key=<that string>. Requests without it are refused before any work.
-define('PUSH_CRON_KEY', 'mmvwwgqp0aqclnd71c099uidl08ehu32');
+define('PUSH_CRON_KEY', '__CRON_KEY__');   // replaced by make-config.php with a fresh key
 
 // ---- Behaviour ----
 define('PUSH_WINDOW_MIN', 15);        // cron sends anything due in the next N minutes.
