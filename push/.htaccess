@@ -29,4 +29,17 @@ RedirectMatch 403 ^/push/queue(/|$)
 # it requires a per-device HMAC token and refuses everything else.
 #   allow:  <Files push-sync.php> Require all granted </Files>
 RedirectMatch 403 ^/push/.*\.php$
+
+# push-sync.php is the one .php a browser must be able to POST to. Safe to expose: it takes no
+# input it trusts (per-uid derived token, strict uid regex, past events dropped, hard event cap)
+# and returns only {ok, queued}. push-cron.php and every source file stay blocked.
+<Files "push-sync.php">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+  </IfModule>
+</Files>
 Options -Indexes

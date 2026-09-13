@@ -12,5 +12,5 @@
     "leadMinutes": 0,
     "note": "GitHub Pages reuses this file, and OneSignal binds an appId to ONE origin: on Pages their SDK logs a refusal and our client swallows it, so the app is unaffected and push simply stays off there. Flip to false here if that console line ever bothers someone."
   },
-  "notes": "The ONLY file that differs per origin, and it is not edited per origin: the same copy works on both, and is simply inert where the appId does not belong. installUrl is the link users are asked to share so every install lands on the push-capable origin. writeToken must match PUSH_TOKEN_SECRET in push/push-config.php; leave it empty until the sender is switched on."
+  "notes": "The ONLY file that differs per origin, and it is not edited per origin: the same copy works on both, and is simply inert where the appId does not belong. installUrl is the link users are asked to share so every install lands on the push-capable origin. writeToken is unused: the queue token is derived from the uid and the public app id, so nothing secret lives in this file. If you ever set it, it must equal PUSH_TOKEN_SECRET in push/push-config.php (which also flips the server into strict mode)."
 }

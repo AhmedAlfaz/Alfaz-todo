@@ -112,8 +112,12 @@
   // Derive this device's queue-write token: HMAC-SHA256(uid + ':' + appId) with a PUBLIC
   // constant, base64url - byte-for-byte what push-lib.php's push_token_for() computes with the
   // server secret. Deliberate: no write credential is ever copy-pasted into a public config file.
+  // Deliberately NOT keyed on any secret: this value is computed in the browser, so anything it
+  // depends on is public by definition. Its job is binding (only the holder of a uid can rewrite
+  // that uid's queue), not authentication - unguessable uid + knowledge-of-uid is the real gate.
+  // A secret here would be theatre: site-config.json is a public file.
   function deriveToken(uid, appId) {
-    var secret = cfg.writeToken || '';
+    var secret = '';
     if (!window.crypto || !crypto.subtle) return Promise.resolve('');
     return crypto.subtle.importKey('raw', new TextEncoder().encode(appId), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
       .then(function (k) { return crypto.subtle.sign('HMAC', k, new TextEncoder().encode(uid + ':' + secret)); })

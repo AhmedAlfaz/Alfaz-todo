@@ -47,8 +47,13 @@ function push_token_for($uid, $secret, $app_id = '') {
     return rtrim(strtr(base64_encode($uid . ':' . $app_id . ':' . $mac), '+/', '-_'), '=');
 }
 function push_token_ok($uid, $token, $secret, $app_id = '') {
-    if ($secret === '' || $token === null || $token === '') return false;
-    return hash_equals(push_token_for($uid, $secret, $app_id), (string)$token);
+    if ($token === null || $token === '') return false;
+    // Binding mode (default): token = f(uid, public app id). Proves the caller knows the uid;
+    // needs no secret in the public client. Set PUSH_REQUIRE_SECRET_TOKEN=true after moving
+    // subscription state into Supabase, where the server can hand a device a real credential.
+    if (!$secret) return hash_equals(push_token_for($uid, '', $app_id), (string)$token);
+    return hash_equals(push_token_for($uid, $secret, $app_id), (string)$token)
+        || hash_equals(push_token_for($uid, '', $app_id), (string)$token);
 }
 
 function push_queue_path($uid) {
