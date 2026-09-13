@@ -21,7 +21,13 @@ define('PUSH_TRANSPORT', 'log');
 // Verified doc root on this host is
 //   /home/u136736209/domains/firebrick-sardine-612688.hostingersite.com/public_html
 // so a sibling directory is one ../ away and unreachable over HTTP:
-define('PUSH_DIR', dirname(dirname(__DIR__)) . '/abdo-push/queue');  // nested dirname, not dirname(x,2): works on every PHP 5/7/8
+// Two levels up from public_html/push is the domain folder - outside the web root, so the
+// queue holding users' notification copy is unreachable over HTTP even if .htaccess is ignored.
+// (dirname(x,2) is PHP 7+; this host reports 8.3. If it ever resolves somewhere unwritable,
+// push-check.php says so and the fallback below keeps the sender working inside push/.)
+$_abdo_q = dirname(__DIR__, 2) . '/abdo-push/queue';
+if (!@mkdir($_abdo_q, 0750, true) && !is_dir($_abdo_q)) { $_abdo_q = __DIR__ . '/queue'; @mkdir($_abdo_q, 0750, true); }
+define('PUSH_DIR', $_abdo_q);
 // dirname(__DIR__, 2) from public_html/push = the domain folder. If that ever resolves
 // somewhere unwritable, push-check.php will say so; fall back to __DIR__ . '/queue'
 // only if you must (push/.htaccess denies that path over HTTP as a second line).
