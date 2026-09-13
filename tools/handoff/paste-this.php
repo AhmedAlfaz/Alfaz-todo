@@ -14,11 +14,12 @@ define('PUSH_TZ', 'Africa/Cairo');
 define('PUSH_MAX_EVENTS_PER_USER', 120);
 define('PUSH_MAX_BODY', 240);
 
-$_q = dirname(__DIR__, 2) . '/abdo-push/queue';           // outside the web root
-if (!@mkdir($_q, 0750, true) && !is_dir($_q)) {
-    $_q = __DIR__ . '/queue';                              // fallback; push/ is deny-all
-    @mkdir($_q, 0750, true);
-}
+// Keep the queue inside push/, which this host already refuses to serve or execute over HTTP.
+// An out-of-root path is nicer in theory, but dirname() levels here are host-specific and
+// guessing them silently lands the queue somewhere unwritable - i.e. no reminders, no error.
+// If you want it out of the web root, read the absolute path from push-check.php and paste it.
+$_q = __DIR__ . '/queue';
+if (!is_dir($_q)) { @mkdir($_q, 0750, true); }
 define('PUSH_DIR', $_q);
 
 date_default_timezone_set(PUSH_TZ);
