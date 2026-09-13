@@ -96,7 +96,15 @@ if (function_exists('curl_init') && isset($_GET['auth'])) {
         echo "  note: the probe id is unknown, so nothing was delivered\n";
     } elseif ($code === 401 || strpos($body, 'Access denied') !== false) {
         echo "key REJECTED (HTTP $code)\n";
-        echo "  check Keys & IDs: if 'Rest API key' is absent, create one; if present, re-copy it whole\n";
+        // Shape, not contents: enough to tell a wrong field from a truncated copy.
+        $k = (string)$cfgx['rest_key'];
+        $shape = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $k)
+               ? 'looks like a valid OneSignal key (36-char UUID)'
+               : 'does NOT look like a OneSignal key - wrong field copied, or text got mangled';
+        $stray = preg_match('/^[A-Za-z0-9+_\/=-]+$/', $k) ? 'no stray spaces' : 'CONTAINS SPACES OR STRAY CHARACTERS';
+        echo '  stored: ' . strlen($k) . ' chars, starts [' . substr($k, 0, 4) . '] ends [' . substr($k, -2) . '], ' . $stray . "\n";
+        echo '  shape : ' . $shape . "\n";
+        echo "  if the field is empty in the dashboard, click Create/Generate first, then copy with the copy button (manual selection drops characters)\n";
     } else {
         echo "key ACCEPTED enough to be checked, but the call failed (HTTP $code)\n";
         $err = is_array($j) ? json_encode($j) : substr($body, 0, 160);
