@@ -216,6 +216,19 @@ anyone it's done.
 4. Tell me the **minimum cron interval** hPanel offers you (commonly 5 or 15 min) — decides
    whether Tier 3 uses exact `send_at` scheduling (preferred) or a sweep.
 
+## 5b. Hard constraint found on the real host (2026-09-10)
+
+**Hostinger does not execute PHP inside `push/`, but does at the web root.** Proven, not assumed:
+a file containing only `echo` returned 200 at `/` and 403 at `/push/`, and removing my own
+`FilesMatch` deny rule changed nothing — the block is the host's, not ours.
+
+Consequences now baked into the design:
+- Public entry points are two one-line shims at the web root (`abdo-sync.php`, `abdo-cron.php`)
+  that `require` the real code in `push/`. They hold no logic, so `push/` stays the single source
+  of truth and nothing in it is readable over HTTP.
+- Prefer a shell cron (`php -f .../push/push-cron.php`) over the wget shim: no HTTP surface at all.
+- Do NOT try to fix this by loosening `push/.htaccess`. It was never the blocker.
+
 ## 6b. Status — 2026-09-10, after "why don't you just do the move?"
 
 | Item | State |

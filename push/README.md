@@ -12,7 +12,7 @@ before any client code is wired to it.
 | File | Role |
 |---|---|
 | `push-lib.php` | config load, per-device token sign/verify, queue paths, transport, cancel |
-| `push-sync.php` | one POST per device: replace that device's whole schedule (idempotent) |
+| `push/push-sync.php` (served through the `abdo-sync.php` shim) | one POST per device: replace that device's whole schedule (idempotent) |
 | `push-cron.php` | cron worker: dispatches anything due inside the window, prunes what is done |
 | `push-config.example.php` | template. Copy to `push-config.php`, never commit it |
 | `queue/` | created at runtime: `user-<uid>.json` + `transport.log`. Deny-served via `.htaccess` |

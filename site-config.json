@@ -7,7 +7,7 @@
     "swParam": {
       "scope": "push/onesignal/"
     },
-    "syncUrl": "push/push-sync.php",
+    "syncUrl": "abdo-sync.php",
     "writeToken": "",
     "leadMinutes": 0,
     "note": "GitHub Pages reuses this file, and OneSignal binds an appId to ONE origin: on Pages their SDK logs a refusal and our client swallows it, so the app is unaffected and push simply stays off there. Flip to false here if that console line ever bothers someone."
