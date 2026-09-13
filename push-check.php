@@ -71,18 +71,38 @@ if (isset($_GET['queue']) && function_exists('push_config')) {
 } else {
     echo "\nqueue present : not created yet\n";
 
-// One read-only call, and the only thing we print is the verdict - never the key.
+// Ask the SAME endpoint the sender uses, the SAME way. GET /apps/{id} is app-management and
+// does not authenticate like create-notification, so testing there produced a false 401.
+// This POST is deliberately undeliverable (unknown external id): it can only fail on auth or
+// payload, never on sending, so a 200 proves the key with no notification going anywhere.
 if (function_exists('curl_init') && isset($_GET['auth'])) {
     $cfgx = push_config();
-    $ch = curl_init('https://onesignal.com/api/v1/apps/' . rawurlencode((string)$cfgx['app_id']));
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 12,
-        CURLOPT_HTTPHEADER => ['Authorization: Basic ' . (string)$cfgx['rest_key']]]);
-    $body = (string)curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    $payload = json_encode(['app_id' => (string)$cfgx['app_id'],
+                            'contents' => ['en' => 'auth probe - not delivered'],
+                            'include_external_ids' => ['onesignal-auth-probe']]);
+    $ch = curl_init('https://onesignal.com/api/v1/notifications');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8',
+                               'Authorization: Basic ' . (string)$cfgx['rest_key']],
+        CURLOPT_POSTFIELDS => $payload]);
+    $body = (string)curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlerr = curl_error($ch); curl_close($ch);
+    $j = json_decode($body, true);
     echo "\nOneSignal auth  : ";
-    if ($cfgx['rest_key'] === '') echo "NO REST KEY SET (line is empty in push-config.php)\n";
-    elseif ($code === 200) echo "REST key is VALID (HTTP 200)\n";
-    else echo "REJECTED (HTTP $code) - " . (strpos($body, 'Access denied') !== false ? 'wrong or truncated key'
-        : substr(preg_replace('/[^A-Za-z0-9 .]/', '', (string)json_decode($body, true)['errors'][0] ?? $body), 0, 90)) . "\n";
+    if ((string)$cfgx['rest_key'] === '') {
+        echo "NO REST KEY SET - the line is still empty\n";
+    } elseif ($code === 200) {
+        echo "key ACCEPTED (HTTP 200)\n";
+        echo "  note: the probe id is unknown, so nothing was delivered\n";
+    } elseif ($code === 401 || strpos($body, 'Access denied') !== false) {
+        echo "key REJECTED (HTTP $code)\n";
+        echo "  check Keys & IDs: if 'Rest API key' is absent, create one; if present, re-copy it whole\n";
+    } else {
+        echo "key ACCEPTED enough to be checked, but the call failed (HTTP $code)\n";
+        $err = is_array($j) ? json_encode($j) : substr($body, 0, 160);
+        echo "  " . substr(preg_replace('/[\r\n\t]+/', ' ', (string)$err), 0, 160) . "\n";
+        if ($curlerr !== '') echo "  curl: " . substr($curlerr, 0, 120) . "\n";
+    }
 } elseif (isset($_GET['auth'])) {
     echo "\nOneSignal auth  : cannot check, curl extension unavailable\n";
 }
