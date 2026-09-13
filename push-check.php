@@ -105,6 +105,12 @@ if (function_exists('curl_init') && isset($_GET['auth'])) {
         echo '  stored: ' . strlen($k) . ' chars, starts [' . substr($k, 0, 4) . '] ends [' . substr($k, -2) . '], ' . $stray . "\n";
         echo '  shape : ' . $shape . "\n";
         echo "  if the field is empty in the dashboard, click Create/Generate first, then copy with the copy button (manual selection drops characters)\n";
+        // The App ID and the REST key sit side by side in Keys & IDs, so swapping them is the
+        // single most common failure - and it reads as '401 bad key', pointing away from the cause.
+        if ($k !== '' && hash_equals((string)$cfgx['app_id'], $k)) {
+            echo "  >> THAT IS YOUR APP ID, NOT THE REST KEY. Keys & IDs lists both; use the line"
+               . " labelled 'REST API key' (it is hidden until you click View).\n";
+        }
     } else {
         echo "key ACCEPTED enough to be checked, but the call failed (HTTP $code)\n";
         $err = is_array($j) ? json_encode($j) : substr($body, 0, 160);
