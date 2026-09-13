@@ -48,3 +48,17 @@ RedirectMatch 403 ^/push/.*\.php$
   </IfModule>
 </Files>
 Options -Indexes
+
+# One exception, and it is load-bearing: push/client.js POSTs schedules to /abdo-sync.php, which
+# requires this file. Without the grant the client's request 403s and nothing is ever queued -
+# silently, from the browser's side. It exposes no source: it is 11 lines that include
+# abdo-sync.php's logic and return only {ok, queued}, guarded by a per-uid token + strict regex.
+<Files "push-sync.php">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+  </IfModule>
+</Files>
