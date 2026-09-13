@@ -10,7 +10,7 @@ header('Content-Type: text/plain; charset=utf-8');
 echo "ABDO push diagnostics\n=====================\n\n";
 
 $dir = __DIR__ . '/push';
-@require_once $dir . '/push-lib.php';  // push_config() caches, and the config loader guards its own re-include
+require_once $dir . '/push-lib.php';
 echo "push/ directory : " . (is_dir($dir) ? "found" : "MISSING <- the sync did not create it") . "\n";
 foreach (['push-lib.php', 'push-sync.php', 'push-cron.php', 'push-config.php', 'push-config.example.php'] as $f) {
     printf("  %-24s %s\n", $f, is_readable($dir . '/' . $f) ? "readable" : "absent");
