@@ -24,11 +24,12 @@ if (is_readable($cfg)) {
     if (trim($src) === '' || ltrim($src) === '<?php') {
         echo "  parses          : " . (trim($src) === '' ? "FILE IS EMPTY - open it and paste the contents" : "loaded into a check scope") . "\n";
     }
-    $rc = 0; $err = '';
-    try {
-        $probe = eval('?>' . $src);
-    } catch (\Throwable $e) { $rc = 1; $err = $e->getMessage(); }
-    if ($rc) echo "  syntax          : BROKEN -> " . htmlspecialchars($err) . "\n";
+    if (trim($src) !== '') {
+        $body = preg_replace('/^<\?php\s*/', '', $src, 1);   // eval() starts in code mode
+        $rc = 0; $err = '';
+        try { eval($body); } catch (\Throwable $e) { $rc = 1; $err = $getMsg = $e->getMessage(); }
+        echo "  syntax          : " . ($rc ? "BROKEN -> " . htmlspecialchars($err) : "ok") . "\n";
+    }
     foreach (['ONESIGNAL_APP_ID' => '/ONESIGNAL_APP_ID\'\s*,\s*\'([^\']*)\'/', 'PUSH_TRANSPORT' => '/PUSH_TRANSPORT\'\s*,\s*\'([^\']*)\'/', 'PUSH_CRON_KEY set' => '/PUSH_CRON_KEY\'\s*,\s*\'([a-f0-9]{8,})\'/', 'REST key set' => '/ONESIGNAL_REST_KEY\'\s*,\s*\'([^\']{10,})\'/'] as $label => $re) {
         if (preg_match($re, $src, $m)) {
             $v = $m[1];
