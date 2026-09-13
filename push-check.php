@@ -47,3 +47,21 @@ if (function_exists('curl_init')) {
     echo "\nphp-curl          : MISSING - OneSignal calls will fail; set PUSH_TRANSPORT to 'log' until enabled\n";
 }
 echo "PHP               : " . PHP_VERSION . "\n";
+
+// Last delivery attempts, reason only - no uid, no token, no player id.
+$qdir = defined('PUSH_DIR_OK') ? '' : (is_dir($dir . '/queue') ? $dir . '/queue' : dirname($dir) . '/abdo-push/queue');
+$files = is_dir($qdir) ? glob($qdir . '/user-*.json') : [];
+echo "\nqueue: " . count($files) . " device file(s)\n";
+$shown = 0;
+foreach ($files as $f) {
+    $j = json_decode((string)file_get_contents($f), true);
+    foreach ((array)($j['events'] ?? []) as $e) {
+        if (empty($e['error'])) continue;
+        $http = preg_match('/http (\d+)/', (string)$e['error'], $m) ? 'HTTP ' . $m[1] : 'no response';
+        echo "  last send: " . $http;
+        if (preg_match('/\{"errors[^}]{0,120}/', (string)$e['error'], $mm)) echo "  " . substr($mm[0], 0, 120);
+        echo "\n  attempts: " . (int)($e['attempts'] ?? 0) . "\n";
+        if (++$shown >= 3) break 2;
+    }
+}
+if (!$shown) echo "  no recorded send failures\n";
