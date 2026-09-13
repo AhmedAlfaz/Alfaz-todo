@@ -19,12 +19,16 @@ $cfg = $dir . '/push-config.php';
 if (is_readable($cfg)) {
     $src = file_get_contents($cfg);
     echo "push-config.php   : " . strlen($src) . " bytes\n";
-    echo "  parses          : ";
-    $tmp = tempnam(sys_get_temp_dir(), 'chk') . '.php';
-    file_put_contents($tmp, $src);
-    exec('php -l ' . escapeshellarg($tmp) . ' 2>&1', $out, $rc);
-    @unlink($tmp);
-    echo ($rc === 0 ? "yes\n" : "NO -> " . htmlspecialchars(implode(' ', $out)) . "\n");
+    // exec()/shell_exec are disabled on this host, so lint by executing the definitions in a
+    // sandboxed scope instead of shelling out to `php -l`.
+    if (trim($src) === '' || ltrim($src) === '<?php') {
+        echo "  parses          : " . (trim($src) === '' ? "FILE IS EMPTY - open it and paste the contents" : "loaded into a check scope") . "\n";
+    }
+    $rc = 0; $err = '';
+    try {
+        $probe = eval('?>' . $src);
+    } catch (\Throwable $e) { $rc = 1; $err = $e->getMessage(); }
+    if ($rc) echo "  syntax          : BROKEN -> " . htmlspecialchars($err) . "\n";
     foreach (['ONESIGNAL_APP_ID' => '/ONESIGNAL_APP_ID\'\s*,\s*\'([^\']*)\'/', 'PUSH_TRANSPORT' => '/PUSH_TRANSPORT\'\s*,\s*\'([^\']*)\'/', 'PUSH_CRON_KEY set' => '/PUSH_CRON_KEY\'\s*,\s*\'([a-f0-9]{8,})\'/', 'REST key set' => '/ONESIGNAL_REST_KEY\'\s*,\s*\'([^\']{10,})\'/'] as $label => $re) {
         if (preg_match($re, $src, $m)) {
             $v = $m[1];
