@@ -8,7 +8,7 @@
  */
 
 // ---- OneSignal (web push) ----
-define('ONESIGNAL_APP_ID', '');      // public; index.html uses the same value
+define('ONESIGNAL_APP_ID', '');      // public; must equal push.appId in site-config.json
 define('ONESIGNAL_REST_KEY', '');    // server-side only. Creating it = accepting that this file holds a send-to-everybody secret.
 
 // ---- Transport ----
