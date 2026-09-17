@@ -135,7 +135,7 @@
       .then(function () { return window.OneSignal.User.pushSubscription.getIdAsync(); })
       .then(function (id) {
         if (id) ls('alfaz_push_player', id);
-        setState('on');
+        setState('on'); try { statusLine(); } catch (e) {}
         if (!silent) { try { showToast(i18n[currentLang].pushOnToast || '🔔 Alerts are on', 'success'); } catch (e) {} }
         return syncPush('enable');
       })
@@ -293,7 +293,7 @@
   };
   window.abdoPushNever = function () {
     closeAsk();
-    setState('off');
+    setState('off'); try { statusLine(); } catch (e) {}
     try { ls(ASKED_KEY, '1'); } catch (e) {}
   };
   function closeAsk() { var m = document.getElementById('push-ask-modal'); if (m) m.remove(); }
@@ -405,6 +405,28 @@
     } catch (e) {}
   }
 
+  // One honest line in the sidebar: what this device actually did, not what we assume it did.
+  function statusLine() {
+    try {
+      var el = document.getElementById('app-version-num');
+      if (!el) return;
+      var v = el.textContent || '';
+      var state = ls(STATE_KEY);
+      var label = state === 'on' ? 'alerts on' : (state === 'off' ? 'alerts off' : 'not asked yet');
+      var extra = '';
+      try {
+        if (window.OneSignal && window.OneSignal.User) {
+          var sub = window.OneSignal.User.pushSubscription.get ? window.OneSignal.User.pushSubscription.get() : null;
+          extra = sub && sub.id ? ' · id ok' : ' · no id';
+        } else if (cfg) { extra = ' · sdk pending'; }
+        else { extra = ' · push off here'; }
+      } catch (e) { extra = ' · id pending'; }
+      var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+      el.textContent = v + '  ·  ' + label + extra + '  ·  ' + perm;
+      el.parentNode.title = 'uid ' + pushUid();
+    } catch (e) {}
+  }
+
   // ---- boot ----
   function bootPush(pc) {
     try { if (window.__abdoTrace) window.__abdoTrace.push(['bootPush', pc ? (pc.enabled === false ? 'disabled' : 'enabled') : 'no-push-node']); } catch (e) {}
@@ -430,6 +452,7 @@
     }
     loadSiteConfig(function (j) {
       setupShare();
+      try { statusLine(); } catch (e) {}
       bootPush(j && j.push ? j.push : null);
     });
   }
