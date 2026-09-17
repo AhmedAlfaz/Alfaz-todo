@@ -135,7 +135,7 @@
       .then(function () { return window.OneSignal.User.pushSubscription.getIdAsync(); })
       .then(function (id) {
         if (id) ls('alfaz_push_player', id);
-        setState('on'); try { statusLine(); } catch (e) {}
+        setState('on'); try { reportState(); } catch (e) {}
         if (!silent) { try { showToast(i18n[currentLang].pushOnToast || '🔔 Alerts are on', 'success'); } catch (e) {} }
         return syncPush('enable');
       })
@@ -293,7 +293,7 @@
   };
   window.abdoPushNever = function () {
     closeAsk();
-    setState('off'); try { statusLine(); } catch (e) {}
+    setState('off'); try { reportState(); } catch (e) {}
     try { ls(ASKED_KEY, '1'); } catch (e) {}
   };
   function closeAsk() { var m = document.getElementById('push-ask-modal'); if (m) m.remove(); }
@@ -393,38 +393,36 @@
   // The version label reads the service worker's own cache name. Deriving it there means it can
   // never drift out of sync with reality the way a hardcoded string in index.html would - and this
   // whole debug loop happened because 'is my phone on the new build?' was unanswerable from the app.
-  function showVersion() {
-    try {
-      if (!('caches' in window)) return;
-      caches.keys().then(function (ks) {
-        var hit = null;
-        for (var i = 0; i < ks.length; i++) { var m = /^alfaz-todo-v(\d+)$/.exec(ks[i]); if (m) hit = m[1]; }
-        var el = document.getElementById('app-version-num');
-        if (el && hit) el.textContent = 'v' + hit;
-      }).catch(function () {});
-    } catch (e) {}
-  }
-
-  // One honest line in the sidebar: what this device actually did, not what we assume it did.
-  function statusLine() {
+  // One always-populated line. An earlier version only wrote text when it happened to find a
+  // matching cache entry, so any unexpected state left the '…' placeholder on screen and told us
+  // nothing. A diagnostic that can stay silent is worse than none.
+  function reportState() {
     try {
       var el = document.getElementById('app-version-num');
       if (!el) return;
-      var v = el.textContent || '';
+      var ver = 'v?';
+      try { ver = window.__abdoPushVersion || ver; } catch (e) {}
       var state = ls(STATE_KEY);
-      var label = state === 'on' ? 'alerts on' : (state === 'off' ? 'alerts off' : 'not asked yet');
-      var extra = '';
+      var label = state === 'on' ? 'alerts ON' : (state === 'off' ? 'alerts OFF' : 'not asked');
+      var sdk = !cfg ? 'no config here' : (!window.OneSignal ? 'sdk missing' : 'sdk loading');
       try {
-        if (window.OneSignal && window.OneSignal.User) {
-          var sub = window.OneSignal.User.pushSubscription.get ? window.OneSignal.User.pushSubscription.get() : null;
-          extra = sub && sub.id ? ' · id ok' : ' · no id';
-        } else if (cfg) { extra = ' · sdk pending'; }
-        else { extra = ' · push off here'; }
-      } catch (e) { extra = ' · id pending'; }
-      var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
-      el.textContent = v + '  ·  ' + label + extra + '  ·  ' + perm;
-      el.parentNode.title = 'uid ' + pushUid();
-    } catch (e) {}
+        if (window.OneSignal && window.OneSignal.User && window.OneSignal.User.pushSubscription) {
+          var sub = null;
+          try { sub = window.OneSignal.User.pushSubscription.get(); } catch (e0) {}
+          sdk = (sub && sub.id) ? 'id ok' : 'no id yet';
+        }
+      } catch (e) {}
+      var perm = 'n/a';
+      try { perm = ('Notification' in window) ? Notification.permission : 'unsupported'; } catch (e) {}
+      var extra = label + '  ·  ' + sdk + '  ·  ' + perm;
+      if (state === 'on') {
+        try { extra = label + '  ·  ' + (ls('alfaz_push_player') ? 'queued' : 'not synced') + '  ·  ' + perm; } catch (e) {}
+      }
+      el.textContent = ver + '  ·  ' + extra;
+      try { el.parentNode.title = 'uid ' + pushUid(); } catch (e) {}
+    } catch (e) {
+      try { document.getElementById('app-version-num').textContent = 'report failed'; } catch (e2) {}
+    }
   }
 
   // ---- boot ----
@@ -452,13 +450,28 @@
     }
     loadSiteConfig(function (j) {
       setupShare();
-      try { statusLine(); } catch (e) {}
+      try { reportState(); } catch (e) {}
       bootPush(j && j.push ? j.push : null);
     });
   }
 
+  // The version is read from the service worker's own cache name so it can never drift from
+  // what is actually deployed; the label falls back to 'v?' rather than staying blank.
+  function readVersion() {
+    try {
+      if (!('caches' in window)) return;
+      caches.keys().then(function (ks) {
+        for (var i = 0; i < ks.length; i++) {
+          var m = /^alfaz-todo-v(\d+)$/.exec(ks[i]);
+          if (m) { window.__abdoPushVersion = 'v' + m[1]; }
+        }
+      }).catch(function () {}).then(function () { reportState(); });
+    } catch (e) {}
+  }
+
   window.addEventListener('load', function () {
-    showVersion();
+    readVersion();
+    reportState();
     start();
     document.addEventListener('signout', clearOnSignOut);
   });
