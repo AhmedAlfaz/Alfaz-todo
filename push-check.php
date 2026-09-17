@@ -75,6 +75,12 @@ foreach ([__DIR__ . '/push/push-config.php', __DIR__ . '/push-config.php'] as $c
     echo '  config at ' . (substr($cand, strlen(__DIR__)) ?: '/') . ' : '
        . (file_exists($cand) ? 'EXISTS (saved ' . date('H:i', filemtime($cand)) . ')' : 'absent') . "\n";
 }
+$cfgreal = __DIR__ . '/push/push-config.php';
+if (is_readable($cfgreal)) {
+    foreach (preg_split('/\n/', (string)file_get_contents($cfgreal)) as $l) {
+        if (stripos($l, 'PUSH_DIR') !== false) echo '  PUSH_DIR line : ' . trim($l) . "\n";
+    }
+}
 if (file_exists(__DIR__ . '/push-config.php') && !file_exists(__DIR__ . '/push/push-config.php')) {
     echo "  >> MISPLACED. Move push-config.php INTO the push/ folder.\n";
 }
