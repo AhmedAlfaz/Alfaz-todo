@@ -68,6 +68,16 @@ if (is_readable($own)) {
 }
 echo "  queue in use : " . ($cfgd ? $cfgd['dir'] : 'unknown') . "\n";
 echo "  push/ __DIR__  : " . $dir . "\n";
+// The one question that decides everything: is push-config.php in push/ where the code expects
+// it, or one level too high in public_html/? A misplaced config resolves every relative path in it
+// against the wrong folder, which looks exactly like a silently empty queue.
+foreach ([__DIR__ . '/push/push-config.php', __DIR__ . '/push-config.php'] as $cand) {
+    echo '  config at ' . (substr($cand, strlen(__DIR__)) ?: '/') . ' : '
+       . (file_exists($cand) ? 'EXISTS (saved ' . date('H:i', filemtime($cand)) . ')' : 'absent') . "\n";
+}
+if (file_exists(__DIR__ . '/push-config.php') && !file_exists(__DIR__ . '/push/push-config.php')) {
+    echo "  >> MISPLACED. Move push-config.php INTO the push/ folder.\n";
+}
 echo "  PUSH_DIR raw   : " . (defined('PUSH_DIR') ? PUSH_DIR : '(not defined - code default)') . "\n"
    . "  push-lib __DIR__: " . (function_exists('push_dir_probe') ? push_dir_probe() : 'n/a') . "\n";
 echo "  file tree      : ";
