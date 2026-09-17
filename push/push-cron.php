@@ -68,4 +68,6 @@ foreach ($glob as $file) {
     }
 }
 echo "abdo-push-cron " . date('c') . " cfg=" . basename((string)($cfg["config_file"] ?? "?")) . " files=" . count($glob) . " sent=$sent delivered=$noop failed=$failed pruned=$pruned skipped=$skipped transport=" . $cfg['transport']
-    . ($lasterr ? "  last_error=" . substr(preg_replace('/\s+/', ' ', $lasterr), 0, 170) : '') . "\n";
+    . ($lasterr ? "  last_error=" . substr(preg_replace('/\s+/', ' ', $lasterr), 0, 170) : '')
+    . (isset($_GET['devices']) ? '  devices=' . (count(glob(dirname($cfg['dir']) . '/user-*.json') ?: [])) : '')
+    . "\n";

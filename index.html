@@ -326,6 +326,9 @@
         <i class="fas fa-sync-alt"></i>
         <span data-i18n="refreshAppBtn">Refresh / Update App</span>
       </button>
+      <p id="app-version" class="text-center text-[11px] text-gray-400 dark:text-gray-500 py-1 select-all">
+        <span data-i18n="appVersionLabel">App version</span>: <span id="app-version-num">…</span>
+      </p>
       <button onclick="openAudioStudioModal()" class="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
         <i class="fas fa-volume-up"></i>
         <span data-i18n="audioStudioBtn">Audio Tones Studio</span>
@@ -1148,6 +1151,7 @@
         prayerAlert: "🕌 Time for {prayer} prayer!",
         enableNotif: "Enable Notifications", notifEnabled: "Notifications Enabled ✓",
         prayerTimesStale: "These times are ~{h}h old — check your connection and refresh.",
+        appVersionLabel: "App version", versionOutdated: "outdated — refresh",
         shareAppBtn: "Share ABDO", copiedLink: "Link copied \u2014 send it to a friend",
         workshopFlag: "Workshop copy \u2014 not the real app",
         pushOnToast: "🔔 Alerts are on — we will nudge you at prayer time and for tasks.",
@@ -1256,6 +1260,7 @@
         pushOnToast: "🔔 تم تفعيل التنبيهات — نذكّرك بوقت الصلاة وبمهامك.",
         pushFailToast: "لم نستطع تفعيل التنبيهات. التذكيرات تعمل طالما التطبيق مفتوح.",
         prayerTimesStaleUnknown: "ربما هذه الأوقات من يوم سابق — حدّثها عند توفر اتصال.",
+        appVersionLabel: "إصدار التطبيق", versionOutdated: "قديم — حدّث",
         shareAppBtn: "مشاركة عبده", copiedLink: "تم نسخ الرابط",
         workshopFlag: "\u0646\u0633\u062e\u0629 \u0627\u0644\u062a\u062c\u0631\u0628\u0629 \u2014 \u0644\u064a\u0633\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0627\u0644\u062d\u0642\u064a\u0642\u064a",
         noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",

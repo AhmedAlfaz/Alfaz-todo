@@ -390,6 +390,21 @@
     } catch (e) {}
   }
 
+  // The version label reads the service worker's own cache name. Deriving it there means it can
+  // never drift out of sync with reality the way a hardcoded string in index.html would - and this
+  // whole debug loop happened because 'is my phone on the new build?' was unanswerable from the app.
+  function showVersion() {
+    try {
+      if (!('caches' in window)) return;
+      caches.keys().then(function (ks) {
+        var hit = null;
+        for (var i = 0; i < ks.length; i++) { var m = /^alfaz-todo-v(\d+)$/.exec(ks[i]); if (m) hit = m[1]; }
+        var el = document.getElementById('app-version-num');
+        if (el && hit) el.textContent = 'v' + hit;
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   // ---- boot ----
   function bootPush(pc) {
     try { if (window.__abdoTrace) window.__abdoTrace.push(['bootPush', pc ? (pc.enabled === false ? 'disabled' : 'enabled') : 'no-push-node']); } catch (e) {}
@@ -420,6 +435,7 @@
   }
 
   window.addEventListener('load', function () {
+    showVersion();
     start();
     document.addEventListener('signout', clearOnSignOut);
   });
