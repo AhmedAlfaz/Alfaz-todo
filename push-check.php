@@ -73,7 +73,7 @@ if (isset($_GET['queue']) && function_exists('push_config')) {
 // does not authenticate like create-notification, so testing there produced a false 401.
 // This POST is deliberately undeliverable (unknown external id): it can only fail on auth or
 // payload, never on sending, so a 200 proves the key with no notification going anywhere.
-if (function_exists('curl_init') && isset($_GET['auth'])) {
+if (function_exists('curl_init')) {
     $cfgx = push_config();
     $payload = json_encode(['app_id' => (string)$cfgx['app_id'],
                             'contents' => ['en' => 'auth probe - not delivered'],
@@ -115,6 +115,4 @@ if (function_exists('curl_init') && isset($_GET['auth'])) {
         echo "  " . substr(preg_replace('/[\r\n\t]+/', ' ', (string)$err), 0, 160) . "\n";
         if ($curlerr !== '') echo "  curl: " . substr($curlerr, 0, 120) . "\n";
     }
-} else {
-    echo "\nOneSignal auth  : cannot check, curl extension unavailable\n";
 }
