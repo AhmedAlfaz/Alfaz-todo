@@ -34,10 +34,10 @@ $lasterr = '';
 foreach ($glob as $file) {
     $snap = json_decode((string)file_get_contents($file), true);
     if (!is_array($snap) || empty($snap['events'])) { continue; }
-    $changed = false; $keep = [];
+    $changed = false; $keep = []; $has_future = false;
     foreach ($snap['events'] as $e) {
         $due = (int)($e['send_at'] ?? 0) <= $horizon;
-        if (!$due) { $keep[] = $e; continue; }
+        if (!$due) { $keep[] = $e; $has_future = true; continue; }
         if (!empty($e['sent'])) { $pruned++; $changed = true; continue; }          // delivered
         if (!empty($e['pre_sent'])) {                                            // scheduled by OneSignal already
             if ((int)($e['send_at'] ?? 0) <= $now) { $pruned++; $changed = true; continue; }
@@ -61,7 +61,7 @@ foreach ($glob as $file) {
         else { $failed++; $e['error'] = substr((string)($r['error'] ?? '?'), 0, 200); $lasterr = $e['error']; }
         $keep[] = $e; // kept one extra cycle for the delivery log, then pruned
     }
-    if ($keep === []) { @unlink($file); continue; }
+    if ($keep === []) { @unlink($file); continue; }        // empty or all-past schedule: forget the device
     if ($changed) {
         $snap['events'] = array_values($keep);
         @file_put_contents($file, json_encode($snap), LOCK_EX);
