@@ -10,6 +10,7 @@ header('Content-Type: text/plain; charset=utf-8');
 echo "ABDO push diagnostics\n=====================\n\n";
 
 $dir = __DIR__ . '/push';
+$own = $dir . '/push-config.php';
 require_once $dir . '/push-lib.php';
 echo "push/ directory : " . (is_dir($dir) ? "found" : "MISSING <- the sync did not create it") . "\n";
 foreach (['push-lib.php', 'push-sync.php', 'push-cron.php', 'push-config.php', 'push-config.example.php'] as $f) {
@@ -66,6 +67,14 @@ if (is_readable($own)) {
        . " (" . round((time() - $md) / 60) . " min ago)\n";
 }
 echo "  queue in use : " . ($cfgd ? $cfgd['dir'] : 'unknown') . "\n";
+echo "  push/ __DIR__  : " . $dir . "\n";
+echo "  file tree      : ";
+$seen = [];
+foreach (['push/push-lib.php' => 'push-lib', 'push/push-sync.php' => 'push-sync', 'queue' => 'public_html/queue',
+          'push/queue' => 'push/queue', 'abdo-sync.php' => 'root abdo-sync'] as $rel => $lbl) {
+    $seen[] = $lbl . (file_exists(__DIR__ . '/' . $rel) ? '=yes' : '=no');
+}
+echo implode(' ', $seen) . "\n";
 $found = [];
 $base = isset($cfgd) && $cfgd ? dirname($cfgd['dir']) : __DIR__;   // public_html
 foreach ([
