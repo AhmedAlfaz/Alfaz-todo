@@ -49,6 +49,43 @@ if (function_exists('curl_init')) {
 }
 echo "PHP               : " . PHP_VERSION . "\n";
 
+// One block that answers the only two questions that matter after a "it should work" report:
+// where the queue really is, and whether any device file exists anywhere on the account.
+$cfgd = null;
+if (function_exists('push_config')) { try { $cfgd = push_config(); } catch (\Throwable $e) {} }
+echo "\ndebug\n------\n";
+if ($own && is_readable($own)) {
+    $lines = preg_split('/\n/', (string)file_get_contents($own));
+    $dirLine = '(PUSH_DIR not set in push-config.php - the code default applies)';
+    foreach ($lines as $l) { if (strpos($l, 'PUSH_DIR') !== false) { $dirLine = trim($l); break; } }
+    echo "  config line : " . $dirLine . "\n";
+}
+if (is_readable($own)) {
+    $md = filemtime($own);
+    echo "  config saved : " . date('Y-m-d H:i:s', $md)
+       . " (" . round((time() - $md) / 60) . " min ago)\n";
+}
+echo "  queue in use : " . ($cfgd ? $cfgd['dir'] : 'unknown') . "\n";
+$found = [];
+$base = isset($cfgd) && $cfgd ? dirname($cfgd['dir']) : __DIR__;   // public_html
+foreach ([
+    $cfgd ? $cfgd['dir'] . '/user-*.json' : '',
+    $base . '/queue/user-*.json',
+    $base . '/push/queue/user-*.json',
+    dirname($base) . '/abdo-push/queue/user-*.json',
+] as $pat) { if ($pat) $found = array_merge($found, glob($pat) ?: []); }
+$found = array_values(array_unique($found));
+echo "  device files : " . count($found) . ($found ? "" : "  <- nobody is registered") . "
+";
+foreach (array_slice($found, 0, 4) as $f) {
+    $j = json_decode((string)file_get_contents($f), true);
+    $pl = !empty($j['player']) ? substr((string)$j['player'], 0, 12) : 'none';
+    echo "    " . basename($f) . "  player=" . $pl . "  events=" . count((array)($j['events'] ?? []))
+       . "  synced=" . (empty($j['sync_at']) ? '?' : date('H:i', (int)$j['sync_at'])) . "
+";
+}
+
+
 // Use the loader's own PUSH_DIR - guessing the path here is how a check reports an empty queue
 // while cron is reading a populated one two folders away.
 if (isset($_GET['queue']) && function_exists('push_config')) {
