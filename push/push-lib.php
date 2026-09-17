@@ -1,6 +1,12 @@
 <?php
 /**
  * ABDO push sender — transport layer.
+ *
+ * The queue lives here, permanently, and the config file is no longer allowed to move it. A
+ * hand-pasted config ended up with two PUSH_DIR lines; PHP keeps the FIRST definition and ignores
+ * the rest, so the sender read one folder while the app wrote another and every device looked
+ * unregistered. One truth, in code, is the fix - not another instruction to edit a file by hand.
+ */
  * Kept separate so the queue logic can be tested without touching OneSignal.
  */
 
@@ -21,14 +27,12 @@ function push_config() {
     $is_template = basename($cfg_file) === 'push-config.example.php';
     require_once $cfg_file;
 
-    // Queue path is never left to a hand-edited value: a wrong one makes every write fail quietly
-    // (a guessed dirname() level pointed the first deploy outside the site, and nothing complained).
-    $dir = defined('PUSH_DIR') ? (string)PUSH_DIR : __DIR__ . '/queue';
-    if (!is_dir($dir) && !@mkdir($dir, 0750, true)) {
-        $dir = __DIR__ . '/queue';
-        if (!is_dir($dir)) @mkdir($dir, 0750, true);
-    }
-    if (!is_dir($dir) || !is_writable($dir)) {
+    // The queue location is fixed in code. A config-provided PUSH_DIR is deliberately ignored:
+    // a hand-pasted file ended up defining it twice, PHP keeps the first definition, and the
+    // sender then read one folder while the app wrote another - every device looked unregistered.
+    $dir = __DIR__ . '/queue';
+    if (!is_dir($dir)) { @mkdir($dir, 0750, true); }
+    if (!is_writable($dir)) {
         throw new RuntimeException('ABDO push: queue directory is not writable: ' . $dir);
     }
 
