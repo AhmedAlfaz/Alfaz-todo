@@ -160,5 +160,3 @@ function push_cancel($notification_id, $external_id, array $cfg) {
 
 /** Where push-lib itself thinks it lives. Temporary diagnostic. */
 function push_dir_probe() { return __DIR__; }
-
-function push_dir_probe() { return __DIR__; }
