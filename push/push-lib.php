@@ -107,6 +107,13 @@ function push_send(array $ev, $external_id, array $cfg) {
     if ($cfg['app_id'] === '' || $cfg['rest_key'] === '') {
         return ['ok' => false, 'id' => null, 'error' => 'onesignal credentials missing'];
     }
+    // The App ID and the REST key sit on adjacent rows in Keys & IDs, so pasting the wrong one is
+    // the commonest setup error and it produces a bare 401 that reads like "bad key". Say what
+    // actually happened, in the delivery log, instead of leaving someone to guess.
+    if (hash_equals((string)$cfg['app_id'], (string)$cfg['rest_key'])) {
+        return ['ok' => false, 'id' => null,
+                'error' => 'ONESIGNAL_REST_KEY still holds the App ID - copy the row labelled REST API key'];
+    }
     $ch = curl_init('https://onesignal.com/api/v1/notifications');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
