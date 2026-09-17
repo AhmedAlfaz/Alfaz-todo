@@ -28,7 +28,7 @@ if (PHP_SAPI !== 'cli') {
 $glob = glob($cfg['dir'] . '/user-*.json') ?: [];
 $now = time();
 $horizon = $now + $cfg['window'] * 60;
-$sent = $skipped = $failed = $pruned = 0;
+$sent = $skipped = $failed = $pruned = $noop = 0;
 $lasterr = '';
 
 foreach ($glob as $file) {
@@ -54,7 +54,10 @@ foreach ($glob as $file) {
         // a stale prayer alert late — worst case is no alert, which the log records.
         $e['attempts'] = (int)($e['attempts'] ?? 0) + 1; $changed = true;
         $r = push_send($e, $e['ext'] ?? $snap['uid'], $cfg);
-        if ($r['ok']) { $sent++; $e['sent'] = $now; $e['nid'] = $r['id']; }
+        if ($r['ok']) {
+            $e['sent'] = $now;
+            if (!empty($r['noop'])) { $noop++; } else { $sent++; $e['nid'] = $r['id']; }
+        }
         else { $failed++; $e['error'] = substr((string)($r['error'] ?? '?'), 0, 200); $lasterr = $e['error']; }
         $keep[] = $e; // kept one extra cycle for the delivery log, then pruned
     }
@@ -64,5 +67,5 @@ foreach ($glob as $file) {
         @file_put_contents($file, json_encode($snap), LOCK_EX);
     }
 }
-echo "abdo-push-cron " . date('c') . " cfg=" . basename((string)($cfg["config_file"] ?? "?")) . " files=" . count($glob) . " sent=$sent failed=$failed pruned=$pruned skipped=$skipped transport=" . $cfg['transport']
+echo "abdo-push-cron " . date('c') . " cfg=" . basename((string)($cfg["config_file"] ?? "?")) . " files=" . count($glob) . " sent=$sent delivered=$noop failed=$failed pruned=$pruned skipped=$skipped transport=" . $cfg['transport']
     . ($lasterr ? "  last_error=" . substr(preg_replace('/\s+/', ' ', $lasterr), 0, 170) : '') . "\n";

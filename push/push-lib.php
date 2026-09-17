@@ -132,7 +132,14 @@ function push_send(array $ev, $external_id, array $cfg) {
     if ($code >= 200 && $code < 300 && !empty($json['id'])) {
         return ['ok' => true, 'id' => $json['id']];
     }
-    return ['ok' => false, 'id' => null, 'error' => 'http ' . $code . ' ' . substr((string)$raw, 0, 180)];
+    // An empty audience is a SUCCESS with nothing to do, not a failure: a brand-new install has
+    // no subscribers yet, and reporting it as failed makes a healthy setup look broken and
+    // burns a retry cycle per event. Counted separately so cron can say "noaudience".
+    $msg = (string)$raw;
+    if ($code >= 200 && $code < 300 && strpos($msg, 'not subscribed') !== false) {
+        return ['ok' => true, 'id' => null, 'noop' => 'noaudience'];
+    }
+    return ['ok' => false, 'id' => null, 'error' => 'http ' . $code . ' ' . substr($msg, 0, 180)];
 }
 
 /** Cancel a previously scheduled notification (best effort). */
