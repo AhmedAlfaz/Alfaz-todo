@@ -68,6 +68,8 @@ if (is_readable($own)) {
 }
 echo "  queue in use : " . ($cfgd ? $cfgd['dir'] : 'unknown') . "\n";
 echo "  push/ __DIR__  : " . $dir . "\n";
+echo "  PUSH_DIR raw   : " . (defined('PUSH_DIR') ? PUSH_DIR : '(not defined - code default)') . "\n"
+   . "  push-lib __DIR__: " . (function_exists('push_dir_probe') ? push_dir_probe() : 'n/a') . "\n";
 echo "  file tree      : ";
 $seen = [];
 foreach (['push/push-lib.php' => 'push-lib', 'push/push-sync.php' => 'push-sync', 'queue' => 'public_html/queue',

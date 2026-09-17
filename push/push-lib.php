@@ -156,4 +156,6 @@ function push_cancel($notification_id, $external_id, array $cfg) {
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     return $code < 400;
-}
+
+/** Where push-lib itself thinks it lives, and where it writes. */
+function push_dir_probe() { return __DIR__; }
