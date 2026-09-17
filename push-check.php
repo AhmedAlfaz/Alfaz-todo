@@ -66,11 +66,9 @@ if (isset($_GET['queue']) && function_exists('push_config')) {
                . (empty($e['error']) ? "" : "  ERROR: " . substr((string)$e['error'], 0, 200)) . "\n";
         }
     }
-} elseif (is_dir($dir . '/queue') || is_dir(dirname($dir) . '/abdo-push/queue')) {
-    echo "\nqueue present : yes (use ?queue=1 to read it)\n";
-} else {
-    echo "\nqueue present : not created yet\n";
+}
 
+// --- Key check: runs on every load, no flag needed -------------------------------
 // Ask the SAME endpoint the sender uses, the SAME way. GET /apps/{id} is app-management and
 // does not authenticate like create-notification, so testing there produced a false 401.
 // This POST is deliberately undeliverable (unknown external id): it can only fail on auth or
@@ -117,7 +115,6 @@ if (function_exists('curl_init') && isset($_GET['auth'])) {
         echo "  " . substr(preg_replace('/[\r\n\t]+/', ' ', (string)$err), 0, 160) . "\n";
         if ($curlerr !== '') echo "  curl: " . substr($curlerr, 0, 120) . "\n";
     }
-} elseif (isset($_GET['auth'])) {
+} else {
     echo "\nOneSignal auth  : cannot check, curl extension unavailable\n";
-}
 }
