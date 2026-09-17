@@ -89,15 +89,17 @@ function push_send(array $ev, $external_id, array $cfg) {
     $body = push_cut((string)($ev['body'] ?? ''), $cfg['max_body']);
     $payload = [
         'app_id'      => $cfg['app_id'],
-        'name'        => (string)($ev['id'] ?? ''),          // lets us cancel by name later
-        'include_external_ids' => [(string)$external_id],
+        'name'        => substr(preg_replace('/[^A-Za-z0-9_.:-]/', '', (string)($ev['id'] ?? '')), 0, 50),
+        // include_external_user_ids is the real v1 field. 'include_external_ids' does not exist,
+        // so the call addressed nobody and was rejected - while a minimal auth probe still
+        // returned 200, which is why 'key ACCEPTED' and 'failed=1' appeared together.
+        'include_external_user_ids' => [(string)$external_id],
         'send_at'     => gmdate('Y-m-d\TH:i:s\Z', (int)$ev['send_at']),
         'contents'    => ['en' => $body, 'ar' => $body],
         'headings'    => ['en' => (string)($ev['title'] ?? ''), 'ar' => (string)($ev['title'] ?? '')],
         'url'         => (string)($ev['link'] ?? './'),
         'chrome_web_icon' => 'brand/abdo-icon-192-wb.png',
         'ttl'         => 3600,                                // never deliver a prayer alert late by an hour
-        'priority'    => 10,
     ];
     if ($cfg['transport'] !== 'onesignal') {
         @file_put_contents($cfg['dir'] . '/transport.log',
