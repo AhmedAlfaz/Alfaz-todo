@@ -2,8 +2,12 @@
 """Deterministic real-browser verification of the v40 prayer-times staleness patch.
 The app fetches at boot by itself, so every scenario: blocks geolocation (no boot fetch),
 mocks or aborts Aladhan, seeds the cache, then calls fetchPrayerTimes exactly once."""
-import json, threading, http.server, sys, time, datetime
+import json, os, shutil, threading, http.server, sys, time, datetime
 from playwright.sync_api import sync_playwright
+
+def _chromium():
+    return os.environ.get('CHROME') or shutil.which('chromium') or shutil.which('chromium-browser') or shutil.which('google-chrome') or None
+
 
 APP, PORT = '/home/user/Alfaz-todo', 8138
 class H(http.server.SimpleHTTPRequestHandler):
@@ -59,7 +63,7 @@ def check(name, cond, detail=""):
     print(("PASS  " if cond else "FAIL  ") + name + (("   | " + str(detail)[:180]) if detail else ""))
 
 with sync_playwright() as p:
-    b = p.chromium.launch(executable_path='/usr/bin/chromium', args=['--no-sandbox','--disable-dev-shm-usage'])
+    b = p.chromium.launch(executable_path=_chromium(), args=['--no-sandbox','--disable-dev-shm-usage'])
 
     # A: stale v2 cache + offline -> warn with the true age, cards from cache
     A = scenario(b, {"v":2,"cached_at":int(time.time()*1000)-20*3600*1000,"date_key":DS,"timings":TIMINGS}, net='abort')

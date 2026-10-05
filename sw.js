@@ -1,20 +1,27 @@
-const CACHE_NAME = 'alfaz-todo-v49';
-const SHELL = [
-  './',
-  './index.html',
-  './manifest.json',
-  './site-config.json',
-  './brand/abdo-icon-192-wb.png',
-  './brand/abdo-icon-512-wb.png',
-  './brand/abdo-icon-512-maskable-wb.png'
+// ABDO service worker.
+//
+// Design rule: the update path must be ATOMIC for critical assets. An install that swallows a
+// failure and then calls skipWaiting() hands control to a worker whose cache is missing a file -
+// for a single-file app that means "slightly stale", for a split app it means a blank white
+// screen offline. So: required files use addAll (all-or-nothing, install fails -> the old worker
+// keeps serving and we fix the deploy), optional files are best-effort.
+
+const VERSION = 'v49';
+const CACHE_NAME = 'alfaz-todo-' + VERSION;
+const CORE = ['.', 'index.html', 'sw.js', 'site-config.json'];
+const OPTIONAL = [
+  'manifest.json',
+  'brand/abdo-icon-192-wb.png',
+  'brand/abdo-icon-512-wb.png',
+  'brand/abdo-icon-512-maskable-wb.png'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    for (const url of SHELL) {
-      try { await cache.add(url); } catch (e) {}
-    }
+    // Throws on any miss -> no skipWaiting -> current worker stays in control.
+    await cache.addAll(CORE);
+    await Promise.all(OPTIONAL.map(u => cache.add(u).catch(() => {})));
     await self.skipWaiting();
   })());
 });
@@ -34,22 +41,36 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  // HTML and navigations: network first, cache as the offline fallback. Never serve a cached
+  // shell ahead of the network or updates become invisible for up to the CDN's max-age.
+  if (req.mode === 'navigate' || url.pathname.endsWith('.html')) {
+    event.respondWith((async () => {
+      try {
+        const fresh = await fetch(req);
+        if (fresh && fresh.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(req, fresh.clone());
+        }
+        return fresh;
+      } catch (e) {
+        const hit = (await caches.match(req)) || (await caches.match('index.html'));
+        if (hit) return hit;
+        throw e;
+      }
+    })());
+    return;
+  }
+
+  // Static assets: cache first, fill on miss, and refresh in the background when a version bumps.
   event.respondWith((async () => {
-    try {
-      const fresh = await fetch(req);
-      if (fresh && fresh.ok && (req.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/'))) {
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(req, fresh.clone());
-      }
-      return fresh;
-    } catch (e) {
-      const cached = await caches.match(req);
-      if (cached) return cached;
-      if (req.mode === 'navigate') {
-        return (await caches.match('./index.html')) || (await caches.match('./'));
-      }
-      throw e;
+    const hit = await caches.match(req);
+    if (hit) return hit;
+    const res = await fetch(req);
+    if (res && res.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(req, res.clone());
     }
+    return res;
   })());
 });
 
@@ -71,7 +92,7 @@ self.addEventListener('notificationclick', event => {
 });
 
 self.addEventListener('notificationclose', event => {
-  event.waitUntil(Promise.resolve());
+  event.notification.close();
 });
 
 self.addEventListener('message', event => {

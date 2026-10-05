@@ -1,0 +1,46 @@
+name: gates
+
+# Static gates + browser suites. Free on a public repo, and it runs on every push — which is
+# the point: this repo auto-deploys to the live site, so a check that only runs when someone
+# remembers is not a check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test driver
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Static gates (syntax, version pair, declared assets, duplicate definitions)
+        run: python3 tools/gates.py
+
+      - name: Service-worker atomic-install gate
+        run: python3 tools/test_sw_atomic.py
+
+      - name: Prayer-time staleness suite
+        run: python3 tools/test_v40_stale.py
+
+      - name: Push client + config suite
+        run: python3 tools/test_v42_push.py
+
+      - name: Sender queue/auth suite
+        run: python3 tools/test_push_php.py

@@ -3,8 +3,13 @@
 Covers: inert-by-default, enabled:false never touches OneSignal, no auto-prompt, the earned
 one-shot soft-ask, schedule building for prayers/tasks/plans, the sync POST, the shared link,
 and config resolution across navigations/offline via our own service worker cache."""
-import json, re, sys, time, subprocess, signal
+import os, json, re, sys, time, subprocess, signal
+import shutil
 from playwright.sync_api import sync_playwright
+
+def _chromium():
+    return os.environ.get('CHROME') or shutil.which('chromium') or shutil.which('chromium-browser') or shutil.which('google-chrome') or None
+
 
 REPO, PORT = '/home/user/Alfaz-todo', 8099
 srv_proc = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', REPO],
@@ -83,7 +88,7 @@ def safe_eval(pg, expr, fallback=None):
         return 'EVAL-ERR: ' + str(e).splitlines()[0][:120]
 
 with sync_playwright() as pw:
-    b = pw.chromium.launch(executable_path='/usr/bin/chromium', args=['--no-sandbox', '--disable-dev-shm-usage'])
+    b = pw.chromium.launch(executable_path=_chromium(), args=['--no-sandbox', '--disable-dev-shm-usage'])
 
     # 1) missing config => inert
     pg, e1 = make_page(b, cfg=None)
@@ -273,24 +278,22 @@ check('13b: committed config is deployable as-is: enabled, canonical link, real 
       and committed.get('push', {}).get('writeToken') == '',
       json.dumps({k: committed.get(k) for k in ('installUrl',)})[:110] if committed else b2[:80])
 check('13g: nothing host-specific left behind at the web root', get('/push-config.json')[0] == 404)
+src_txt = open(f'{REPO}/index.html', encoding='utf-8').read()
 c3, b3 = get('/sw.js')
 # version number deliberately not asserted here: it changes every release and a test that
 # fails because of a correct release is a test people start ignoring.
 # The refresh URL has been corrupted by a careless version bump before now ('?v=43?v=42&t=t='),
 # which silently breaks cache-busting: an empty t= makes the URL identical on every tap.
-# Assert the whole shape, not just the number.
 idx_txt = open(f'{REPO}/index.html','rb').read()
 occ = re.findall(rb"\?v=\d+&t=", idx_txt)
 junk = re.findall(rb"\?v=", idx_txt)
+_swv = re.search(rb"VERSION\s*=\s*'v(\d+)'", b3) or re.search(rb"CACHE_NAME\s*=\s*'alfaz-todo-v(\d+)'", b3)
 check('13c2: refresh URL well-formed - exactly one ?v=N&t=, no doubled version, no empty t=',
-      len(occ) == 1 and len(junk) == 1 and (b'?v=' + re.search(rb"CACHE_NAME = 'alfaz-todo-v(\d+)'", b3).group(1) + b'&t=') in idx_txt,
-      f'?v= count={len(junk)}, well-formed={len(occ)}')
-m_ver = re.search(rb"CACHE_NAME = 'alfaz-todo-v(\d+)'", b3)
-idx_ver = re.search(rb"\?v=(\d+)&t=", idx_txt)
+      len(occ) == 1 and len(junk) == 1, f'?v= count={len(junk)}, well-formed={len(occ)}')
 check('13c: our own worker still owns the root scope, caches the config, and matches index.html',
-      c3 == 200 and b'site-config.json' in b3 and m_ver and idx_ver and m_ver.group(1) == idx_ver.group(1),
-      f"sw=v{m_ver.group(1).decode() if m_ver else '?'} index=v{idx_ver.group(1).decode() if idx_ver else '?'}")
-src_txt = open(f'{REPO}/index.html', encoding='utf-8').read()
+      c3 == 200 and b'site-config.json' in b3 and _swv and (b'?v=' + _swv.group(1) + b'&t=') in idx_txt,
+      f"sw={_swv.group(1).decode() if _swv else '?'} index={occ[0].decode() if occ else '?'}")
+
 check('13d: index.html loads OneSignal + client, both deferred (no render block)',
       'OneSignalSDK.page.js" defer' in src_txt and 'push/client.js" defer' in src_txt)
 check('13e: no push-config.json left behind to confuse a deploy', get('/push-config.json')[0] == 404, get('/push-config.json')[0])

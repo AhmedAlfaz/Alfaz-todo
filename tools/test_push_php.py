@@ -81,12 +81,16 @@ def cron(key=CRON_KEY):
         return e.code, e.read().decode().strip()
 
 def queue(uid):
-    p = f'{QDIR}/user-{uid}.json'
+    p = f'{QDIR}/queue/user-{uid}.json'
     return json.loads(open(p).read()) if os.path.exists(p) else None
 
 def loglines():
-    p = f'{QDIR}/transport.log'
-    return [json.loads(l) for l in open(p)] if os.path.exists(p) else []
+    # transport.log lives in the queue dir, which the code pins to push/queue and no longer
+    # reads from config - so accept either location rather than re-deriving it here.
+    for p in (f'{QDIR}/queue/transport.log', f'{QDIR}/transport.log'):
+        if os.path.exists(p):
+            return [json.loads(l) for l in open(p)]
+    return []
 
 res = []
 def check(name, cond, detail=''):
@@ -163,7 +167,7 @@ check('6a: past-dated event is not queued (ttl protects users)',
 lg = loglines()
 sample = [l for l in lg if l['payload']['name'] == ev_later['id']]
 ok_shape = bool(sample) and 'send_at' in sample[-1]['payload'] and 'Z' in sample[-1]['payload']['send_at'] \
-    and sample[-1]['payload']['include_external_ids'] == ['pl-test'] and sample[-1]['payload']['ttl'] == 3600
+    and sample[-1]['payload']['include_external_user_ids'] == ['pl-test'] and sample[-1]['payload']['ttl'] == 3600
 check('7a: payload has send_at(Z) + external id targeting + 1h ttl', ok_shape, json.dumps(sample[-1]['payload'])[:220] if sample else 'no log entry')
 check('7b: body clamped to PUSH_MAX_BODY', max([len(l['payload']['contents']['en']) for l in lg] or [0]) <= 240)
 
