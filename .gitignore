@@ -4,3 +4,6 @@ push/queue/
 
 # generated locally by make-config.php - never commit (public repo mirrors to the web root)
 tools/handoff/push-config.php
+node_modules/
+package*.json
+test-adhan.html

@@ -1136,6 +1136,7 @@
   </main>
 
   <!-- ==================== JAVASCRIPT ==================== -->
+  <script src="js/adhan.umd.min.js"></script>
   <script>
     // ===== i18n =====
     const i18n = {
@@ -2539,6 +2540,10 @@
       );
     }
     function fetchPrayerTimes(lat, lng) {
+      if (typeof adhan === 'undefined') {
+        showToast('❌ Offline Adhan engine not loaded', 'error');
+        return;
+      }
       const d = new Date(), dd = d.getDate().toString().padStart(2,'0'), mm = (d.getMonth()+1).toString().padStart(2,'0'), yyyy = d.getFullYear(), ds = `${dd}-${mm}-${yyyy}`;
       const cacheKey = `alfatore_prayers_${ds}`;
       const cached = localStorage.getItem(cacheKey);
@@ -2548,18 +2553,36 @@
           if (parsed && parsed.v === 2 && parsed.timings) {
             prayerTimings = parsed.timings; cachedAt = parsed.cached_at || 0;
           } else {
-            prayerTimings = parsed || {};   // legacy v1: bare timings object
+            prayerTimings = parsed || {};
           }
         } catch(e) { prayerTimings = {}; }
         renderPrayerCards(); updateNextPrayer();
       }
-      fetch(`https://api.aladhan.com/v1/timings/${ds}?latitude=${lat}&longitude=${lng}&method=5`)
-        .then(r => r.json()).then(data => {
-          prayerTimings = { Fajr: data.data.timings.Fajr, Dhuhr: data.data.timings.Dhuhr, Asr: data.data.timings.Asr, Maghrib: data.data.timings.Maghrib, Isha: data.data.timings.Isha };
-          localStorage.setItem(cacheKey, JSON.stringify({ v: 2, cached_at: Date.now(), date_key: ds, timings: prayerTimings }));
-          cachedAt = Date.now();
-          renderPrayerCards(); updateNextPrayer();
-        }).catch(() => { if (!cached) showToast('❌ Failed to load prayer times', 'error'); });
+
+      try {
+        const coordinates = new adhan.Coordinates(lat, lng);
+        const params = adhan.CalculationMethod.Egyptian();
+        params.madhab = adhan.Madhab.Shafi;
+        params.highLatitudeRule = adhan.HighLatitudeRule.MiddleOfTheNight;
+        const pt = new adhan.PrayerTimes(coordinates, d, params);
+        
+        const fmt = (dt) => dt.getHours().toString().padStart(2, '0') + ':' + dt.getMinutes().toString().padStart(2, '0');
+        
+        prayerTimings = {
+          Fajr: fmt(pt.fajr),
+          Dhuhr: fmt(pt.dhuhr),
+          Asr: fmt(pt.asr),
+          Maghrib: fmt(pt.maghrib),
+          Isha: fmt(pt.isha)
+        };
+        
+        localStorage.setItem(cacheKey, JSON.stringify({ v: 2, cached_at: Date.now(), date_key: ds, timings: prayerTimings }));
+        cachedAt = Date.now();
+        renderPrayerCards(); updateNextPrayer();
+      } catch (e) {
+        if (!cached) showToast('❌ Failed to calculate prayer times', 'error');
+        console.error(e);
+      }
     }
 
     function renderPrayerFreshness() {
@@ -4214,26 +4237,36 @@
       if (occHijriMonthCache[key]) return occHijriMonthCache[key];
       const map = {};
       try {
-        const res = await fetch('https://api.aladhan.com/v1/gToHCalendar/' + (m0 + 1) + '/' + y);
-        const json = await res.json();
-        (json.data || []).forEach(row => {
-          const g = row.gregorian || {};
-          const h = row.hijri || {};
-          const iso = (g.date || '').split('-').reverse().join('-'); // API is DD-MM-YYYY
-          let giso = '';
-          if (g.date && g.date.indexOf('-') > -1) {
-            const p = g.date.split('-');
-            if (p[0].length === 2) giso = p[2] + '-' + p[1] + '-' + p[0];
-            else giso = g.date;
+        const dtfNum = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric', year: 'numeric' });
+        const dtfAr = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', { month: 'long' });
+        const dtfEn = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { month: 'long' });
+        
+        const endDay = new Date(y, m0 + 1, 0).getDate();
+        for (let d = 1; d <= endDay; d++) {
+          const dt = new Date(y, m0, d, 12, 0, 0);
+          
+          const partsNum = dtfNum.formatToParts(dt);
+          const pMap = {}; partsNum.forEach(p => pMap[p.type] = p.value);
+          
+          let hName = '';
+          if (currentLang === 'ar') {
+            const pAr = dtfAr.formatToParts(dt).find(p => p.type === 'month');
+            if (pAr) hName = pAr.value;
+          } else {
+            const pEn = dtfEn.formatToParts(dt).find(p => p.type === 'month');
+            if (pEn) hName = pEn.value;
           }
+          
+          const giso = `${y}-${(m0+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+          
           map[giso] = {
-            hd: parseInt(h.day, 10),
-            hm: parseInt(h.month && h.month.number, 10),
-            hy: parseInt(h.year, 10),
-            hName: (h.month && (currentLang === 'ar' ? h.month.ar : h.month.en)) || ''
+            hd: parseInt(pMap.day, 10),
+            hm: parseInt(pMap.month, 10),
+            hy: parseInt(pMap.year, 10),
+            hName: hName
           };
-        });
-      } catch (e) {}
+        }
+      } catch (e) { console.error('Hijri conversion failed', e); }
       occHijriMonthCache[key] = map;
       return map;
     }
