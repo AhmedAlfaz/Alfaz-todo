@@ -2704,9 +2704,19 @@
 
     // ===== QIBLA =====
     function calculateQibla(lat, lng) {
-      const mLat=21.422487*(Math.PI/180), mLng=39.826206*(Math.PI/180), uLat=lat*(Math.PI/180), uLng=lng*(Math.PI/180);
-      const y=Math.sin(mLng-uLng), x=Math.cos(uLat)*Math.tan(mLat)-Math.sin(uLat)*Math.cos(mLng-uLng);
-      qiblaAngle = (Math.atan2(y,x)*(180/Math.PI)+360)%360;
+      if (typeof adhan === 'undefined') {
+        const mLat = 21.422487 * (Math.PI / 180);
+        const mLng = 39.826206 * (Math.PI / 180);
+        const uLat = lat * (Math.PI / 180);
+        const uLng = lng * (Math.PI / 180);
+        const y = Math.sin(mLng - uLng);
+        const x = Math.cos(uLat) * Math.tan(mLat) - Math.sin(uLat) * Math.cos(mLng - uLng);
+        qiblaAngle = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+      } else {
+        const coordinates = new adhan.Coordinates(lat, lng);
+        qiblaAngle = adhan.Qibla(coordinates);
+      }
+      
       document.getElementById('qibla-info').innerHTML = i18n[currentLang].qiblaResult.replace('{angle}', qiblaAngle.toFixed(1));
       document.getElementById('qibla-angle-text').textContent = `${qiblaAngle.toFixed(1)}°`;
       const marker = document.getElementById('qibla-marker');
