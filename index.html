@@ -1143,7 +1143,7 @@
       en: {
         myDay: "My Day", prayerReminders: "Prayer Reminders", qiblaNavigator: "Qibla Navigator",
         addTaskPlaceholder: "Add a task (Press Enter to save)", fetchingLoc: "Fetching location...",
-        locLocked: "Location locked", locDenied: "Location denied. Using Mecca.",
+        locLocked: "Location locked", locDenied: "Location denied. Using default/last.",
         selectAzan: "Select Azan Sound", makkah: "Makkah", madinah: "Madinah", alaqsa: "Al-Aqsa",
         egypt: "Egypt", turkey: "Turkey", testAudio: "Test Audio", qiblaDir: "Qibla Direction",
         calculating: "Calculating coordinates...",
@@ -1249,7 +1249,7 @@
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
         addTaskPlaceholder: "أضف مهمة (اضغط Enter للحفظ)", fetchingLoc: "جاري تحديد الموقع...",
-        locLocked: "تم تحديد الموقع", locDenied: "تم رفض الموقع. سيتم استخدام مكة.",
+        locLocked: "تم تحديد الموقع", locDenied: "تم رفض الموقع. استخدام الافتراضي/السابق.",
         selectAzan: "اختر صوت الأذان", makkah: "مكة المكرمة", madinah: "المدينة المنورة",
         alaqsa: "المسجد الأقصى", egypt: "مصر", turkey: "تركيا", testAudio: "اختبار الصوت",
         qiblaDir: "اتجاه القبلة", calculating: "جاري حساب الإحداثيات...",
@@ -2532,11 +2532,72 @@
     }
 
     // ===== GEOLOCATION & PRAYER TIMES =====
+    const EGYPT_CITIES = {
+      Cairo: { lat: 30.0444, lng: 31.2357 },
+      Alexandria: { lat: 31.2001, lng: 29.9187 },
+      Giza: { lat: 30.0131, lng: 31.2089 },
+      SharmElSheikh: { lat: 27.9158, lng: 34.3299 },
+      Mansoura: { lat: 31.0379, lng: 31.3815 },
+      Assiut: { lat: 27.1810, lng: 31.1837 },
+      Luxor: { lat: 25.6872, lng: 32.6396 },
+      Aswan: { lat: 24.0889, lng: 32.8998 },
+      Hurghada: { lat: 27.2579, lng: 33.8116 }
+    };
+
+    function setLocationAndFetch(lat, lng, isFallback = false) {
+      userLat = lat; userLng = lng;
+      if (!isFallback) {
+        localStorage.setItem('alfatore_last_coords', JSON.stringify({ lat, lng }));
+      }
+      const icon = isFallback ? '<i class="fas fa-exclamation-triangle text-amber-500"></i>' : '<i class="fas fa-check-circle text-green-500"></i>';
+      const msg = isFallback ? i18n[currentLang].locDenied : i18n[currentLang].locLocked;
+      document.getElementById('location-status').innerHTML = `${icon} ${msg}: ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+      fetchPrayerTimes(lat, lng);
+      calculateQibla(lat, lng);
+    }
+
     function initGeolocation() {
-      if (!navigator.geolocation) return;
+      let lat = EGYPT_CITIES.Cairo.lat;
+      let lng = EGYPT_CITIES.Cairo.lng;
+      let isFallback = true;
+      
+      const lastCoords = localStorage.getItem('alfatore_last_coords');
+      if (lastCoords) {
+        try {
+          const parsed = JSON.parse(lastCoords);
+          if (parsed.lat && parsed.lng) {
+            lat = parsed.lat;
+            lng = parsed.lng;
+            isFallback = false;
+          }
+        } catch(e) {}
+      }
+
+      if (!navigator.geolocation) {
+        setLocationAndFetch(lat, lng, true);
+        return;
+      }
+      
+      let locationFound = false;
+
+      const fallbackTimer = setTimeout(() => {
+        if (!locationFound) {
+          setLocationAndFetch(lat, lng, true);
+        }
+      }, 3000);
+
       navigator.geolocation.getCurrentPosition(
-        pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; document.getElementById('location-status').innerHTML = `<i class="fas fa-check-circle text-green-500"></i> ${i18n[currentLang].locLocked}: ${userLat.toFixed(2)}, ${userLng.toFixed(2)}`; fetchPrayerTimes(userLat, userLng); calculateQibla(userLat, userLng); },
-        () => { document.getElementById('location-status').innerHTML = `<i class="fas fa-exclamation-triangle text-amber-500"></i> ${i18n[currentLang].locDenied}`; fetchPrayerTimes(21.4225, 39.8262); }
+        pos => { 
+          locationFound = true;
+          clearTimeout(fallbackTimer);
+          setLocationAndFetch(pos.coords.latitude, pos.coords.longitude, false);
+        },
+        () => { 
+          locationFound = true;
+          clearTimeout(fallbackTimer);
+          setLocationAndFetch(lat, lng, true);
+        },
+        { timeout: 3000, maximumAge: 600000 }
       );
     }
     function fetchPrayerTimes(lat, lng) {
