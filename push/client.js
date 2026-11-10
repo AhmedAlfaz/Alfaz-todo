@@ -370,7 +370,13 @@
     });
   }
   function sameOrigin(u) {
-    try { return new URL(u, location.href).origin === location.origin; } catch (e) { return true; }
+    try {
+      var uUrl = new URL(u, location.href);
+      var locUrl = new URL(location.href);
+      return uUrl.hostname.replace(/^www\./, '') === locUrl.hostname.replace(/^www\./, '') &&
+             uUrl.port === locUrl.port &&
+             uUrl.protocol === locUrl.protocol;
+    } catch (e) { return true; }
   }
   window.shareApp = function () {
     var fire = function (u) {
