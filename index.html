@@ -501,13 +501,18 @@
             </select>
           </div>
         </div>
-        <div class="flex space-x-2">
-          <button onclick="testAzan()" class="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
-            <i class="fas fa-play me-2"></i> <span data-i18n="testAudio">Test Audio</span>
+        <div class="flex flex-wrap gap-2 justify-end">
+          <button id="audio-cache-btn" onclick="manageOfflineAudio()" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2 border border-gray-200 dark:border-gray-600">
+            <i class="fas fa-cloud-download-alt"></i> <span data-i18n="downloadAudio">Download Offline</span>
           </button>
-          <button onclick="stopAzan()" class="bg-red-500 text-white hover:bg-red-600 px-4 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
-            <i class="fas fa-stop"></i>
-          </button>
+          <div class="flex space-x-2">
+            <button onclick="testAzan()" class="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
+              <i class="fas fa-play me-2"></i> <span data-i18n="testAudio">Test Audio</span>
+            </button>
+            <button onclick="stopAzan()" class="bg-red-500 text-white hover:bg-red-600 px-4 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
+              <i class="fas fa-stop"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1218,6 +1223,7 @@
         taskToneLabel: "Work & Personal Task Tone", toneTaskChime: "Modern Productivity Chime",
         toneTaskSpoken: "Spoken Reminder Voice", testTone: "Test",
         prayerAzanSetting: "Prayer Azan Sound: 13 MP3s", changeAzanBtn: "Change Azan",
+        downloadAudio: "Download Offline", audioCached: "Cached Offline",
         audioSettingsSaved: "✅ Audio settings saved!",
         occasionsCalendar: "Occasions", occasionsSubtitle: "Islamic occasions & Egypt official holidays",
         noOccasionsDay: "No listed occasions on this day.",
@@ -1324,6 +1330,7 @@
         taskToneLabel: "نغمة مهام العمل والحياة", toneTaskChime: "نغمة إنجاز عصرية",
         toneTaskSpoken: "نطق اسم المهمة صوتياً", testTone: "تجربة",
         prayerAzanSetting: "أذان الصلاة: ١٣ صوتاً", changeAzanBtn: "تغيير الأذان",
+        downloadAudio: "تحميل للملفات", audioCached: "متاح بدون إنترنت",
         audioSettingsSaved: "✅ تم حفظ إعدادات الأصوات!",
         occasionsCalendar: "المناسبات", occasionsSubtitle: "مناسبات إسلامية وعطلات مصر الرسمية",
         noOccasionsDay: "لا توجد مناسبات مدرجة في هذا اليوم.",
@@ -1965,6 +1972,13 @@
       initGeolocation();
       loadDarkMode();
       updateNotifButton();
+      
+      const azanSelect = document.getElementById('azan-select');
+      if (azanSelect) {
+        azanSelect.addEventListener('change', checkAudioCacheStatus);
+      }
+      checkAudioCacheStatus();
+
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
           try { reg.update(); } catch (e) {}
@@ -2189,6 +2203,7 @@
       if (document.getElementById('calendar-view') && !document.getElementById('calendar-view').classList.contains('hidden')) {
         renderOccasionsCalendar();
       }
+      checkAudioCacheStatus();
     }
     function appDisplayName(l) { return (l === 'ar') ? 'عبده' : 'ABDO'; }
     function applyLanguage(lang) {
@@ -3083,6 +3098,51 @@
     }
     function stopAzan() {
       silenceAzanAudio();
+    }
+
+    // Cache Audio Function
+    async function manageOfflineAudio() {
+      const azanSelect = document.getElementById('azan-select');
+      const src = azanSources[azanSelect?.value || 0];
+      const audioCacheBtn = document.getElementById('audio-cache-btn');
+
+      if (!('caches' in window)) {
+        showToast('Offline audio caching not supported in this browser', 'error');
+        return;
+      }
+
+      const cache = await caches.open('abdo-audio-cache-v1');
+      try {
+        const cachedResponse = await cache.match(src);
+        if (cachedResponse) {
+          await cache.delete(src);
+          audioCacheBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-i18n="downloadAudio">${i18n[currentLang].downloadAudio}</span>`;
+          showToast('🗑 Audio removed from offline storage', 'info');
+        } else {
+          audioCacheBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Downloading...`;
+          await cache.add(src);
+          audioCacheBtn.innerHTML = `<i class="fas fa-check-circle"></i> <span data-i18n="audioCached">${i18n[currentLang].audioCached}</span>`;
+          showToast('✅ Audio saved for offline use!', 'success');
+        }
+      } catch(e) {
+        showToast('❌ Failed to download audio', 'error');
+        audioCacheBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-i18n="downloadAudio">${i18n[currentLang].downloadAudio}</span>`;
+      }
+    }
+
+    async function checkAudioCacheStatus() {
+      const azanSelect = document.getElementById('azan-select');
+      const src = azanSources[azanSelect?.value || 0];
+      const audioCacheBtn = document.getElementById('audio-cache-btn');
+      if (!audioCacheBtn || !('caches' in window)) return;
+
+      const cache = await caches.open('abdo-audio-cache-v1');
+      const cachedResponse = await cache.match(src);
+      if (cachedResponse) {
+        audioCacheBtn.innerHTML = `<i class="fas fa-check-circle"></i> <span data-i18n="audioCached">${i18n[currentLang].audioCached}</span>`;
+      } else {
+        audioCacheBtn.innerHTML = `<i class="fas fa-cloud-download-alt"></i> <span data-i18n="downloadAudio">${i18n[currentLang].downloadAudio}</span>`;
+      }
     }
 
     // ===== ISLAMIC LIBRARY (المكتبة) =====
