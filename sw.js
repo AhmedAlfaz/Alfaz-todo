@@ -8,7 +8,7 @@
 
 const VERSION = 'v51';
 const CACHE_NAME = 'alfaz-todo-' + VERSION;
-const CORE = ['.', 'index.html', 'sw.js', 'site-config.json'];
+const CORE = ['.', 'index.html', 'sw.js', 'site-config.json', 'js/adhan.umd.min.js'];
 const OPTIONAL = [
   'manifest.json',
   'brand/abdo-icon-192-wb.png',

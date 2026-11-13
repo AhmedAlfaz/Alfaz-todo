@@ -326,7 +326,18 @@
         <i class="fas fa-sync-alt"></i>
         <span data-i18n="refreshAppBtn">Refresh / Update App</span>
       </button>
-      <p id="app-version" class="text-center text-[11px] text-gray-400 dark:text-gray-500 py-1 select-all">
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <button onclick="exportData()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-2 rounded-lg text-[11px] font-medium transition">
+          <i class="fas fa-download"></i>
+          <span data-i18n="exportData">Backup</span>
+        </button>
+        <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-2 rounded-lg text-[11px] font-medium transition">
+          <i class="fas fa-upload"></i>
+          <span data-i18n="importData">Restore</span>
+        </button>
+        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
+      </div>
+      <p id="app-version" class="text-center text-[11px] text-gray-400 dark:text-gray-500 py-1 select-all mt-1">
         <span data-i18n="appVersionLabel">App version</span>: <span id="app-version-num">…</span>
       </p>
       <button onclick="openAudioStudioModal()" class="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-3 rounded-lg text-sm font-medium transition">
@@ -1237,6 +1248,7 @@
         installApp: "Install App", installIOSHint: "On iPhone/iPad: open in Safari, tap Share ⬆️, then 'Add to Home Screen'",
         installBrowserHint: "Use your browser menu: 'Add to Home screen' / 'Install app'",
         appInstalled: "App installed!",
+        exportData: "Backup", importData: "Restore", exportSuccess: "Backup saved to device", importSuccess: "Data restored successfully! Reloading...", importError: "Invalid backup file",
         continueGuest: "Continue without an account",
         authNoNetwork: "Sign-in needs an internet connection. You can still use the app without an account.",
         authOfflineHint: "App works offline without an account.",
@@ -1346,6 +1358,7 @@
         installIOSHint: "على الآيفون/الآيباد: افتح في سفاري، اضغط مشاركة ⬆️ ثم 'إضافة إلى الشاشة الرئيسية'",
         installBrowserHint: "من قائمة المتصفح اختر: 'إضافة إلى الشاشة الرئيسية' / 'تثبيت التطبيق'",
         appInstalled: "تم تثبيت التطبيق!",
+        exportData: "نسخة احتياطية", importData: "استرجاع", exportSuccess: "تم حفظ النسخة الاحتياطية", importSuccess: "تم استرجاع البيانات! جاري التحميل...", importError: "ملف نسخة احتياطية غير صالح",
         continueGuest: "المتابعة بدون حساب",
         authNoNetwork: "تسجيل الدخول يحتاج اتصالاً بالإنترنت. يمكنك استخدام التطبيق بدون حساب.",
         authOfflineHint: "التطبيق يعمل دون اتصال بدون حساب.",
@@ -2006,6 +2019,53 @@
           return navigator.serviceWorker.getRegistrations().then(regs => Promise.all(regs.map(r => r.unregister().catch(() => {}))));
         }
       }).finally(() => setTimeout(go, 400));
+    }
+
+    function exportData() {
+      const data = {
+        tasks: localStorage.getItem('alfatore_tasks') || '[]',
+        plans: localStorage.getItem('alfaz_plans') || '[]',
+        settings: {
+          lang: localStorage.getItem('alfatore_lang'),
+          audioAdhkar: localStorage.getItem('alfaz_tone_adhkar'),
+          audioTask: localStorage.getItem('alfaz_tone_task')
+        },
+        exportDate: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `abdo_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('✅ ' + (i18n[currentLang].exportSuccess || 'Backup saved to device'), 'success');
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.tasks) localStorage.setItem('alfatore_tasks', data.tasks);
+          if (data.plans) localStorage.setItem('alfaz_plans', data.plans);
+          if (data.settings) {
+            if (data.settings.lang) localStorage.setItem('alfatore_lang', data.settings.lang);
+            if (data.settings.audioAdhkar) localStorage.setItem('alfaz_tone_adhkar', data.settings.audioAdhkar);
+            if (data.settings.audioTask) localStorage.setItem('alfaz_tone_task', data.settings.audioTask);
+          }
+          showToast('✅ ' + (i18n[currentLang].importSuccess || 'Data restored successfully! Reloading...'), 'success');
+          setTimeout(() => window.location.reload(), 1500);
+        } catch (err) {
+          showToast('❌ ' + (i18n[currentLang].importError || 'Invalid backup file'), 'error');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
     }
 
     let audioSettings = {
