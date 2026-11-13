@@ -665,6 +665,24 @@
         <div id="planner-year-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-4"></div>
       </div>
 
+      <!-- LISTS VIEW PANEL -->
+      <div id="planner-lists-panel" class="hidden">
+        <div class="flex gap-2 mb-3 flex-wrap">
+          <button type="button" onclick="setPlannerFilter('all')" id="pf-all-l" class="planner-filter-chip" data-i18n="chipAll">All</button>
+          <button type="button" onclick="setPlannerFilter('plans')" id="pf-plans-l" class="planner-filter-chip" data-i18n="chipMyPlans">My Plans</button>
+          <button type="button" onclick="setPlannerFilter('occasions')" id="pf-occasions-l" class="planner-filter-chip" data-i18n="chipOccasions">Occasions</button>
+          <button type="button" onclick="setPlannerFilter('lists')" id="pf-lists-l" class="planner-filter-chip active" data-i18n="chipLists">Lists</button>
+        </div>
+        
+        <div class="flex items-center justify-between mb-4 mt-2">
+          <h3 class="text-lg font-bold text-gray-800 dark:text-white" data-i18n="myProjects">My Projects & Lists</h3>
+          <button onclick="openEditListModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition shadow-sm flex items-center gap-2">
+            <i class="fas fa-plus"></i> <span data-i18n="addList">New List</span>
+          </button>
+        </div>
+        <div id="planner-lists-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </div>
+
       <!-- MONTH VIEW (existing content) -->
       <div id="planner-month-panel">
       <!-- Planner filter chips -->
@@ -672,6 +690,7 @@
         <button type="button" onclick="setPlannerFilter('all')" id="pf-all" class="planner-filter-chip active" data-i18n="chipAll">All</button>
         <button type="button" onclick="setPlannerFilter('plans')" id="pf-plans" class="planner-filter-chip" data-i18n="chipMyPlans">My Plans</button>
         <button type="button" onclick="setPlannerFilter('occasions')" id="pf-occasions" class="planner-filter-chip" data-i18n="chipOccasions">Occasions</button>
+        <button type="button" onclick="setPlannerFilter('lists')" id="pf-lists" class="planner-filter-chip" data-i18n="chipLists">Lists</button>
       </div>
 
       <!-- Upcoming list -->
@@ -1038,6 +1057,76 @@
       </div>
     </div>
 
+    <!-- ===== LIST DETAIL MODAL ===== -->
+    <div id="list-detail-modal" class="hidden fixed inset-0 bg-white dark:bg-gray-900 z-[85] flex flex-col transition-transform transform translate-y-full md:translate-y-0 md:translate-x-full duration-300">
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm z-10">
+        <div class="flex items-center gap-3">
+          <button onclick="closeListDetailModal()" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <h2 id="list-detail-title" class="text-xl font-bold text-gray-800 dark:text-white line-clamp-1">List Name</h2>
+        </div>
+        <button onclick="openEditListModal(activeListDetailId)" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+          <i class="fas fa-cog"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
+        <div class="max-w-2xl mx-auto w-full">
+          <div id="list-detail-progress-container" class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800"></div>
+
+          <div id="list-detail-items-container" class="space-y-2 mb-6"></div>
+
+          <div id="list-detail-add-container" class="flex gap-2">
+            <input type="text" id="list-detail-new-item" class="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-gray-800 dark:text-white" placeholder="Add new item...">
+            <button onclick="addListDetailItem()" class="bg-blue-600 hover:bg-blue-700 text-white w-12 rounded-xl flex items-center justify-center transition shadow-sm">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== EDIT LIST MODAL ===== -->
+    <div id="edit-list-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm">
+      <div class="bg-white dark:bg-gray-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-transform transform translate-y-0 relative border border-gray-200 dark:border-gray-700">
+        <div class="w-full flex justify-center pt-3 pb-1 sm:hidden">
+          <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+        </div>
+        <div class="p-4 sm:p-5 flex items-center justify-between border-b border-gray-100 dark:border-gray-700">
+          <h3 class="text-lg font-bold text-gray-800 dark:text-white" id="edit-list-modal-title" data-i18n="addList">New List</h3>
+          <button onclick="closeEditListModal()" class="text-gray-400 hover:text-red-500 transition p-1"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-4 sm:p-5 overflow-y-auto">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1" data-i18n="listTitle">List Title</label>
+              <input type="text" id="edit-list-title" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="e.g. Umrah Preparation">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1" data-i18n="listProgressType">Progress Type</label>
+              <select id="edit-list-target" onchange="toggleListTargetInput()" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                <option value="items" data-i18n="trackByItems">Track by completed items</option>
+                <option value="count" data-i18n="trackByCount">Track by a specific count (e.g., 30 Juz)</option>
+              </select>
+            </div>
+            <div id="edit-list-target-count-container" class="hidden">
+              <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1" data-i18n="targetCountLabel">Target Count</label>
+              <input type="number" id="edit-list-target-count" class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="e.g. 30" min="1">
+            </div>
+          </div>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between gap-3">
+          <button type="button" id="delete-list-btn" onclick="deleteCurrentList()" class="hidden px-4 py-2.5 rounded-xl text-sm font-medium bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition">
+            <i class="fas fa-trash"></i>
+          </button>
+          <div class="flex flex-1 justify-end gap-3">
+            <button type="button" onclick="closeEditListModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition" data-i18n="cancel">Cancel</button>
+            <button type="button" onclick="saveList()" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition" data-i18n="save">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== AUDIO TONES STUDIO MODAL ===== -->
     <div id="audio-studio-modal" class="hidden fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
       <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
@@ -1259,12 +1348,13 @@
         repeatNone: "No repeat", repeatDaily: "Daily", repeatWeekly: "Weekly", repeatMonthly: "Monthly", repeatYearly: "Yearly",
         planSaved: "✅ Plan saved!", planDeleted: "🗑 Plan deleted", yourPlans: "Your plans",
         noPlans: "No plans for this day", planTitleRequired: "Title and date are required",
-        chipAll: "All", chipMyPlans: "My Plans", chipOccasions: "Occasions",
+        chipAll: "All", chipMyPlans: "My Plans", chipOccasions: "Occasions", chipLists: "Lists",
         viewMonth: "Month", viewWeek: "Week", viewYear: "Year",
         planReminder: "📅 Reminder: {task}", planDueNow: "📅 {task} — now", rem15: "15 min before", rem60: "1 hour before", rem1440: "1 day before",
         everyN: "Every", intervalDays: "days", intervalWeeks: "weeks", intervalMonths: "months", intervalYears: "years",
         moveTo: "Move to", hijriLabel: "Hijri",
         alsoAddToMyDay: "Also add to My Day as a task",
+        noLists: "No lists created yet. Start a new project!", addList: "New List", listTitle: "List Title", listProgressType: "Progress Type", trackByItems: "Track by completed items", trackByCount: "Track by a specific count (e.g., 30 Juz)", targetCountLabel: "Target Count", myProjects: "My Projects & Lists",
         upcomingPlans: "Upcoming", nothingUpcoming: "Nothing coming up",
         yearlyOverview: "Year", done: "Done", category: "Category"
       },
@@ -1369,12 +1459,13 @@
         repeatNone: "بدون تكرار", repeatDaily: "يومي", repeatWeekly: "أسبوعي", repeatMonthly: "شهري", repeatYearly: "سنوي",
         planSaved: "✅ تم حفظ الخطة!", planDeleted: "🗑 تم حذف الخطة", yourPlans: "خططك",
         noPlans: "لا توجد خطط لهذا اليوم", planTitleRequired: "العنوان والتاريخ مطلوبان",
-        chipAll: "الكل", chipMyPlans: "خططي", chipOccasions: "المناسبات",
+        chipAll: "الكل", chipMyPlans: "خططي", chipOccasions: "المناسبات", chipLists: "قوائم",
         viewMonth: "شهر", viewWeek: "أسبوع", viewYear: "سنة",
         planReminder: "📅 تذكير: {task}", planDueNow: "📅 {task} — الآن", rem15: "قبل ١٥ دقيقة", rem60: "قبل ساعة", rem1440: "قبل يوم",
         everyN: "كل", intervalDays: "أيام", intervalWeeks: "أسابيع", intervalMonths: "أشهر", intervalYears: "سنوات",
         moveTo: "نقل إلى", hijriLabel: "هجري",
         alsoAddToMyDay: "أضف أيضاً إلى يومي كمهمة",
+        noLists: "لا توجد قوائم حتى الآن. ابدأ مشروعاً جديداً!", addList: "قائمة جديدة", listTitle: "عنوان القائمة", listProgressType: "طريقة المتابعة", trackByItems: "عن طريق إنجاز المهام", trackByCount: "عن طريق رقم محدد (مثال: ٣٠ جزء)", targetCountLabel: "العدد المستهدف", myProjects: "مشاريعي وقوائمي",
         upcomingPlans: "القادمة", nothingUpcoming: "لا يوجد شيء قادم",
         yearlyOverview: "السنة", done: "تم", category: "الفئة"
       }
@@ -1804,7 +1895,7 @@
       const list = document.getElementById('task-list');
       const todayStr = getTodayString();
       const dueToday = tasks.filter(t => !t.done && t.status!=='cancelled' && t.due_date===todayStr);
-      const noDate = tasks.filter(t => !t.done && t.status!=='cancelled' && t.due_date===null);
+      const noDate = tasks.filter(t => !t.done && t.status!=='cancelled' && t.due_date===null && !t.list_id);
       let html = '';
       dueToday.forEach(t => { html += renderTaskRow(t); });
       if (noDate.length > 0 && dueToday.length > 0) {
@@ -1990,6 +2081,14 @@
       initGeolocation();
       loadDarkMode();
       updateNotifButton();
+      loadLists();
+      
+      const inp = document.getElementById('list-detail-new-item');
+      if (inp) {
+        inp.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') addListDetailItem();
+        });
+      }
       
       const azanSelect = document.getElementById('azan-select');
       if (azanSelect) {
@@ -4694,6 +4793,298 @@
       el.innerHTML = opts;
       el.value = '1';
     }
+    let editingListId = null;
+
+    function openEditListModal(listId = null) {
+      editingListId = listId;
+      const modal = document.getElementById('edit-list-modal');
+      const titleEl = document.getElementById('edit-list-title');
+      const targetEl = document.getElementById('edit-list-target');
+      const countEl = document.getElementById('edit-list-target-count');
+      const deleteBtn = document.getElementById('delete-list-btn');
+      
+      if (listId) {
+        const list = userLists.find(x => x.id === listId);
+        if (list) {
+          titleEl.value = list.title || '';
+          targetEl.value = list.target || 'items';
+          countEl.value = list.target_count || '';
+          deleteBtn.classList.remove('hidden');
+        }
+      } else {
+        titleEl.value = '';
+        targetEl.value = 'items';
+        countEl.value = '';
+        deleteBtn.classList.add('hidden');
+      }
+      
+      toggleListTargetInput();
+      modal.classList.remove('hidden');
+    }
+
+    function closeEditListModal() {
+      document.getElementById('edit-list-modal').classList.add('hidden');
+      editingListId = null;
+    }
+
+    function toggleListTargetInput() {
+      const targetEl = document.getElementById('edit-list-target');
+      const container = document.getElementById('edit-list-target-count-container');
+      container.classList.toggle('hidden', targetEl.value !== 'count');
+    }
+
+    function saveList() {
+      const title = document.getElementById('edit-list-title').value.trim();
+      const target = document.getElementById('edit-list-target').value;
+      const targetCount = parseInt(document.getElementById('edit-list-target-count').value, 10);
+      
+      if (!title) {
+        showToast('❌ Title is required', 'error');
+        return;
+      }
+      if (target === 'count' && (!targetCount || targetCount < 1)) {
+        showToast('❌ Target count must be at least 1', 'error');
+        return;
+      }
+
+      if (editingListId) {
+        const list = userLists.find(x => x.id === editingListId);
+        if (list) {
+          list.title = title;
+          list.target = target;
+          if (target === 'count') {
+            list.target_count = targetCount;
+            if (list.current_count > targetCount) list.current_count = targetCount;
+          }
+          list.updated = Date.now();
+        }
+      } else {
+        userLists.push({
+          id: 'l_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+          title: title,
+          target: target,
+          target_count: target === 'count' ? targetCount : 0,
+          current_count: 0,
+          status: 'active',
+          created: Date.now(),
+          updated: Date.now()
+        });
+      }
+      
+      saveLists();
+      renderLists();
+      closeEditListModal();
+      showToast('✅ List saved', 'success');
+    }
+
+    function deleteCurrentList() {
+      if (!editingListId) return;
+      if (!confirm('Are you sure you want to delete this list?')) return;
+      userLists = userLists.filter(x => x.id !== editingListId);
+      // Optional: remove task links or delete tasks
+      tasks = (tasks || []).map(t => { if (t.list_id === editingListId) { delete t.list_id; } return t; });
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      
+      saveLists();
+      renderLists();
+      closeEditListModal();
+      showToast('🗑 List deleted', 'info');
+    }
+
+    function renderLists() {
+      const container = document.getElementById('planner-lists-container');
+      if (!container) return;
+      if (!userLists.length) {
+        container.innerHTML = `<div class="col-span-1 md:col-span-2 text-center text-gray-400 py-8"><i class="fas fa-clipboard-list text-3xl mb-2"></i><p>${i18n[currentLang].noLists || 'No lists created yet. Start a new project!'}</p></div>`;
+        return;
+      }
+      
+      container.innerHTML = userLists.map(list => {
+        let progressHtml = '';
+        if (list.target === 'count') {
+          const pct = Math.min(100, Math.round((list.current_count / list.target_count) * 100));
+          progressHtml = `
+            <div class="mt-3 flex items-center justify-between text-xs text-gray-500 font-medium mb-1">
+              <span>${list.current_count} / ${list.target_count}</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden rtl:-scale-x-100">
+              <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+            </div>
+            <div class="mt-3 flex justify-end gap-2">
+              <button onclick="updateListCount('${list.id}', 1); event.stopPropagation();" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-600 transition flex items-center justify-center"><i class="fas fa-plus"></i></button>
+            </div>
+          `;
+        } else {
+          const listTasks = (tasks || []).filter(t => t.list_id === list.id);
+          const doneTasks = listTasks.filter(t => t.completed);
+          const total = listTasks.length;
+          const pct = total ? Math.min(100, Math.round((doneTasks.length / total) * 100)) : 0;
+          progressHtml = `
+            <div class="mt-3 flex items-center justify-between text-xs text-gray-500 font-medium mb-1">
+              <span>${doneTasks.length} / ${total} items</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden rtl:-scale-x-100">
+              <div class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+            </div>
+          `;
+        }
+
+        return `
+          <div onclick="openEditListModal('${list.id}')" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between">
+            <div class="flex items-start justify-between">
+              <h4 class="font-bold text-gray-800 dark:text-white line-clamp-2">${list.title}</h4>
+              <i class="fas fa-ellipsis-v text-gray-400 p-1"></i>
+            </div>
+            ${progressHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    let activeListDetailId = null;
+
+    function openListDetailModal(listId) {
+      activeListDetailId = listId;
+      const list = userLists.find(x => x.id === listId);
+      if (!list) return;
+
+      document.getElementById('list-detail-title').textContent = list.title;
+      renderListDetailView();
+
+      const modal = document.getElementById('list-detail-modal');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('translate-y-full', 'md:translate-x-full');
+      }, 10);
+      pushMobileHistoryState('list-detail-modal');
+    }
+
+    function closeListDetailModal() {
+      const modal = document.getElementById('list-detail-modal');
+      if (!modal) return;
+      modal.classList.add('translate-y-full', 'md:translate-x-full');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        activeListDetailId = null;
+        renderLists(); // Refresh progress bar in grid view
+      }, 300);
+    }
+
+    function renderListDetailView() {
+      if (!activeListDetailId) return;
+      const list = userLists.find(x => x.id === activeListDetailId);
+      if (!list) return;
+
+      // Progress bar
+      const progContainer = document.getElementById('list-detail-progress-container');
+      if (list.target === 'count') {
+        const pct = Math.min(100, Math.round((list.current_count / list.target_count) * 100));
+        progContainer.innerHTML = `
+          <div class="flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
+            <span>Progress</span>
+            <span>${list.current_count} / ${list.target_count}</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden rtl:-scale-x-100 mb-4">
+            <div class="bg-blue-500 h-3 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+          </div>
+          <div class="flex justify-center gap-4">
+            <button onclick="updateListCount('${list.id}', -1); renderListDetailView();" class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-red-50 hover:text-red-500 transition flex items-center justify-center text-xl"><i class="fas fa-minus"></i></button>
+            <button onclick="updateListCount('${list.id}', 1); renderListDetailView();" class="w-16 h-16 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition flex items-center justify-center text-2xl shadow-md"><i class="fas fa-plus"></i></button>
+          </div>
+        `;
+        document.getElementById('list-detail-items-container').innerHTML = '';
+        document.getElementById('list-detail-add-container').classList.add('hidden');
+      } else {
+        const listTasks = (tasks || []).filter(t => t.list_id === list.id);
+        const doneTasks = listTasks.filter(t => t.completed || t.done);
+        const total = listTasks.length;
+        const pct = total ? Math.min(100, Math.round((doneTasks.length / total) * 100)) : 0;
+        
+        progContainer.innerHTML = `
+          <div class="flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
+            <span>Completed Items</span>
+            <span>${doneTasks.length} / ${total}</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden rtl:-scale-x-100">
+            <div class="bg-green-500 h-3 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+          </div>
+        `;
+        
+        document.getElementById('list-detail-add-container').classList.remove('hidden');
+        
+        // Render tasks grouped by Section if they end with ":"
+        let html = '';
+        listTasks.forEach((t, i) => {
+          const isSection = t.text.trim().endsWith(':');
+          if (isSection) {
+            html += `<div class="pt-4 pb-1"><h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">${escapeHtml(t.text.replace(':', ''))}</h4></div>`;
+          } else {
+            const isDone = t.completed || t.done;
+            html += `
+              <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm transition-opacity ${isDone ? 'opacity-60' : ''}">
+                <button onclick="toggleListDetailItem('${t.id}')" class="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isDone ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 dark:border-gray-500 text-transparent hover:border-green-500'}">
+                  <i class="fas fa-check text-[10px]"></i>
+                </button>
+                <span class="flex-1 text-sm text-gray-800 dark:text-gray-200 ${isDone ? 'line-through' : ''}">${escapeHtml(t.text)}</span>
+                <button onclick="deleteListDetailItem('${t.id}')" class="text-gray-300 hover:text-red-500 transition px-2"><i class="fas fa-trash text-xs"></i></button>
+              </div>
+            `;
+          }
+        });
+        document.getElementById('list-detail-items-container').innerHTML = html;
+      }
+    }
+
+    function addListDetailItem() {
+      const inp = document.getElementById('list-detail-new-item');
+      if (!inp || !inp.value.trim() || !activeListDetailId) return;
+      
+      const newTask = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+        text: inp.value.trim(),
+        done: false,
+        due_date: null,
+        due_time: null,
+        priority: 1,
+        status: 'pending',
+        list_id: activeListDetailId
+      };
+      
+      tasks.push(newTask); // Add to end for lists instead of unshift
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      try { syncTask(newTask, 'insert'); } catch(e) {}
+      
+      inp.value = '';
+      renderListDetailView();
+    }
+
+    function toggleListDetailItem(taskId) {
+      const t = tasks.find(x => x.id === taskId);
+      if (!t) return;
+      t.done = !t.done;
+      t.status = t.done ? 'done' : 'pending';
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      try { syncTask(t, 'update'); } catch(e) {}
+      renderListDetailView();
+    }
+
+    function deleteListDetailItem(taskId) {
+      if (!confirm('Delete this item?')) return;
+      tasks = tasks.filter(x => x.id !== taskId);
+      localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
+      renderListDetailView();
+    }
+
+    function updateListCount(id, delta) {
+      const list = userLists.find(x => x.id === id);
+      if (!list) return;
+      list.current_count = Math.max(0, Math.min(list.target_count, list.current_count + delta));
+      list.updated = Date.now();
+      saveLists();
+      renderLists();
+    }
     function setPlannerView(v) {
       plannerView = ['month', 'week', 'year'].indexOf(v) > -1 ? v : 'month';
       try { localStorage.setItem('alfaz_planner_view', plannerView); } catch (e) {}
@@ -4828,9 +5219,23 @@
       document.querySelectorAll('.planner-filter-chip').forEach(el => el.classList.remove('active'));
       const el = document.getElementById('pf-' + plannerFilter);
       if (el) el.classList.add('active');
-      renderOccasionsCalendar();
-      if (plannerView === 'week') renderPlannerWeek();
-      if (plannerView === 'year') renderPlannerYearGrid();
+      const el2 = document.getElementById('pf-' + plannerFilter + '-l');
+      if (el2) el2.classList.add('active');
+      
+      const isLists = plannerFilter === 'lists';
+      document.getElementById('planner-month-panel').classList.toggle('hidden', isLists || plannerView !== 'month');
+      document.getElementById('planner-week-panel').classList.toggle('hidden', isLists || plannerView !== 'week');
+      document.getElementById('planner-year-panel').classList.toggle('hidden', isLists || plannerView !== 'year');
+      const listsPanel = document.getElementById('planner-lists-panel');
+      if (listsPanel) listsPanel.classList.toggle('hidden', !isLists);
+      
+      if (isLists) {
+        renderLists();
+      } else {
+        renderOccasionsCalendar();
+        if (plannerView === 'week') renderPlannerWeek();
+        if (plannerView === 'year') renderPlannerYearGrid();
+      }
     }
     function togglePlanDone(id) {
       const pl = (userPlans || []).find(x => x.id === id);
@@ -4847,6 +5252,14 @@
     }
     function savePlans() {
       try { localStorage.setItem('alfaz_plans', JSON.stringify(userPlans)); } catch (e) {}
+    }
+    let userLists = [];
+    function loadLists() {
+      try { userLists = JSON.parse(localStorage.getItem('alfaz_lists') || '[]'); } catch (e) { userLists = []; }
+      if (!Array.isArray(userLists)) userLists = [];
+    }
+    function saveLists() {
+      try { localStorage.setItem('alfaz_lists', JSON.stringify(userLists)); } catch (e) {}
     }
     function planColor(i) { return PLAN_COLORS[Math.abs(parseInt(i, 10) || 0) % PLAN_COLORS.length]; }
     function repeatLabel(r) {
