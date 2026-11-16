@@ -1698,7 +1698,10 @@
       } catch(e) { showToast('❌ Error joining group', 'error'); }
     }
     async function loadGroups() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        document.getElementById('group-list').innerHTML = `<div class="text-center py-12"><i class="fas fa-users text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].authOfflineHint || 'App works offline without an account.'}</p></div>`;
+        return;
+      }
       try {
         const { data: memberships } = await db.from('group_members').select('group_id').eq('user_id', currentUser.id);
         if (!memberships || memberships.length === 0) {
