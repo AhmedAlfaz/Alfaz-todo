@@ -71,3 +71,4 @@ Static single-page PWA: **ABDO** — Islamic tasks, prayer reminders, and Qibla 
 - **No server copy exists.** The browser can evict site data (and Safari deletes it after 7 days of disuse unless installed to the home screen). Backup & Restore in the sidebar is the only recovery path — protect it.
 - Export format is versioned (`schema`), so a future IndexedDB move can still read old backups.
 - Anything new and user-owned must be added to `BACKUP_KEYS` in `index.html`, or it will silently miss every backup.
+- **Time is the second-biggest hazard after data loss.** Dates are ISO strings (`YYYY-MM-DD`), recurrence maths runs on integer day numbers (`isoToDay`), and prayer times are stored with the zone they belong to then converted to the device clock. Any new date logic goes through those helpers — never `new Date(str)` on a bare date — and gets a case in `tools/test_planner_time.py`.

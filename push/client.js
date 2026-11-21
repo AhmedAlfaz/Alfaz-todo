@@ -180,7 +180,7 @@
       if (typeof tasks === 'object' && tasks) {
         for (var i = 0; i < tasks.length && ev.length < 120; i++) {
           var tk = tasks[i];
-          if (!tk || tk.completed || tk.done || !tk.due_date) continue;
+          if (!tk || tk.completed || tk.done || tk.status === 'cancelled') continue;
           var at = taskFireTime(tk);
           if (!at || at.getTime() < Date.now() - 60000) continue;
           ev.push({ id: 't:' + tk.due_date + ':' + String(tk.text || '').slice(0, 24),
@@ -216,9 +216,16 @@
   }
   function taskFireTime(tk) {
     try {
+      // A snooze is its own instant (added in v52 with the reminder fix) and wins over the
+      // reminder offset: the user already said "not now, at 09:15".
+      if (tk.snooze_until) {
+        var sm = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(String(tk.snooze_until));
+        if (sm) return new Date(+sm[1], +sm[2] - 1, +sm[3], +sm[4], +sm[5], 0, 0);
+      }
       if (tk.reminder_minutes === null || tk.reminder_minutes === undefined) return null;
+      if (!tk.due_date || !tk.due_time) return null;
       var parts = String(tk.due_date).split('-');
-      var t = String(tk.due_time || '20:00').split(':');
+      var t = String(tk.due_time).split(':');
       var base = new Date(+parts[0], +parts[1] - 1, +parts[2], +t[0], +t[1], 0, 0);
       base.setMinutes(base.getMinutes() - (+tk.reminder_minutes));
       return base;

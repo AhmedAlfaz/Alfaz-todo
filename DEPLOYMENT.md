@@ -19,6 +19,7 @@
    Never commit a secret, a debug toggle, or a half-finished feature to `main` on this repo.
 0. **Say the link out loud once: Hostinger is the app.** GitHub Pages is a workshop copy for
    testing on a phone; it is never the install link, and it can never deliver reminders (no PHP).
+0. **Run the checks before pushing** — `python3 tools/gates.py` (includes the time-logic suite). A recurrence or reminder regression is invisible to a syntax check.
 1. Upload these (overwrite existing):
    - `index.html`  ← almost always
    - `sw.js`       ← almost always
