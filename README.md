@@ -26,9 +26,10 @@
 | App | **One static HTML file** (`index.html` — all HTML/CSS/JS inline) |
 | Styling | Tailwind CSS (CDN) |
 | Icons | Font Awesome (CDN) |
-| Auth & sync (optional) | Supabase (anon key is public by design) |
+| Storage | **On the device only** — `localStorage`, plus a JSON backup/restore button |
 | Offline + updates | Service worker (`sw.js`) |
 | Build tools | **None** — no bundler, no package manager, no framework |
+| Accounts / cloud | **None** — no sign-up, no server-side copy of your data |
 
 ---
 

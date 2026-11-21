@@ -16,9 +16,9 @@ Static single-page PWA: **ABDO** — Islamic tasks, prayer reminders, and Qibla 
 
 - **Tailwind CSS** via CDN (`cdn.tailwindcss.com`) with inline config — no local Tailwind install
 - **Font Awesome 6.4** via CDN for icons
-- **Supabase JS SDK** via CDN for auth, database, realtime, storage
 - **Aladhan API** (`api.aladhan.com`) for prayer times — requires internet
-- **localStorage** for tasks, language, dark mode, and prayer time caching
+- **localStorage** for everything the user owns: tasks, plans, library items, settings
+- No accounts and no server: the removed Supabase layer (v52) is not to be reintroduced without a decision from the CEO
 - No framework, no npm, no build step
 
 ## Conventions
@@ -65,10 +65,9 @@ Static single-page PWA: **ABDO** — Islamic tasks, prayer reminders, and Qibla 
 | `project-draft.md` | Add ideas, update status | — | — |
 | `2/index2.html` | **NEVER** touch | — | Unless explicitly asked |
 
-## Data Constraints (Supabase Free Tier)
+## Data Constraints (device-local only, since v52)
 
-- Max 500 MB database — every row must earn its place
-- Max 1 GB file storage — text-only chat for v1, limit images
-- Max 5 GB bandwidth/month — cache aggressively, sync deltas only
-- No automatic backups — snapshot localStorage + Supabase regularly
-- Project pauses after 1 week inactivity — need keepalive
+- **~5 MB** is the hard `localStorage` ceiling per origin; UTF-16 means ~2.5M characters. Tasks and plans are small; the Quran ayah text cache is the only thing that grows fast.
+- **No server copy exists.** The browser can evict site data (and Safari deletes it after 7 days of disuse unless installed to the home screen). Backup & Restore in the sidebar is the only recovery path — protect it.
+- Export format is versioned (`schema`), so a future IndexedDB move can still read old backups.
+- Anything new and user-owned must be added to `BACKUP_KEYS` in `index.html`, or it will silently miss every backup.

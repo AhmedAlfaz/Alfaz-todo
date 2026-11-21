@@ -23,27 +23,6 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script>
-  // Supabase loader with CDN fallback (jsdelivr is sometimes blocked/slow on mobile networks)
-  (function () {
-    function loadScript(src, onOk, onErr) {
-      var s = document.createElement('script');
-      s.src = src; s.async = true;
-      s.onload = onOk; s.onerror = onErr;
-      document.head.appendChild(s);
-    }
-    function tryLoad(i) {
-      var urls = [
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        'https://unpkg.com/@supabase/supabase-js@2'
-      ];
-      if (i >= urls.length) return;
-      loadScript(urls[i], function () { window.__supabaseReady = true; }, function () { tryLoad(i + 1); });
-    }
-    tryLoad(0);
-  })();
-</script>
-
   <style>
     /* Fallback if Tailwind CDN fails on mobile PWA */
     .hidden { display: none !important; }
@@ -53,6 +32,7 @@
     #dhikr-reader-modal[hidden],
     #quran-reader-modal.hidden,
     #audio-studio-modal.hidden,
+    #backup-modal.hidden,
     #azan-alert-modal.hidden,
     #task-alarm-modal.hidden,
     #edit-task-modal.hidden,
@@ -184,68 +164,6 @@
 
 <body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800 transition-all duration-300">
 
-  <!-- ==================== AUTH SCREEN ==================== -->
-  <div id="auth-screen" class="hidden fixed inset-0 bg-gray-50 dark:bg-gray-900 z-[80] flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-      <div class="text-center mb-8">
-        <div class="w-16 h-16 rounded-full overflow-hidden bg-black shadow-lg mx-auto mb-4 ring-2 ring-white/70 dark:ring-gray-600" aria-label="ABDO logo"><img src="brand/abdo-icon-192-wb.png" alt="" class="w-full h-full object-cover"></div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white" data-appname>ABDO</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-2" data-i18n="authTagline">Islamic tasks, prayer reminders, and more</p>
-      </div>
-
-      <!-- Login Form -->
-      <div id="login-form" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6" data-i18n="loginTitle">Sign In</h2>
-        <div class="space-y-4">
-          <div>
-            <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="email">Email</label>
-            <input type="email" id="login-email" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="you@example.com">
-          </div>
-          <div>
-            <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="password">Password</label>
-            <input type="password" id="login-password" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="••••••••">
-          </div>
-          <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition shadow-md flex items-center justify-center">
-            <i class="fas fa-sign-in-alt me-2"></i> <span data-i18n="signIn">Sign In</span>
-          </button>
-        </div>
-        <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-          <span data-i18n="noAccount">Don't have an account?</span>
-          <button onclick="showSignup()" class="text-blue-600 dark:text-blue-400 font-medium hover:underline" data-i18n="signUp">Sign Up</button>
-        </p>
-        <p class="text-center mt-4">
-          <button onclick="continueAsGuest()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-sm font-medium underline" data-i18n="continueGuest">Continue without an account</button>
-        </p>
-      </div>
-
-      <!-- Signup Form -->
-      <div id="signup-form" class="hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6" data-i18n="signupTitle">Create Account</h2>
-        <div class="space-y-4">
-          <div>
-            <label for="signup-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="displayName">Display Name</label>
-            <input type="text" id="signup-name" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="Ahmed">
-          </div>
-          <div>
-            <label for="signup-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="email">Email</label>
-            <input type="email" id="signup-email" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="you@example.com">
-          </div>
-          <div>
-            <label for="signup-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="password">Password</label>
-            <input type="password" id="signup-password" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:border-blue-500 transition" placeholder="Min 6 characters">
-          </div>
-          <button onclick="handleSignup()" id="signup-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition shadow-md flex items-center justify-center">
-            <i class="fas fa-user-plus me-2"></i> <span data-i18n="createAccount">Create Account</span>
-          </button>
-        </div>
-        <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-          <span data-i18n="hasAccount">Already have an account?</span>
-          <button onclick="showLogin()" class="text-blue-600 dark:text-blue-400 font-medium hover:underline" data-i18n="signIn">Sign In</button>
-        </p>
-      </div>
-    </div>
-  </div>
-
   <!-- Mobile Menu Button -->
   <button onclick="toggleSidebar()" class="md:hidden fixed top-4 left-4 z-[60] bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition menu-fab">
     <i class="fas fa-bars" id="menu-icon"></i>
@@ -298,10 +216,6 @@
         <i class="fas fa-book-quran text-emerald-500 w-5 text-center"></i>
         <span data-i18n="library">Library</span>
       </button>
-      <button onclick="switchView('groups-view', this); loadGroups();" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-        <i class="fas fa-users text-cyan-500 w-5 text-center"></i>
-        <span data-i18n="groups">Groups</span>
-      </button>
     </nav>
 
     <!-- Notification Button -->
@@ -333,22 +247,13 @@
         <i class="fas fa-volume-up"></i>
         <span data-i18n="audioStudioBtn">Audio Tones Studio</span>
       </button>
+      <button onclick="openBackupModal()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-3 rounded-lg text-sm font-medium transition">
+        <i class="fas fa-database"></i>
+        <span data-i18n="backupBtn">Backup &amp; Restore</span>
+      </button>
+      <p id="backup-hint" class="hidden text-[11px] leading-snug text-amber-600 dark:text-amber-400 font-medium px-1"></p>
     </div>
 
-    <!-- User Info -->
-    <div id="user-section" class="hidden px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-      <div class="flex items-center space-x-3 mb-3">
-        <div id="user-avatar" class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">?</div>
-        <div class="flex-1 min-w-0">
-          <p id="user-display-name" class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">User</p>
-          <p id="user-email" class="text-xs text-gray-400 dark:text-gray-500 truncate">email</p>
-        </div>
-      </div>
-      <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 py-2 px-3 rounded-lg text-sm font-medium transition text-gray-700 dark:text-gray-200">
-        <i class="fas fa-sign-out-alt"></i>
-        <span data-i18n="signOut">Sign Out</span>
-      </button>
-    </div>
   </aside>
 
   <!-- ==================== MAIN CONTENT ==================== -->
@@ -723,35 +628,6 @@
       </div>
     </div>
 
-    <!-- ===== 4. GROUPS ===== -->
-    <div id="groups-view" class="view-section hidden max-w-3xl mx-auto flex flex-col pt-10 md:pt-0">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="groups">Groups</h2>
-        <span class="text-4xl">👥</span>
-      </div>
-
-      <!-- Create / Join Group -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-          <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-3" data-i18n="createGroup">Create a Group</h3>
-          <input type="text" id="group-name-input" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:border-blue-500 mb-2" data-i18n-placeholder="groupNamePlaceholder" placeholder="Group name">
-          <button onclick="createGroup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition">
-            <i class="fas fa-plus me-1"></i> <span data-i18n="create">Create</span>
-          </button>
-        </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-          <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-3" data-i18n="joinGroup">Join a Group</h3>
-          <input type="text" id="invite-code-input" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white text-sm focus:outline-none focus:border-blue-500 mb-2 font-mono" data-i18n-placeholder="inviteCodePlaceholder" placeholder="Invite code">
-          <button onclick="joinGroup()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition">
-            <i class="fas fa-sign-in-alt me-1"></i> <span data-i18n="join">Join</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Group List -->
-      <div id="group-list" class="space-y-3"></div>
-    </div>
-
     <!-- ===== EDIT TASK MODAL ===== -->
     <div id="edit-task-modal" class="hidden fixed inset-0 bg-black/60 z-[90] flex items-center justify-center p-4">
       <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
@@ -1020,6 +896,40 @@
     </div>
 
     <!-- ===== AUDIO TONES STUDIO MODAL ===== -->
+    <!-- ===== BACKUP & RESTORE MODAL ===== -->
+    <div id="backup-modal" class="hidden fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 mb-4">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-database text-emerald-500 text-xl"></i>
+            <h3 class="font-bold text-gray-800 dark:text-white text-lg" data-i18n="backupTitle">Backup &amp; Restore</h3>
+          </div>
+          <button onclick="closeBackupModal()" class="text-gray-400 hover:text-red-500 transition p-1" aria-label="Close" data-i18n-aria-label="close"><i class="fas fa-times"></i></button>
+        </div>
+
+        <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-2" data-i18n="backupExplainer">
+          ABDO has no account and no cloud copy — your tasks, plans and adhkar live only on this device.
+          Save a backup file now and then, so a lost phone or cleared browser never costs you your data.
+        </p>
+        <p id="backup-counts" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-4"></p>
+
+        <button onclick="exportBackup()" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-semibold transition mb-2">
+          <i class="fas fa-download"></i>
+          <span data-i18n="exportBackupBtn">Download backup file</span>
+        </button>
+
+        <label for="backup-file-input" class="w-full flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl text-sm font-semibold transition cursor-pointer mb-3">
+          <i class="fas fa-upload"></i>
+          <span data-i18n="importBackupBtn">Restore from a backup file</span>
+        </label>
+        <input type="file" id="backup-file-input" accept="application/json,.json" class="hidden" onchange="importBackupFromFile(this)">
+
+        <p class="text-[11px] leading-snug text-gray-400 dark:text-gray-500" data-i18n="restoreWarning">
+          Restoring replaces the data currently on this device (it does not merge). Download a backup first if you are unsure.
+        </p>
+      </div>
+    </div>
+
     <div id="audio-studio-modal" class="hidden fixed inset-0 bg-black/80 z-[95] flex items-center justify-center p-4">
       <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700 mb-4">
@@ -1160,19 +1070,30 @@
         noTasks: "No tasks yet. Add one above! ☀️",
         tasksTotal: "{total} tasks", tasksDone: "{done} completed",
         darkMode: "Dark Mode", lightMode: "Light Mode",
-        authTagline: "Islamic tasks, prayer reminders, and more",
-        loginTitle: "Sign In", signupTitle: "Create Account",
-        email: "Email", password: "Password", displayName: "Display Name",
-        signIn: "Sign In", signUp: "Sign Up", createAccount: "Create Account",
-        noAccount: "Don't have an account?", hasAccount: "Already have an account?",
-        signOut: "Sign Out", signedInAs: "Signed in as {name}",
-        authError: "Authentication error. Please try again.",
-        accountCreated: "Account created! Check your email to verify.",
-        groups: "Groups", createGroup: "Create a Group", joinGroup: "Join a Group",
-        groupNamePlaceholder: "Group name", inviteCodePlaceholder: "Invite code",
-        create: "Create", join: "Join", groupCreated: "Group created! Share the invite code:",
-        joinedGroup: "Joined group!", members: "Members", inviteCode: "Invite Code",
-        noGroups: "No groups yet. Create or join one above!", copyCode: "Copied!",
+        // --- keys the JS/HTML referenced but which had no string (silently rendered blank) ---
+        close: "Close",
+        bookmarkSavedToast: "🔖 Bookmark saved", bookmarkRemovedToast: "Bookmark removed",
+        continueReadingBtn: "Continue reading", openQuranReaderBtn: "Open Quran reader",
+        prayedCongratToast: "✅ May Allah accept your prayer", tomorrow: "Tomorrow",
+        quranReaderTitle: "Holy Quran Reader", reciterLabel: "Reciter",
+        playSurahBtn: "Play surah", stopBtn: "Stop", removeBookmark: "Remove bookmark",
+        prevSurah: "Previous surah", nextSurah: "Next surah", markPauseBtn: "Mark pause",
+        listenDhikrBtn: "Listen to dhikr", azanAlertHeader: "Time for prayer",
+        azanModalQuote: "Allahu Akbar — Allah is the Greatest", listenAzanBtn: "Listen to the azan",
+        silenceAzanBtn: "Stop the azan", iHavePrayedBtn: "I Have Prayed", taskAlertHeader: "Task reminder",
+        completeTaskBtn: "Complete task", snooze15Btn: "Snooze 15 min", dismissBtn: "Dismiss",
+        backupBtn: "Backup & Restore", backupTitle: "Backup & Restore",
+        backupExplainer: "ABDO has no account and no cloud copy — your tasks, plans and adhkar live only on this device. Save a backup file now and then, so a lost phone or cleared browser never costs you your data.",
+        backupCounts: "{tasks} tasks · {plans} plans on this device",
+        exportBackupBtn: "Download backup file", importBackupBtn: "Restore from a backup file",
+        restoreWarning: "Restoring replaces the data currently on this device (it does not merge). Download a backup first if you are unsure.",
+        backupSaved: "✅ Backup downloaded — keep it somewhere safe.",
+        backupFailed: "Could not create the backup file.",
+        restoreInvalid: "That file is not an ABDO backup.",
+        restoreConfirm: "Replace the data on this device with this backup? ({tasks} tasks, {plans} plans)",
+        restoreDone: "✅ Backup restored. Reloading…",
+        backupHintNever: "⚠️ No backup yet — one tap protects everything.",
+        backupHintOld: "⚠️ Last backup was over two weeks ago.",
         upcoming: "Upcoming", overdue: "Overdue", highPriority: "High Priority", allTasks: "All Tasks",
         noDueDate: "No due date", noTasksToday: "Nothing due today. Enjoy your day!",
         noUpcomingTasks: "No upcoming tasks in the next 7 days.", noOverdueTasks: "No overdue tasks. MashaAllah!",
@@ -1226,9 +1147,6 @@
         installApp: "Install App", installIOSHint: "On iPhone/iPad: open in Safari, tap Share ⬆️, then 'Add to Home Screen'",
         installBrowserHint: "Use your browser menu: 'Add to Home screen' / 'Install app'",
         appInstalled: "App installed!",
-        continueGuest: "Continue without an account",
-        authNoNetwork: "Sign-in needs an internet connection. You can still use the app without an account.",
-        authOfflineHint: "App works offline without an account.",
         plannerTitle: "Planner", plannerSubtitle: "Islamic occasions, Egypt holidays & your plans",
         openPlanner: "Open Planner", upNext: "Up next", noUpcomingPlans: "Nothing planned ahead",
         todayBtn: "Today", addPlan: "Add Plan", editPlan: "Edit Plan", deletePlan: "Delete",
@@ -1266,19 +1184,30 @@
         noTasks: "لا توجد مهام بعد. أضف واحدة! ☀️",
         tasksTotal: "{total} مهام", tasksDone: "{done} مكتملة",
         darkMode: "الوضع المظلم", lightMode: "الوضع الفاتح",
-        authTagline: "مهام إسلامية، تذكيرات صلاة، والمزيد",
-        loginTitle: "تسجيل الدخول", signupTitle: "إنشاء حساب",
-        email: "البريد الإلكتروني", password: "كلمة المرور", displayName: "الاسم",
-        signIn: "تسجيل الدخول", signUp: "إنشاء حساب", createAccount: "إنشاء حساب",
-        noAccount: "ليس لديك حساب؟", hasAccount: "لديك حساب بالفعل؟",
-        signOut: "تسجيل الخروج", signedInAs: "مسجل الدخول كـ {name}",
-        authError: "خطأ في المصادقة. يرجى المحاولة مرة أخرى.",
-        accountCreated: "تم إنشاء الحساب! تحقق من بريدك الإلكتروني للتأكيد.",
-        groups: "المجموعات", createGroup: "إنشاء مجموعة", joinGroup: "الانضمام لمجموعة",
-        groupNamePlaceholder: "اسم المجموعة", inviteCodePlaceholder: "كود الدعوة",
-        create: "إنشاء", join: "انضم", groupCreated: "تم إنشاء المجموعة! شارك كود الدعوة:",
-        joinedGroup: "تم الانضمام للمجموعة!", members: "الأعضاء", inviteCode: "كود الدعوة",
-        noGroups: "لا توجد مجموعات بعد. أنشئ أو انضم واحدة!", copyCode: "تم النسخ!",
+        // --- keys the JS/HTML referenced but which had no string (silently rendered blank) ---
+        close: "إغلاق",
+        bookmarkSavedToast: "🔖 تم حفظ العلامة", bookmarkRemovedToast: "تم حذف العلامة",
+        continueReadingBtn: "متابعة القراءة", openQuranReaderBtn: "فتح المصحف",
+        prayedCongratToast: "✅ تقبّل الله صلاتك", tomorrow: "غداً",
+        quranReaderTitle: "المصحف الشريف", reciterLabel: "القارئ",
+        playSurahBtn: "تشغيل السورة", stopBtn: "إيقاف", removeBookmark: "حذف العلامة",
+        prevSurah: "السورة السابقة", nextSurah: "السورة التالية", markPauseBtn: "تحديد موضع التوقف",
+        listenDhikrBtn: "استماع للذكر", azanAlertHeader: "حان وقت الصلاة",
+        azanModalQuote: "الله أكبر — الله أكبر", listenAzanBtn: "استماع للأذان",
+        silenceAzanBtn: "إيقاف الأذان", iHavePrayedBtn: "أتممت الصلاة", taskAlertHeader: "تذكير بمهمة",
+        completeTaskBtn: "إتمام المهمة", snooze15Btn: "تأجيل ١٥ دقيقة", dismissBtn: "إغلاق",
+        backupBtn: "النسخ الاحتياطي والاستعادة", backupTitle: "النسخ الاحتياطي والاستعادة",
+        backupExplainer: "عبده بلا حساب وبلا نسخة سحابية — مهامك وخططك وأذكارك موجودة على هذا الجهاز فقط. احفظ ملف نسخة احتياطية من وقت لآخر حتى لا تفقد بياناتك إذا ضاع الهاتف أو مُسح المتصفح.",
+        backupCounts: "{tasks} مهمة · {plans} خطة على هذا الجهاز",
+        exportBackupBtn: "تنزيل ملف النسخة الاحتياطية", importBackupBtn: "استعادة من ملف نسخة احتياطية",
+        restoreWarning: "الاستعادة تستبدل البيانات الموجودة على هذا الجهاز (ولا تدمجها). نزّل نسخة احتياطية أولاً إن لم تكن متأكداً.",
+        backupSaved: "✅ تم تنزيل النسخة الاحتياطية — احفظها في مكان آمن.",
+        backupFailed: "تعذّر إنشاء ملف النسخة الاحتياطية.",
+        restoreInvalid: "هذا الملف ليس نسخة احتياطية من عبده.",
+        restoreConfirm: "استبدال بيانات هذا الجهاز بهذه النسخة؟ ({tasks} مهمة، {plans} خطة)",
+        restoreDone: "✅ تمت الاستعادة. جاري إعادة التحميل…",
+        backupHintNever: "⚠️ لا توجد نسخة احتياطية بعد — لمسة واحدة تحمي كل شيء.",
+        backupHintOld: "⚠️ آخر نسخة احتياطية من أكثر من أسبوعين.",
         upcoming: "قادمة", overdue: "متأخرة", highPriority: "أولوية عالية", allTasks: "كل المهام",
         noDueDate: "بدون موعد", noTasksToday: "لا توجد مهام اليوم. استمتع بيومك!",
         noUpcomingTasks: "لا توجد مهام قادمة خلال 7 أيام.", noOverdueTasks: "لا توجد مهام متأخرة. ماشاء الله!",
@@ -1333,9 +1262,6 @@
         installIOSHint: "على الآيفون/الآيباد: افتح في سفاري، اضغط مشاركة ⬆️ ثم 'إضافة إلى الشاشة الرئيسية'",
         installBrowserHint: "من قائمة المتصفح اختر: 'إضافة إلى الشاشة الرئيسية' / 'تثبيت التطبيق'",
         appInstalled: "تم تثبيت التطبيق!",
-        continueGuest: "المتابعة بدون حساب",
-        authNoNetwork: "تسجيل الدخول يحتاج اتصالاً بالإنترنت. يمكنك استخدام التطبيق بدون حساب.",
-        authOfflineHint: "التطبيق يعمل دون اتصال بدون حساب.",
         plannerTitle: "المخطط", plannerSubtitle: "المناسبات الإسلامية والعطلات المصرية وخططك",
         openPlanner: "فتح المخطط", upNext: "القادم", noUpcomingPlans: "لا خطط قادمة",
         todayBtn: "اليوم", addPlan: "إضافة خطة", editPlan: "تعديل الخطة", deletePlan: "حذف",
@@ -1362,252 +1288,129 @@
     let selectedPriority = 1;
     let pendingRecurrence = { type: null, weekdays: [], endDate: null };
 
-    // ===== SUPABASE =====
-    const SUPABASE_URL = 'https://fxceebqojhfupsmadswl.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4Y2VlYnFvamhmdXBzbWFkc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxOTMwNzgsImV4cCI6MjA5OTc2OTA3OH0.Rnp2ByI9FM8hrX0KqlftIvcpax8jFrI_dQcG3cq6io8';
-    let db = null;
-    let currentUser = null;
-    function ensureSupabase(maxWaitMs) {
-      return new Promise(resolve => {
-        if (typeof supabase !== 'undefined') {
-          if (!db) { try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {} }
-          return resolve(!!db);
-        }
-        const start = Date.now();
-        const iv = setInterval(() => {
-          if (typeof supabase !== 'undefined') {
-            clearInterval(iv);
-            if (!db) { try { db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {} }
-            resolve(!!db);
-          } else if (Date.now() - start > maxWaitMs) {
-            clearInterval(iv);
-            resolve(false);
-          }
-        }, 100);
-      });
+    // ===== LOCAL DATA HELPERS =====
+    // This app keeps every task, plan and setting on the device itself. There is no account and
+    // no server-side copy, which is why backup/restore (below) is a first-class feature rather
+    // than a nicety: the device is the only place the data exists.
+    let uidCounter = 0;
+    function newLocalId(prefix) {
+      // Local ids replace the database-generated uuids the app used to receive. They are only
+      // ever compared locally, so a timestamp + random suffix is enough and needs no server.
+      uidCounter = (uidCounter + 1) % 1000;
+      return (prefix || 'id') + Date.now().toString(36) + uidCounter.toString(36) + Math.random().toString(36).slice(2, 6);
     }
-
-    async function checkSession() {
-      // Guest mode is a standing choice, not a one-off dismissal: no sign-in wall on the next
-      // launch, and no Supabase round-trip paid by someone who already declined an account.
-      // Data is already device-local in this mode (alfatore_tasks), so nothing is newly at risk.
-      let guestMode = false;
-      try { guestMode = localStorage.getItem('alfaz_guest') === '1'; } catch (e) {}
-      if (guestMode) { showApp(); return; }
-      const ok = await ensureSupabase(6000);
-      if (!ok) {
-        showApp();
-        if (typeof showToast === 'function') setTimeout(() => showToast('ℹ️ ' + (i18n[currentLang].authOfflineHint || 'App works offline without an account.'), 'info'), 1200);
-        return;
+    function ensureTaskIds() {
+      // Older tasks were saved before ids existed (the database used to assign them on insert).
+      // Anything without an id is invisible to reminder keys, plan links and the push queue, so
+      // give every legacy task a stable local id once, not on every render.
+      let changed = false;
+      (tasks || []).forEach(t => { if (!t.id) { t.id = newLocalId('t'); changed = true; } });
+      (userPlans || []).forEach(p => { if (!p.id) { p.id = newLocalId('p'); changed = true; } });
+      if (changed) {
+        try { localStorage.setItem('alfatore_tasks', JSON.stringify(tasks)); } catch (e) {}
+        try { savePlans(); } catch (e) {}
       }
-      try {
-        const { data: { session } } = await db.auth.getSession();
-        if (session) { currentUser = session.user; showApp(); loadUserTasks(); } else { showAuth(); }
-      } catch (e) { showApp(); }
-    }
-    function showAuth() {
-      document.getElementById('auth-screen').classList.remove('hidden');
-      document.getElementById('sidebar').classList.add('hidden');
-      document.getElementById('mobile-overlay').classList.add('hidden');
-      document.querySelector('main').classList.add('hidden');
-      const nav = document.getElementById('bottom-nav'); if (nav) nav.classList.add('hidden');
     }
     function showApp() {
-      document.getElementById('auth-screen').classList.add('hidden');
+      // The app is local-first: there is no sign-in wall to dismiss any more, this just makes
+      // the shell visible (boot sequence and the mobile "back to the app" path both call it).
       document.getElementById('sidebar').classList.remove('hidden');
       document.querySelector('main').classList.remove('hidden');
       const nav = document.getElementById('bottom-nav'); if (nav) nav.classList.remove('hidden');
-      updateUserUI();
-    }
-    function updateUserUI() {
-      if (!currentUser) return;
-      const name = currentUser.user_metadata?.display_name || currentUser.email?.split('@')[0] || 'User';
-      const initial = name.charAt(0).toUpperCase();
-      document.getElementById('user-avatar').textContent = initial;
-      document.getElementById('user-display-name').textContent = name;
-      document.getElementById('user-email').textContent = currentUser.email;
-      document.getElementById('user-section').classList.remove('hidden');
-    }
-    function continueAsGuest() {
-      try { localStorage.setItem('alfaz_guest', '1'); } catch (e) {}
-      showApp();
-    }
-    function showLogin() {
-      document.getElementById('login-form').classList.remove('hidden');
-      document.getElementById('signup-form').classList.add('hidden');
-    }
-    function showSignup() {
-      document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('signup-form').classList.remove('hidden');
-    }
-    async function handleLogin() {
-      if (!db && !(await ensureSupabase(6000))) {
-        showToast('⚠️ ' + (i18n[currentLang].authNoNetwork || 'Sign-in needs an internet connection. You can still use the app without an account.'), 'error');
-        return;
-      }
-      const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
-      if (!email || !password) { showToast('⚠️ Please fill all fields', 'error'); return; }
-      const btn = document.getElementById('login-btn');
-      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Signing in...';
-      const { data, error } = await db.auth.signInWithPassword({ email, password });
-      btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i> <span data-i18n="signIn">Sign In</span>';
-      if (error) { showToast('❌ ' + (error.message || i18n[currentLang].authError), 'error'); return; }
-      currentUser = data.user; showApp(); loadUserTasks();
-    }
-    async function handleSignup() {
-      if (!db && !(await ensureSupabase(6000))) {
-        showToast('⚠️ ' + (i18n[currentLang].authNoNetwork || 'Sign-up needs an internet connection. You can still use the app without an account.'), 'error');
-        return;
-      }
-      const name = document.getElementById('signup-name').value.trim();
-      const email = document.getElementById('signup-email').value.trim();
-      const password = document.getElementById('signup-password').value;
-      if (!name || !email || !password) { showToast('⚠️ Please fill all fields', 'error'); return; }
-      const btn = document.getElementById('signup-btn');
-      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Creating...';
-      const { data, error } = await db.auth.signUp({ email, password, options: { data: { display_name: name } } });
-      btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus me-2"></i> <span data-i18n="createAccount">Create Account</span>';
-      if (error) { showToast('❌ ' + (error.message || i18n[currentLang].authError), 'error'); return; }
-      showToast('✅ ' + i18n[currentLang].accountCreated, 'success');
-      showLogin();
-    }
-    async function handleLogout() {
-      await db.auth.signOut();
-      currentUser = null; tasks = []; localStorage.removeItem('alfatore_tasks'); localStorage.removeItem('alfaz_guest');
-      renderActiveSmartList(); showAuth();
     }
 
-    // ===== TASK SYNC =====
-    async function loadUserTasks() {
-      if (!currentUser) return;
+    // ===== BACKUP / RESTORE =====
+    // Everything the user cannot get back by refreshing. Prayer-time and ayah caches are left out
+    // on purpose: they are re-fetched from Aladhan and quran.com, so backing them up would only
+    // inflate the file.
+    const BACKUP_KEYS = [
+      'alfatore_tasks', 'alfaz_plans', 'alfaz_custom_lib', 'alfatore_lang', 'alfatore_darkmode',
+      'alfaz_tone_adhkar', 'alfaz_tone_task', 'alfaz_quran_bookmark', 'alfaz_quran_audio_pos',
+      'alfatore_smartlist', 'alfaz_planner_view', 'alfaz_push_state', 'alfaz_push_player',
+      'alfaz_push_uid', 'alfaz_schema_ver', 'alfaz_azan_sound'
+    ];
+    function exportBackup() {
+      const data = {};
+      BACKUP_KEYS.forEach(k => {
+        try { const v = localStorage.getItem(k); if (v !== null) data[k] = v; } catch (e) {}
+      });
+      const payload = {
+        app: 'abdo', schema: 4, exported_at: new Date().toISOString(),
+        counts: { tasks: (tasks || []).length, plans: (userPlans || []).length },
+        data: data
+      };
       try {
-        const { data, error } = await db.from('tasks').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-        if (error) throw error;
-        if (data && data.length > 0) {
-          tasks = data.map(t => ({
-            id: t.id,
-            text: t.title,
-            done: t.done,
-            due_date: t.due_date || null,
-            due_time: t.due_time || null,
-            priority: t.priority ?? 1,
-            status: t.status || (t.done ? 'done' : 'pending'),
-            recurrence_type: t.recurrence_type || null,
-            recurrence_interval: t.recurrence_interval || 1,
-            recurrence_weekdays: t.recurrence_weekdays || [],
-            recurrence_end: t.recurrence_end || null,
-            recurrence_done_at: t.recurrence_done_at || null,
-            reminder_minutes: t.reminder_minutes ?? null,
-            reminder_fired: t.reminder_fired || false
-          }));
-          localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-          renderActiveSmartList();
-        }
-      } catch(e) {}
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'abdo-backup-' + getTodayString() + '.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        try { localStorage.setItem('alfaz_last_backup', String(Date.now())); } catch (e) {}
+        updateBackupHint();
+        showToast(i18n[currentLang].backupSaved || '✅ Backup downloaded — keep it somewhere safe.', 'success');
+      } catch (e) {
+        showToast('❌ ' + (i18n[currentLang].backupFailed || 'Could not create the backup file.'), 'error');
+      }
     }
-    async function syncTask(task, action) {
-      if (!currentUser) return;
-      try {
-        if (action === 'insert') {
-          const { data, error } = await db.from('tasks').insert({
-            user_id: currentUser.id,
-            title: task.text,
-            done: task.done,
-            due_date: task.due_date || null,
-            due_time: task.due_time || null,
-            priority: task.priority ?? 1,
-            status: task.status || 'pending',
-            recurrence_type: task.recurrence_type || null,
-            recurrence_interval: task.recurrence_interval || 1,
-            recurrence_weekdays: task.recurrence_weekdays || [],
-            recurrence_end: task.recurrence_end || null,
-            recurrence_done_at: task.recurrence_done_at || null,
-            reminder_minutes: task.reminder_minutes ?? null,
-            reminder_fired: task.reminder_fired || false
-          }).select().single();
-          if (!error && data) task.id = data.id;
-        } else if (action === 'update') {
-          await db.from('tasks').update({
-            title: task.text,
-            done: task.done,
-            due_date: task.due_date || null,
-            due_time: task.due_time || null,
-            priority: task.priority ?? 1,
-            status: task.status || 'pending',
-            recurrence_done_at: task.recurrence_done_at || null,
-            reminder_minutes: task.reminder_minutes ?? null,
-            reminder_fired: task.reminder_fired || false
-          }).eq('id', task.id);
-        } else if (action === 'delete') {
-          await db.from('tasks').delete().eq('id', task.id);
-        }
-      } catch(e) {}
-    }
-
-    // ===== GROUPS =====
-    function generateInviteCode() {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let code = '';
-      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-      return code;
-    }
-    async function createGroup() {
-      if (!currentUser) return;
-      const name = document.getElementById('group-name-input').value.trim();
-      if (!name) { showToast('⚠️ Enter a group name', 'error'); return; }
-      try {
-        const code = generateInviteCode();
-        const { data, error } = await db.from('groups').insert({ name, invite_code: code, created_by: currentUser.id }).select().single();
-        if (error) throw error;
-        await db.from('group_members').insert({ group_id: data.id, user_id: currentUser.id, role: 'admin' });
-        document.getElementById('group-name-input').value = '';
-        showToast('✅ ' + i18n[currentLang].groupCreated + ' ' + code, 'success');
-        loadGroups();
-      } catch(e) { showToast('❌ Error creating group', 'error'); }
-    }
-    async function joinGroup() {
-      if (!currentUser) return;
-      const code = document.getElementById('invite-code-input').value.trim().toUpperCase();
-      if (!code) { showToast('⚠️ Enter an invite code', 'error'); return; }
-      try {
-        const { data: group, error: findErr } = await db.from('groups').select('*').eq('invite_code', code).single();
-        if (findErr || !group) { showToast('❌ Group not found', 'error'); return; }
-        const { error: memErr } = await db.from('group_members').insert({ group_id: group.id, user_id: currentUser.id, role: 'member' });
-        if (memErr) { showToast('❌ Already in this group', 'error'); return; }
-        document.getElementById('invite-code-input').value = '';
-        showToast('✅ ' + i18n[currentLang].joinedGroup, 'success');
-        loadGroups();
-      } catch(e) { showToast('❌ Error joining group', 'error'); }
-    }
-    async function loadGroups() {
-      if (!currentUser) return;
-      try {
-        const { data: memberships } = await db.from('group_members').select('group_id').eq('user_id', currentUser.id);
-        if (!memberships || memberships.length === 0) {
-          document.getElementById('group-list').innerHTML = `<div class="text-center py-12"><i class="fas fa-users text-5xl text-gray-300 dark:text-gray-600 mb-4"></i><p class="text-gray-400 dark:text-gray-500 text-lg">${i18n[currentLang].noGroups}</p></div>`;
+    function importBackupFromFile(input) {
+      const file = input && input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let payload = null;
+        try { payload = JSON.parse(String(reader.result)); } catch (e) {}
+        if (!payload || payload.app !== 'abdo' || !payload.data || typeof payload.data !== 'object') {
+          showToast('❌ ' + (i18n[currentLang].restoreInvalid || 'That file is not an ABDO backup.'), 'error');
+          try { input.value = ''; } catch (e) {}
           return;
         }
-        const groupIds = memberships.map(m => m.group_id);
-        const { data: groups } = await db.from('groups').select('*').in('id', groupIds);
-        const list = document.getElementById('group-list');
-        list.innerHTML = '';
-        for (const g of (groups || [])) {
-          const { count } = await db.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
-          list.innerHTML += `
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div class="flex items-center justify-between mb-3">
-                <h4 class="font-bold text-gray-800 dark:text-white text-lg">${g.name}</h4>
-                <span class="text-sm text-gray-400 dark:text-gray-500">${count || 0} ${i18n[currentLang].members}</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400">${i18n[currentLang].inviteCode}:</span>
-                <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-blue-600 dark:text-blue-400">${g.invite_code}</code>
-                <button onclick="navigator.clipboard.writeText('${g.invite_code}');showToast('✅ '+i18n[currentLang].copyCode,'success')" class="text-gray-400 hover:text-blue-500 transition text-sm"><i class="fas fa-copy"></i></button>
-              </div>
-            </div>`;
-        }
-      } catch(e) {}
+        const nTasks = (() => { try { return (JSON.parse(payload.data['alfatore_tasks'] || '[]') || []).length; } catch (e) { return 0; } })();
+        const nPlans = (() => { try { return (JSON.parse(payload.data['alfaz_plans'] || '[]') || []).length; } catch (e) { return 0; } })();
+        const msg = (i18n[currentLang].restoreConfirm || 'Replace the data on this device with this backup? ({tasks} tasks, {plans} plans)')
+          .replace('{tasks}', nTasks).replace('{plans}', nPlans);
+        // Replace, never merge: a half-merged task list is harder to recover from than a clean
+        // restore, and the export above means the current state can be saved first.
+        if (!window.confirm(msg)) { try { input.value = ''; } catch (e) {} return; }
+        Object.keys(payload.data).forEach(k => {
+          if (BACKUP_KEYS.indexOf(k) === -1) return;   // never write arbitrary keys from a file
+          try { localStorage.setItem(k, String(payload.data[k])); } catch (e) {}
+        });
+        showToast(i18n[currentLang].restoreDone || '✅ Backup restored. Reloading…', 'success');
+        setTimeout(() => { window.location.href = window.location.pathname + '?v=52&t=' + Date.now(); }, 900);
+      };
+      reader.onerror = () => showToast('❌ ' + (i18n[currentLang].restoreInvalid || 'That file is not an ABDO backup.'), 'error');
+      reader.readAsText(file);
+    }
+    function openBackupModal() {
+      const mod = document.getElementById('backup-modal');
+      if (!mod) return;
+      const info = document.getElementById('backup-counts');
+      if (info) {
+        info.textContent = (i18n[currentLang].backupCounts || '{tasks} tasks · {plans} plans on this device')
+          .replace('{tasks}', (tasks || []).length).replace('{plans}', (userPlans || []).length);
+      }
+      mod.classList.remove('hidden');
+      pushMobileHistoryState('backup-modal');
+    }
+    function closeBackupModal() {
+      const mod = document.getElementById('backup-modal');
+      if (mod) mod.classList.add('hidden');
+    }
+    // Nudge, not a nag: the hint only appears once the user has real data and no backup recorded.
+    function updateBackupHint() {
+      const el = document.getElementById('backup-hint');
+      if (!el) return;
+      let last = 0;
+      try { last = parseInt(localStorage.getItem('alfaz_last_backup') || '0', 10) || 0; } catch (e) {}
+      const hasData = (tasks || []).length >= 5 || (userPlans || []).length >= 1;
+      const staleDays = last ? (Date.now() - last) / 86400000 : Infinity;
+      const show = hasData && staleDays >= 14;
+      if (show) el.textContent = last
+        ? (i18n[currentLang].backupHintOld || '⚠️ Last backup was over two weeks ago.')
+        : (i18n[currentLang].backupHintNever || '⚠️ No backup yet — one tap protects everything.');
+      el.classList.toggle('hidden', !show);
     }
 
     const prayerNamesAr = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
@@ -1629,9 +1432,11 @@
     ];
 
     // ===== MIGRATION =====
+    // v3 -> v4 (2026-11-21): the account/cloud layer was removed, so ids that a database used to
+    // hand out now come from newLocalId(), and Supabase's saved session is dead weight.
     function migrateTaskSchema() {
       const VER_KEY = 'alfaz_schema_ver';
-      const CURRENT_VER = 3;
+      const CURRENT_VER = 4;
       const stored = parseInt(localStorage.getItem(VER_KEY) || '0', 10);
       if (stored >= CURRENT_VER) return;
       if (stored < 3) {
@@ -1653,6 +1458,16 @@
           }
           localStorage.setItem(VER_KEY, String(CURRENT_VER));
         } catch(e) { localStorage.setItem(VER_KEY, String(CURRENT_VER)); }
+      }
+      if (stored >= 0 && stored < 4) {
+        // v4: the account/cloud layer is gone. Clear what Supabase's client left behind - nothing
+        // reads it any more, and a stale refresh token should not outlive the feature that made it.
+        try {
+          Object.keys(localStorage).forEach(k => {
+            if (k === 'alfaz_guest' || /^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k);
+          });
+          localStorage.setItem(VER_KEY, String(CURRENT_VER));
+        } catch (e) {}
       }
     }
 
@@ -1957,6 +1772,11 @@
     window.addEventListener('load', () => {
       migrateTaskSchema();
       document.getElementById('lang-select').value = currentLang;
+      try {
+        const savedAzan = localStorage.getItem('alfaz_azan_sound');
+        const azSel = document.getElementById('azan-select');
+        if (savedAzan !== null && azSel && azanSources[parseInt(savedAzan, 10)]) azSel.value = String(savedAzan);
+      } catch (e) {}
       applyLanguage(currentLang);
       initSmartList();
       initVoiceInput();
@@ -1969,15 +1789,19 @@
           try { reg.update(); } catch (e) {}
         }).catch(() => {});
       }
-      checkSession();
+      // Local-first boot: show the app immediately, then re-key any legacy rows. The old flow
+      // waited on a Supabase session here, which is also why a slow CDN used to delay launch.
+      showApp();
       loadPlans();
+      ensureTaskIds();
+      updateBackupHint();
       populatePlannerYearSelect();
       showInstallButtonAlways();
     });
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=51&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=52&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2195,6 +2019,7 @@
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
       document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.getAttribute('data-i18n'); if (i18n[lang][k]) el.innerHTML = i18n[lang][k]; });
       document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { const k = el.getAttribute('data-i18n-placeholder'); if (i18n[lang][k]) el.placeholder = i18n[lang][k]; });
+      document.querySelectorAll('[data-i18n-aria-label]').forEach(el => { const k = el.getAttribute('data-i18n-aria-label'); if (i18n[lang][k]) el.setAttribute('aria-label', i18n[lang][k]); });
       document.querySelectorAll('[data-appname]').forEach(el => el.textContent = appDisplayName(lang));
       const ameta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if (ameta) ameta.setAttribute('content', appDisplayName(lang));
@@ -2218,6 +2043,7 @@
       const eModal = document.getElementById('edit-task-modal');
       const cModal = document.getElementById('custom-dua-modal');
       const aModal = document.getElementById('audio-studio-modal');
+      const bModal = document.getElementById('backup-modal');
       const azAlertModal = document.getElementById('azan-alert-modal');
       const pModal = document.getElementById('plan-modal');
 
@@ -2233,6 +2059,8 @@
         closeCustomDuaModal();
       } else if (aModal && !aModal.classList.contains('hidden')) {
         closeAudioStudioModal();
+      } else if (bModal && !bModal.classList.contains('hidden')) {
+        closeBackupModal();
       } else if (azAlertModal && !azAlertModal.classList.contains('hidden')) {
         closeAzanAlertModal(false);
       } else if (pModal && !pModal.classList.contains('hidden')) {
@@ -2392,6 +2220,7 @@
       if (dueTime && !dueDate) { dueDate = getTodayString(); nlDate = nlDate || dueDate; }
 
       const task = {
+        id: newLocalId('t'),
         text: taskText, done: false,
         due_date: dueDate, due_time: dueTime, priority: selectedPriority, status: 'pending',
         recurrence_type: pendingRecurrence.type, recurrence_interval: 1,
@@ -2402,7 +2231,6 @@
         reminder_fired: false
       };
       tasks.unshift(task); localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      syncTask(task, 'insert');
       clearTaskInputs();
       const badge = document.getElementById('nl-badge');
       if (badge) badge.classList.add('hidden');
@@ -2470,7 +2298,6 @@
       t.due_time = document.getElementById('edit-task-time').value || null;
       t.priority = editPriority;
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      syncTask(t, 'update');
       closeEditModal();
       renderActiveSmartList();
       showToast(i18n[currentLang].taskUpdated || '✅ Task updated!', 'success');
@@ -2480,22 +2307,21 @@
       const t = tasks[i];
       if (!t.done && t.recurrence_type) {
         t.done = true; t.status = 'done'; t.recurrence_done_at = new Date().toISOString();
-        syncTask(t, 'update');
         const next = calculateNextOccurrence(t);
         if (next) {
           const newTask = {
+            id: newLocalId('t'),
             text: t.text, done: false, due_date: next, priority: t.priority, status: 'pending',
             recurrence_type: t.recurrence_type, recurrence_interval: t.recurrence_interval,
             recurrence_weekdays: t.recurrence_weekdays || [], recurrence_end: t.recurrence_end,
             recurrence_done_at: null
           };
-          tasks.unshift(newTask); syncTask(newTask, 'insert');
+          tasks.unshift(newTask);
         }
       } else {
         t.done = !t.done; t.status = t.done ? 'done' : 'pending';
         if (!t.done) t.reminder_fired = false;
-        syncTask(t, 'update');
-      }
+        }
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
       renderActiveSmartList();
     }
@@ -2519,14 +2345,12 @@
     function deleteTask(i) {
       const task = tasks[i]; tasks.splice(i, 1);
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      if (task.id) syncTask(task, 'delete');
       renderActiveSmartList();
     }
     function clearCompleted() {
       const deleted = tasks.filter(t => t.done || t.status === 'cancelled');
       tasks = tasks.filter(t => !t.done && t.status !== 'cancelled');
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      deleted.forEach(t => { if (t.id) syncTask(t, 'delete'); });
       renderActiveSmartList(); showToast('🧹 Cleared!', 'info');
     }
 
@@ -2694,8 +2518,7 @@
         if (nowMins >= remindAt && nowMins <= remindAt + 60) {
           t.reminder_fired = true;
           localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-          syncTask(t, 'update');
-
+    
           activeAlarmTaskIndex = idx;
           const titleEl = document.getElementById('task-alarm-modal-title');
           const timeEl = document.getElementById('task-alarm-modal-time');
@@ -2732,8 +2555,7 @@
         t.status = 'done';
         if (t.target_count > 0) t.current_count = t.target_count;
         localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-        syncTask(t, 'update');
-        showToast(i18n[currentLang].completedBadge || 'Completed ✓', 'success');
+          showToast(i18n[currentLang].completedBadge || 'Completed ✓', 'success');
         renderActiveSmartList();
       }
       closeTaskAlarmModal();
@@ -2748,8 +2570,7 @@
         t.due_time = ('0' + nextTime.getHours()).slice(-2) + ':' + ('0' + nextTime.getMinutes()).slice(-2);
         t.reminder_minutes = 0;
         localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-        syncTask(t, 'update');
-        showToast((currentLang === 'ar' ? `💤 تم تأجيل التنبيه ١٥ دقيقة` : `💤 Snoozed for 15 minutes`), 'info');
+          showToast((currentLang === 'ar' ? `💤 تم تأجيل التنبيه ١٥ دقيقة` : `💤 Snoozed for 15 minutes`), 'info');
         renderActiveSmartList();
       }
       closeTaskAlarmModal();
@@ -2935,6 +2756,8 @@
       const azPlayer = document.getElementById('azan-player');
       if (!azPlayer) return;
       const src = azanSources[document.getElementById('azan-select')?.value || 0];
+      // Remember the chosen muezzin: before this, every launch silently went back to Makkah.
+      try { localStorage.setItem('alfaz_azan_sound', String(document.getElementById('azan-select')?.value || 0)); } catch (e) {}
       azPlayer.src = src;
       azPlayer.volume = 1.0;
       azPlayer.muted = false;
@@ -3260,6 +3083,7 @@
 
       const title = currentLang === 'ar' ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar);
       const task = {
+        id: newLocalId('t'),
         text: title,
         done: autoComplete,
         due_date: getTodayString(),
@@ -3280,7 +3104,6 @@
 
       tasks.unshift(task);
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      syncTask(task, 'insert');
       showToast(autoComplete ? (i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.') : (i18n[currentLang].addedToMyDay || '✅ Added to My Day!'), 'success');
       renderActiveSmartList();
     }
@@ -3332,8 +3155,7 @@
         t.status = 'done';
         if (t.target_count > 0) t.current_count = t.target_count;
         localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-        syncTask(t, 'update');
-        showToast(i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.', 'success');
+          showToast(i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.', 'success');
         renderActiveSmartList();
       }
       closeQuranReader();
@@ -3397,8 +3219,7 @@
         t.status = 'done';
         if (t.target_count > 0) t.current_count = t.target_count;
         localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-        syncTask(t, 'update');
-        showToast(i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.', 'success');
+          showToast(i18n[currentLang].dhikrCompletedToast || '✅ May Allah accept from you! Task completed.', 'success');
         renderActiveSmartList();
       } else if (activeDhikrLibraryId) {
         addLibraryItemToMyDay(activeDhikrLibraryId, true);
@@ -3518,6 +3339,7 @@
       const title = (currentLang === 'ar' ? `📖 ورد القرآن اليومي - ` : `📖 Daily Quran Khatmah - `) + riwNames[selectedRiwayah] + ' ' + stepText;
 
       const task = {
+        id: newLocalId('t'),
         text: title,
         done: false,
         due_date: getTodayString(),
@@ -3538,7 +3360,6 @@
 
       tasks.unshift(task);
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      syncTask(task, 'insert');
       closeKhatmahModal();
       showToast(i18n[currentLang].khatmahStarted || '✅ Quran Khatmah started!', 'success');
       renderActiveSmartList();
@@ -4167,7 +3988,6 @@
         showToast(i18n[currentLang].completedBadge || 'Completed ✓', 'success');
       }
       localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-      syncTask(t, 'update');
       renderActiveSmartList();
     }
 
@@ -4397,6 +4217,7 @@
         if (!ev) return;
         const name = currentLang === 'ar' ? ev.ar : ev.en;
         const task = {
+          id: newLocalId('t'),
           text: '📅 ' + name,
           done: false,
           due_date: iso,
@@ -4409,8 +4230,7 @@
         };
         tasks.unshift(task);
         localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-        syncTask(task, 'insert');
-        renderActiveSmartList();
+          renderActiveSmartList();
         showToast(i18n[currentLang].addedToMyDay || '✅ Added to My Day!', 'success');
       });
     }
@@ -4811,16 +4631,15 @@
             existing.reminder_fired = false;
             if (!existing.id) existing.plan_id = plan.id;
             localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-            try { syncTask(existing, 'update'); } catch (e) {}
           } else {
             const newTask = {
+              id: newLocalId('t'),
               text: plan.title, done: false, due_date: plan.date, due_time: plan.time || null,
               priority: 1, status: 'pending', library_id: null,
               reminder_minutes: remVal, reminder_fired: false, plan_id: plan.id
             };
             tasks.unshift(newTask);
             localStorage.setItem('alfatore_tasks', JSON.stringify(tasks));
-            try { syncTask(newTask, 'insert'); } catch (e) {}
           }
         } else if (hasLinked) {
           tasks = (tasks || []).filter(x => x.plan_id !== plan.id);
