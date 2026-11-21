@@ -2,7 +2,8 @@
 
 **Status:** v1 was rejected as weak. This is the rewritten version, and it exists to be *torn apart
 by someone who knows more than I do*, not to be approved as-is.
-**Branch:** `arena/56b587ab-alfaz-todo` · **Baseline:** v53, local-only, no server. **Fixes for §3.1–3.4 shipped in v53** (commit `4c3bd1d`) with a regression suite; the remaining open work is the cache split, the storage listener, and the specialist decisions below.
+**Branch:** `arena/56b587ab-alfaz-todo` · **Baseline:** v54, local-only, no server.
+**Status of steps 0–4 and 6: done** (v53 `4c3bd1d`, v54 `2adebdb`) — recurrence, reminders, prayer-time zone, the i18n gate, the cache split and multi-tab safety are shipped and covered by tests. **Open:** step 5 (the timeline itself) and the specialist decisions in §9.
 **Also filed as an issue:** https://github.com/AhmedAlfaz/Alfaz-todo/issues/1
 **How to review:** every claim below is either *(M)* measured with a command you can re-run, or
 *(A)* an assertion marked as such. Attack the (A)s first — that is where v1 failed.
