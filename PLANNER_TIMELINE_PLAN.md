@@ -2,7 +2,7 @@
 
 **Status:** v1 was rejected as weak. This is the rewritten version, and it exists to be *torn apart
 by someone who knows more than I do*, not to be approved as-is.
-**Branch:** `arena/56b587ab-alfaz-todo` · **Baseline:** v52, local-only, no server.
+**Branch:** `arena/56b587ab-alfaz-todo` · **Baseline:** v53, local-only, no server. **Fixes for §3.1–3.4 shipped in v53** (commit `4c3bd1d`) with a regression suite; the remaining open work is the cache split, the storage listener, and the specialist decisions below.
 **Also filed as an issue:** https://github.com/AhmedAlfaz/Alfaz-todo/issues/1
 **How to review:** every claim below is either *(M)* measured with a command you can re-run, or
 *(A)* an assertion marked as such. Attack the (A)s first — that is where v1 failed.
@@ -79,7 +79,13 @@ cache out of the data's bucket"**, and the dangerous part becomes optional.
 
 ## 3. Time model: the three defects a timeline will expose
 
-### 3.1 Recurrence *(M — reproduced by executing the shipped function)*
+### 3.1 Recurrence — **fixed in v53**
+
+> Historical record of the defect, kept because the fix is only trustworthy if the failure it
+> replaced is written down. `tools/test_planner_time.py` now covers every case below and gates.py
+> runs it.
+
+ *(M — reproduced by executing the shipped function)*
 
 ```
 monthly on the 31st:   Jan 31 ✓   Feb 28 ✗   Mar 31 ✓   Apr 30 ✗   May 31 ✓
@@ -88,7 +94,12 @@ yearly on Feb 29:      2027 ✗      2028 ✓      2029 ✗      2030 ✗
 Both fail silently — the plan simply does not appear. A month view hides this; a timeline shows an
 empty day and the user concludes the app forgot.
 
-### 3.2 Reminders are not aware of the timeline's day
+### 3.2 Reminders are not aware of the timeline's day — **fixed in v53**
+
+> `reminderShouldFire()` is now a pure predicate with the exact-minute + grace rule and the overnight
+> grace; snooze writes `snooze_until` instead of moving `due_time`. The timeline can now trust
+> `due_time` to mean "when the thing is due".
+
 
 ```
 09:00 task, reminder 15 min before → fires at 08:45 … and still fires at 09:44  (60-min catch-up)
@@ -99,7 +110,12 @@ plan with no time, reminder set     → silently assumes 09:00
 So a timeline cannot simply read `due_time` as "where the block goes": the alarm and the block would
 disagree about what the time means.
 
-### 3.3 Prayer times belong to a place, not to the phone *(M-adjacent, from Aladhan's documented contract)*
+### 3.3 Prayer times belong to a place, not to the phone — **fixed in v53**
+
+> Times are stored with `timezone` + coordinates (cache v3), converted to the device clock before
+> comparison, and re-fetched on a >25 km move or a zone change. Legacy caches still load.
+>
+> *(M-adjacent, from Aladhan's documented contract)*
 
 `GET /v1/timings/{date}?latitude=…&longitude=…` returns **wall-clock times for the coordinates'
 timezone**; a `timezonestring` is optional and we never send it. The cache key is
