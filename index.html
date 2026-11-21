@@ -911,7 +911,8 @@
           ABDO has no account and no cloud copy — your tasks, plans and adhkar live only on this device.
           Save a backup file now and then, so a lost phone or cleared browser never costs you your data.
         </p>
-        <p id="backup-counts" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-4"></p>
+        <p id="backup-counts" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1"></p>
+        <p id="backup-cache" class="text-[11px] text-gray-400 dark:text-gray-500 mb-4"></p>
 
         <button onclick="exportBackup()" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-semibold transition mb-2">
           <i class="fas fa-download"></i>
@@ -1093,6 +1094,10 @@
         restoreConfirm: "Replace the data on this device with this backup? ({tasks} tasks, {plans} plans)",
         restoreDone: "✅ Backup restored. Reloading…",
         backupHintNever: "⚠️ No backup yet — one tap protects everything.",
+        cacheLine: "Regenerable cache: {n} items, ~{kb} KB — {where}",
+        cacheInIdb: "in browser storage, not in your backup",
+        cacheInLs: "in local storage (private mode)",
+        storageCleared: "⚠️ Your data was changed in another tab or cleared by the browser. Reloading…",
         backupHintOld: "⚠️ Last backup was over two weeks ago.",
         upcoming: "Upcoming", overdue: "Overdue", highPriority: "High Priority", allTasks: "All Tasks",
         noDueDate: "No due date", noTasksToday: "Nothing due today. Enjoy your day!",
@@ -1208,6 +1213,10 @@
         restoreConfirm: "استبدال بيانات هذا الجهاز بهذه النسخة؟ ({tasks} مهمة، {plans} خطة)",
         restoreDone: "✅ تمت الاستعادة. جاري إعادة التحميل…",
         backupHintNever: "⚠️ لا توجد نسخة احتياطية بعد — لمسة واحدة تحمي كل شيء.",
+        cacheLine: "ذاكرة مؤقتة قابلة لإعادة التحميل: {n} عنصر، نحو {kb} ك.ب — {where}",
+        cacheInIdb: "في تخزين المتصفح، خارج نسختك الاحتياطية",
+        cacheInLs: "في التخزين المحلي (الوضع الخاص)",
+        storageCleared: "⚠️ تغيّرت بياناتك في تبويب آخر أو مسحها المتصفح. جاري إعادة التحميل…",
         backupHintOld: "⚠️ آخر نسخة احتياطية من أكثر من أسبوعين.",
         upcoming: "قادمة", overdue: "متأخرة", highPriority: "أولوية عالية", allTasks: "كل المهام",
         noDueDate: "بدون موعد", noTasksToday: "لا توجد مهام اليوم. استمتع بيومك!",
@@ -1321,6 +1330,145 @@
       const nav = document.getElementById('bottom-nav'); if (nav) nav.classList.remove('hidden');
     }
 
+    // ===== CACHE STORE (IndexedDB) =====
+    // Why this exists: every byte the app can regenerate used to sit in the same 5 MB localStorage
+    // bucket as the user's tasks and plans. A handful of long surahs is a few hundred KB of HTML,
+    // so cache growth could eventually block a task write or force eviction of the one thing that
+    // cannot be re-downloaded. Nothing here is precious, so it lives in IndexedDB, which has a far
+    // larger quota, and user data keeps the smaller bucket to itself.
+    const CACHE_DB = 'abdo-cache';
+    const CACHE_STORE = 'kv';
+    const CACHE_PREFIXES = ['alfaz_quran_cache_ayah_', 'alfaz_ayah_ts_', 'alfatore_prayers_'];
+    const cacheMem = Object.create(null);      // key -> {v, at}; loaded once, then read synchronously
+    let cacheDb = null;
+    let cacheReadyResolve = null;
+    const cacheReady = new Promise(res => { cacheReadyResolve = res; });
+    let cacheMode = 'memory';                  // 'idb' | 'ls' | 'memory' (private mode)
+
+    function isCacheKey(key) { return CACHE_PREFIXES.some(pre => key.indexOf(pre) === 0); }
+
+    function openCacheDb() {
+      return new Promise(resolve => {
+        try {
+          if (!window.indexedDB) return resolve(null);
+          const req = indexedDB.open(CACHE_DB, 1);
+          req.onupgradeneeded = () => { try { req.result.createObjectStore(CACHE_STORE); } catch (e) {} };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+          req.onblocked = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    }
+
+    async function initCacheStore() {
+      try {
+        cacheDb = await openCacheDb();
+        if (!cacheDb) { cacheMode = 'ls'; return; }
+        cacheMode = 'idb';
+        await new Promise(resolve => {
+          try {
+            const tx = cacheDb.transaction(CACHE_STORE, 'readonly');
+            const store = tx.objectStore(CACHE_STORE);
+            const req = store.openCursor();
+            req.onsuccess = () => {
+              const cur = req.result;
+              if (cur) { cacheMem[cur.key] = cur.value; cur.continue(); }
+            };
+            req.onerror = () => resolve();
+            tx.oncomplete = () => resolve();
+            tx.onabort = () => resolve();
+          } catch (e) { resolve(); }
+        });
+      } finally {
+        migrateCachesToIdb();
+        pruneCacheStore();
+        if (cacheReadyResolve) { cacheReadyResolve(); cacheReadyResolve = null; }
+      }
+    }
+
+    function cacheGetSync(key) {
+      if (!isCacheKey(key)) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+      const hit = cacheMem[key];
+      if (hit && typeof hit.v === 'string') return hit.v;
+      if (cacheMode !== 'idb') {            // fallback path also covers a not-yet-loaded store
+        try { const ls = localStorage.getItem(key); if (ls !== null) return ls; } catch (e) {}
+      }
+      return null;
+    }
+
+    function cacheSet(key, value) {
+      if (!isCacheKey(key)) { try { localStorage.setItem(key, value); } catch (e) {} return; }
+      cacheMem[key] = { v: value, at: Date.now() };
+      if (cacheMode === 'idb' && cacheDb) {
+        try {
+          const tx = cacheDb.transaction(CACHE_STORE, 'readwrite');
+          tx.objectStore(CACHE_STORE).put(cacheMem[key], key);
+        } catch (e) {}
+        // Writing a cache must never throw into a caller that is rendering a surah.
+        return;
+      }
+      try { localStorage.setItem(key, value); } catch (e) {
+        // Last resort in private mode: drop the oldest cache entry rather than the write.
+        const keys = Object.keys(cacheMem);
+        if (keys.length > 8) { delete cacheMem[keys[0]]; try { localStorage.removeItem(keys[0]); } catch (e2) {} }
+      }
+    }
+
+    function cacheDelete(key) {
+      delete cacheMem[key];
+      if (cacheMode === 'idb' && cacheDb) {
+        try { cacheDb.transaction(CACHE_STORE, 'readwrite').objectStore(CACHE_STORE).delete(key); } catch (e) {}
+      }
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    function migrateCachesToIdb() {
+      // Move anything the old version left in localStorage. Only after the copy succeeded, so a
+      // failed migration cannot lose a cache that is still the only copy on this device.
+      let moved = 0;
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach(k => {
+          if (!isCacheKey(k)) return;
+          if (cacheMode === 'idb' && cacheDb) {
+            const entry = cacheMem[k] || { v: localStorage.getItem(k), at: Date.now() };
+            cacheMem[k] = entry;
+            try { cacheDb.transaction(CACHE_STORE, 'readwrite').objectStore(CACHE_STORE).put(entry, k); } catch (e) { return; }
+            localStorage.removeItem(k); moved++;
+          }
+        });
+      } catch (e) {}
+      return moved;
+    }
+
+    function pruneCacheStore() {
+      // Two cheap rules, both about caches only: day-keyed prayer entries are useless after a week,
+      // and the ayah cache keeps its most recent 80 surah/riwayah pairs. User data is never touched.
+      const now = Date.now();
+      Object.keys(cacheMem).forEach(k => {
+        const entry = cacheMem[k];
+        if (k.indexOf('alfatore_prayers_') === 0) {
+          const m = /(\d{2})-(\d{2})-(\d{4})/.exec(k);
+          if (m) {
+            const day = new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+            if (now - day > 7 * 86400000) cacheDelete(k);
+          }
+        }
+      });
+      const ayahKeys = Object.keys(cacheMem).filter(k => k.indexOf('alfaz_quran_cache_ayah_') === 0);
+      if (ayahKeys.length > 80) {
+        ayahKeys.sort((a, b) => (cacheMem[a].at || 0) - (cacheMem[b].at || 0));
+        ayahKeys.slice(0, ayahKeys.length - 80).forEach(cacheDelete);
+      }
+    }
+
+    function cacheStats() {
+      let bytes = 0, n = 0;
+      Object.keys(cacheMem).forEach(k => { n++; bytes += (cacheMem[k].v || '').length * 2; });
+      try { Object.keys(localStorage).forEach(k => { if (isCacheKey(k)) { n++; bytes += (localStorage.getItem(k) || '').length * 2; } }); } catch (e) {}
+      return { entries: n, kb: Math.round(bytes / 1024), mode: cacheMode };
+    }
+
     // ===== BACKUP / RESTORE =====
     // Everything the user cannot get back by refreshing. Prayer-time and ayah caches are left out
     // on purpose: they are re-fetched from Aladhan and quran.com, so backing them up would only
@@ -1380,7 +1528,7 @@
           try { localStorage.setItem(k, String(payload.data[k])); } catch (e) {}
         });
         showToast(i18n[currentLang].restoreDone || '✅ Backup restored. Reloading…', 'success');
-        setTimeout(() => { window.location.href = window.location.pathname + '?v=53&t=' + Date.now(); }, 900);
+        setTimeout(() => { window.location.href = window.location.pathname + '?v=54&t=' + Date.now(); }, 900);
       };
       reader.onerror = () => showToast('❌ ' + (i18n[currentLang].restoreInvalid || 'That file is not an ABDO backup.'), 'error');
       reader.readAsText(file);
@@ -1392,6 +1540,15 @@
       if (info) {
         info.textContent = (i18n[currentLang].backupCounts || '{tasks} tasks · {plans} plans on this device')
           .replace('{tasks}', (tasks || []).length).replace('{plans}', (userPlans || []).length);
+      }
+      const cacheEl = document.getElementById('backup-cache');
+      if (cacheEl) {
+        let c = { entries: 0, kb: 0, mode: 'idb' };
+        try { c = cacheStats(); } catch (e) {}
+        const where = c.mode === 'idb' ? (i18n[currentLang].cacheInIdb || 'in browser storage, not in your backup')
+                    : (i18n[currentLang].cacheInLs || 'in local storage (private mode)');
+        cacheEl.textContent = (i18n[currentLang].cacheLine || 'Regenerable cache: {n} items, ~{kb} KB — {where}')
+          .replace('{n}', c.entries).replace('{kb}', c.kb).replace('{where}', where);
       }
       mod.classList.remove('hidden');
       pushMobileHistoryState('backup-modal');
@@ -1472,6 +1629,68 @@
         } catch (e) {}
       }
     }
+
+    // ===== CROSS-TAB SAFETY =====
+    // `storage` only fires in tabs that did not write, which is exactly what is needed: reload the
+    // in-memory copy from storage and re-render, without echoing our own writes back at ourselves.
+    function adoptStoredTasks() {
+      try {
+        const raw = localStorage.getItem('alfatore_tasks');
+        if (raw === null) {
+          // Someone cleared site data. Re-render the empty state, and say why, once.
+          if ((tasks || []).length) showToast(i18n[currentLang].storageCleared || '⚠️ Your data was changed in another tab or cleared by the browser.', 'info');
+          tasks = [];
+        } else {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) tasks = parsed;
+        }
+      } catch (e) { return; }
+      ensureTaskIds();
+      renderActiveSmartList();
+      if (typeof renderOccasionsCalendar === 'function') { try { renderOccasionsCalendar(); } catch (e) {} }
+      try { if (Object.keys(prayerTimings).length) updateNextPrayer(); } catch (e) {}
+      if (typeof updateBackupHint === 'function') updateBackupHint();
+    }
+    function onStorageEvent(e) {
+      if (!e || !e.key) return;
+      if (e.key === 'alfatore_tasks') { adoptStoredTasks(); return; }
+      if (e.key === 'alfaz_plans') {
+        try { loadPlans(); } catch (err) { return; }
+        if (typeof renderOccasionsCalendar === 'function') { try { renderOccasionsCalendar(); } catch (err) {} }
+        return;
+      }
+      if (e.key === 'alfaz_custom_lib') {
+        try { customLibraryItems = JSON.parse(e.newValue || '[]') || []; } catch (err) { return; }
+        try { renderLibrary('all'); } catch (err) {}
+        return;
+      }
+      if (e.key === 'alfatore_lang' && e.newValue && e.newValue !== currentLang) {
+        try { changeLanguage(e.newValue); } catch (err) {}
+      }
+      if (e.key === 'alfatore_darkmode') {
+        try { loadDarkMode(); } catch (err) {}
+      }
+      if (e.key === 'alfatore_smartlist' && e.newValue) {
+        try { switchSmartList(e.newValue); } catch (err) {}
+      }
+    }
+    window.addEventListener('storage', onStorageEvent);
+    // A tab that was asleep (phone in a pocket, laptop closed) missed those events. On resume,
+    // re-read storage once: cheap, and it is the difference between stale and correct.
+    let lastResumeSync = 0;
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastResumeSync < 5000) return;
+      lastResumeSync = now;
+      let stored = null;
+      try { stored = localStorage.getItem('alfatore_tasks'); } catch (e) { return; }
+      const current = JSON.stringify(tasks || []);
+      if (stored !== null && stored !== current) {
+        try { const parsed = JSON.parse(stored); if (Array.isArray(parsed)) { tasks = parsed; ensureTaskIds(); renderActiveSmartList(); } } catch (e) {}
+      }
+      try { checkTaskReminders(new Date()); checkPlanReminders(new Date()); } catch (e) {}
+    });
 
     // ===== HELPERS =====
     function getTodayString() {
@@ -1794,6 +2013,7 @@
       // Local-first boot: show the app immediately, then re-key any legacy rows. The old flow
       // waited on a Supabase session here, which is also why a slow CDN used to delay launch.
       showApp();
+      initCacheStore();       // cache lives in IndexedDB; user data stays in localStorage
       loadPlans();
       ensureTaskIds();
       updateBackupHint();
@@ -1803,7 +2023,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=53&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=54&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2496,7 +2716,7 @@
       const o = opts || {};
       const d = new Date(), dd = d.getDate().toString().padStart(2,'0'), mm = (d.getMonth()+1).toString().padStart(2,'0'), yyyy = d.getFullYear(), ds = `${dd}-${mm}-${yyyy}`;
       const cacheKey = `alfatore_prayers_${ds}`;
-      const cached = o.skipCache ? null : localStorage.getItem(cacheKey);
+      const cached = o.skipCache ? null : cacheGetSync(cacheKey);
       if (cached) {
         try { prayerTimesFromCache(JSON.parse(cached), ds); } catch(e) { prayerTimings = {}; }
         renderPrayerCards(); updateNextPrayer();
@@ -2506,7 +2726,7 @@
           const stored = prayerTimesToStore(data, ds);
           prayerSourceZone = stored.timezone;
           prayerTimings = prayerTimesInDeviceClock(stored, ds);
-          localStorage.setItem(cacheKey, JSON.stringify(stored));
+          cacheSet(cacheKey, JSON.stringify(stored));
           rememberPrayerFetch(lat, lng);
           cachedAt = Date.now();
           renderPrayerCards(); updateNextPrayer();
@@ -3683,7 +3903,7 @@
 
       const cacheKey = `alfaz_quran_cache_ayah_${currentReaderRiwayah}_${num}`;
       let cached = null;
-      try { cached = localStorage.getItem(cacheKey); } catch(e) {}
+      try { cached = cacheGetSync(cacheKey); } catch(e) {}
 
       if (cached) {
         contentDiv.innerHTML = `
@@ -3717,7 +3937,7 @@
           </span>
         `).join(' ');
 
-        try { localStorage.setItem(cacheKey, textFormatted); } catch(e) {}
+        try { cacheSet(cacheKey, textFormatted); } catch(e) {}
 
         contentDiv.innerHTML = `
           <div class="text-center mb-6">
@@ -3838,13 +4058,14 @@
     function saveQuranAudioPosition(player) {
       const t = player && !isNaN(player.currentTime) ? player.currentTime : quranResumeTime;
       if (t > 0.4) quranResumeTime = t;
+      // One key, overwritten in place (it used to keep a signed audio URL, which can carry a large
+      // query string). The resume point is 5 fields; this stays small deliberately.
       try {
         localStorage.setItem('alfaz_quran_audio_pos', JSON.stringify({
           surah: currentReaderSurah,
           reciter: selectedQuranReciter,
-          time: quranResumeTime || 0,
-          ayah: currentRecitingIndex > 0 ? currentRecitingIndex : null,
-          url: quranLoadedUrl
+          time: Math.round((quranResumeTime || 0) * 10) / 10,
+          ayah: currentRecitingIndex > 0 ? currentRecitingIndex : null
         }));
       } catch (e) {}
     }
@@ -3871,7 +4092,7 @@
       const reciterId = getQuranChapterReciterId(reciter);
       const cacheKey = 'alfaz_ayah_ts_' + reciterId + '_' + surahNum;
       try {
-        const cached = localStorage.getItem(cacheKey);
+        const cached = cacheGetSync(cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length) {
@@ -3892,7 +4113,7 @@
         })).filter(x => x.ayah);
         quranAyahTimestamps = ts;
         if (file.audio_url) quranChapterAudioUrl = file.audio_url;
-        try { localStorage.setItem(cacheKey, JSON.stringify(ts)); } catch (e) {}
+        try { cacheSet(cacheKey, JSON.stringify(ts)); } catch (e) {}
         return ts;
       } catch (e) {
         return [];
