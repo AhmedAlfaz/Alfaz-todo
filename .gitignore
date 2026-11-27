@@ -4,3 +4,7 @@ push/queue/
 
 # generated locally by make-config.php - never commit (public repo mirrors to the web root)
 tools/handoff/push-config.php
+
+# python bytecode from tools/ (gates and test suites import each other)
+__pycache__/
+*.pyc

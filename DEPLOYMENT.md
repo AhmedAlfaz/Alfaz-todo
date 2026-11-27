@@ -19,6 +19,7 @@
    Never commit a secret, a debug toggle, or a half-finished feature to `main` on this repo.
 0. **Say the link out loud once: Hostinger is the app.** GitHub Pages is a workshop copy for
    testing on a phone; it is never the install link, and it can never deliver reminders (no PHP).
+0. **Run the checks before pushing** — `python3 tools/gates.py` (includes the time-logic suite). A recurrence or reminder regression is invisible to a syntax check.
 1. Upload these (overwrite existing):
    - `index.html`  ← almost always
    - `sw.js`       ← almost always
@@ -42,7 +43,7 @@
 - [x] All files optimized and tested
 - [ ] Hostinger FTP/File Manager credentials ready
 - [ ] Custom domain or Hostinger subdomain chosen
-- [ ] Supabase keys verified and active
+- [ ] Backup & Restore opens and downloads a file (no server needed)
 
 ---
 
@@ -139,16 +140,19 @@ After deployment, test these:
 
 ---
 
-## 🔑 Supabase Setup (Required for Cloud Features)
+## 💾 Data & Backups (no server to set up)
 
-The app needs your Supabase credentials to work:
+ABDO has **no accounts and no cloud database**. Everything lives in the browser's
+`localStorage` on the user's device, so there is nothing to configure here — but it
+also means the deployment checklist must include the user-facing backup path:
 
-1. **Open the app in your browser**
-2. **Navigate to:** Settings → (scroll to Auth section)
-3. **Enter your Supabase credentials:**
-   - Supabase URL
-   - Supabase Public Key (Anon Key)
-4. **Log in or Sign Up to verify connection**
+1. Add a few tasks and a plan in the app.
+2. Sidebar → **Backup & Restore** → **Download backup file**.
+3. Confirm a file named `abdo-backup-YYYY-MM-DD.json` arrives.
+4. Re-import it and confirm the counts survive the reload.
+
+If step 3 or 4 fails on a phone, the app has lost its only recovery path — treat it as a
+release blocker.
 
 ---
 
@@ -279,7 +283,6 @@ After deployment, test on a real mobile device:
 
 - **Hostinger Help:** https://support.hostinger.com
 - **PWA Debugging:** Open DevTools (F12) → Application tab
-- **Supabase Docs:** https://supabase.com/docs
 - **Testing Tool:** https://www.webpagetest.org
 
 ---

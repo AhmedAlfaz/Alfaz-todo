@@ -129,6 +129,69 @@ def check_no_duplicate_functions(html):
     NOTE.append(f'{len(names)} top-level definitions scanned')
 
 
+def check_i18n_keys(html):
+    """Every data-i18n / data-i18n-placeholder / data-i18n-aria-label key must exist in EN and AR,
+    and no JS reference to i18n[x].key may be undefined. v52 found 22 keys that silently rendered
+    blank because nothing checked this."""
+    i = html.find('const i18n = {')
+    if i < 0:
+        fail('i18n object not found')
+        return
+    body = html[i:]
+    start = body.index('{')
+    depth = 0
+    end = None
+    for n, ch in enumerate(body[start:], start):
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                end = n + 1
+                break
+    obj = body[start:end]
+    a = obj.index('en: {')
+    b = obj.index('ar: {')
+
+    def keys(t):
+        return set(re.findall(r'([A-Za-z0-9_]+)\s*:\s*["\'`]', t))
+
+    en, ar = keys(obj[a:b]), keys(obj[b:])
+    en -= {'End', 'menu'}   # punctuation/keywords caught inside nested objects, not real keys
+    ar -= {'End', 'menu'}
+    for k in sorted(en - ar):
+        fail(f'i18n: {k} exists in EN but not in AR')
+    for k in sorted(ar - en):
+        fail(f'i18n: {k} exists in AR but not in EN')
+    used = set(re.findall(r'data-i18n="([^"]+)"', html))
+    used |= set(re.findall(r'data-i18n-placeholder="([^"]+)"', html))
+    used |= set(re.findall(r'data-i18n-aria-label="([^"]+)"', html))
+    used |= set(re.findall(r'i18n\[(?:currentLang|lang)\]\.([A-Za-z0-9_]+)', html))
+    missing = sorted(k for k in used if k not in en)
+    for k in missing:
+        fail(f'i18n: {k} is referenced but has no string')
+    if not missing and not (en ^ ar):
+        NOTE.append(f'i18n: {len(en)} keys, EN=AR complete, every reference resolves')
+
+
+def check_time_logic():
+    """Run tools/test_planner_time.py. Recurrence/reminder/timezone bugs are invisible to a syntax
+    check and were shipped for months; this makes them a build failure instead."""
+    script = os.path.join(REPO, 'tools', 'test_planner_time.py')
+    if not os.path.exists(script):
+        fail('tools/test_planner_time.py is missing')
+        return
+    r = subprocess.run([sys.executable, script], capture_output=True, text=True)
+    if r.returncode != 0:
+        for line in (r.stdout or '').splitlines():
+            if line.strip().startswith('FAIL'):
+                fail('time-logic: ' + line.strip()[5:])
+        if r.returncode != 0 and 'FAIL' not in (r.stdout or ''):
+            fail('time-logic: suite failed -> ' + (r.stdout or r.stderr).strip().splitlines()[-1])
+    else:
+        NOTE.append('time-logic: recurrence, reminders and timezone suites pass')
+
+
 def check_config_sane():
     p = os.path.join(REPO, 'site-config.json')
     if not os.path.exists(p):
@@ -148,6 +211,8 @@ def main():
     check_version_pair(html, ver)
     check_declared_assets_exist(html)
     check_no_duplicate_functions(html)
+    check_i18n_keys(html)
+    check_time_logic()
     check_config_sane()
 
     print('ABDO gates')
