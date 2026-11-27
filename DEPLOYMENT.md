@@ -19,6 +19,10 @@
    Never commit a secret, a debug toggle, or a half-finished feature to `main` on this repo.
 0. **Say the link out loud once: Hostinger is the app.** GitHub Pages is a workshop copy for
    testing on a phone; it is never the install link, and it can never deliver reminders (no PHP).
+0b. **When you bump the version, bump four places** — `sw.js` `VERSION`, `version.json`, both
+   `?v=N&t=` queries in `index.html`, and `window.__abdoPageVersion` in `index.html`. The gate
+   (`tools/gates.py`) fails on any drift, and it fails for a reason: a phone was left on the old
+   build because the app could not answer "which version am I running?".
 0. **Run the checks before pushing** — `python3 tools/gates.py` (includes the time-logic suite). A recurrence or reminder regression is invisible to a syntax check.
 0b. **To preview locally** — `python3 tools/serve.py 8099`, then open `http://localhost:8099/`.
    Use this, not `python3 -m http.server`: that one ignores `Range` (azan MP3s are 2–6 MB and the

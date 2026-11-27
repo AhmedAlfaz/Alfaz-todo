@@ -6,9 +6,9 @@
 // screen offline. So: required files use addAll (all-or-nothing, install fails -> the old worker
 // keeps serving and we fix the deploy), optional files are best-effort.
 
-const VERSION = 'v55';
+const VERSION = 'v56';
 const CACHE_NAME = 'alfaz-todo-' + VERSION;
-const CORE = ['.', 'index.html', 'sw.js', 'site-config.json'];
+const CORE = ['.', 'index.html', 'sw.js', 'site-config.json', 'version.json'];
 const OPTIONAL = [
   'manifest.json',
   'brand/abdo-icon-192-wb.png',
@@ -40,6 +40,13 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  // The version file answers "am I on the new build?". Serving it from cache would be answering that
+  // question with the old answer, so it is always network-first with no caching at all.
+  if (url.pathname.endsWith('/version.json')) {
+    event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match(req)));
+    return;
+  }
 
   // HTML and navigations: network first, cache as the offline fallback. Never serve a cached
   // shell ahead of the network or updates become invisible for up to the CDN's max-age.

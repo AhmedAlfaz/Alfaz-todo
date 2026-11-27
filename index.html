@@ -412,9 +412,17 @@
         <h2 class="text-3xl font-bold text-gray-800 dark:text-white" data-i18n="prayerReminders">Prayer Reminders</h2>
         <span class="text-4xl">🕌</span>
       </div>
-      <p id="location-status" class="text-gray-500 dark:text-gray-400 text-sm mb-6">
+      <p id="location-status" class="text-gray-500 dark:text-gray-400 text-sm mb-2">
         <i class="fas fa-location-dot"></i> <span data-i18n="fetchingLoc">Fetching location...</span>
       </p>
+      <!-- Manual location. Present always, not only on denial: a traveller, a user who refuses
+           location for privacy, and a phone with a bad GPS fix all need the same control. -->
+      <div class="mb-6 flex flex-wrap items-center gap-2">
+        <label for="city-select" class="text-xs font-semibold text-gray-500 dark:text-gray-400" data-i18n="chooseCity">Choose your city</label>
+        <select id="city-select" onchange="chooseCity(this.value)" class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-1.5 px-3 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+          <option value="" data-i18n="useMyCity">Use my city</option>
+        </select>
+      </div>
 
       <!-- Azan Settings -->
       <div class="bg-white dark:bg-gray-800 p-5 rounded-xl mb-8 flex flex-col md:flex-row items-center justify-between border border-gray-200 dark:border-gray-700 shadow-sm gap-4">
@@ -1107,7 +1115,18 @@
       en: {
         myDay: "My Day", prayerReminders: "Prayer Reminders", qiblaNavigator: "Qibla Navigator",
         addTaskPlaceholder: "Add a task (Press Enter to save)", fetchingLoc: "Fetching location...",
-        locLocked: "Location locked", locDenied: "Location denied. Using Mecca.",
+        locLocked: "Location locked", locDenied: "Location is off, so prayer times are for Mecca.",
+        useMyCity: "Use my city", chooseCity: "Choose your city", cityCairo: "Cairo", cityAlexandria: "Alexandria",
+        cityGiza: "Giza", cityMansoura: "Mansoura", cityAswan: "Aswan", cityRiyadh: "Riyadh",
+        cityJeddah: "Jeddah", cityDubai: "Dubai", cityAmman: "Amman", cityIstanbul: "Istanbul",
+        cityLondon: "London", cityParis: "Paris", cityNewYork: "New York", cityBerlin: "Berlin",
+        cityToronto: "Toronto", cityKualaLumpur: "Kuala Lumpur", cityJakarta: "Jakarta",
+        cityKarachi: "Karachi", cityDhaka: "Dhaka", cityLagos: "Lagos", cityNairobi: "Nairobi",
+        citySanaa: "Sanaa", cityKhartoum: "Khartoum", cityDoha: "Doha", cityKuwait: "Kuwait City",
+        cityTunis: "Tunis", cityAlgiers: "Algiers", cityCasablanca: "Casablanca", cityBaghdad: "Baghdad",
+        cityBeirut: "Beirut", cityDamascus: "Damascus", cityMuscat: "Muscat", cityManama: "Manama",
+        cityMedina: "Medina", cityMecca: "Mecca", cityOther: "Other (enter coordinates)",
+        coordsPlaceholder: "latitude, longitude", citySaved: "✅ Prayer times updated",
         selectAzan: "Select Azan Sound", makkah: "Makkah", madinah: "Madinah", alaqsa: "Al-Aqsa",
         egypt: "Egypt", turkey: "Turkey", testAudio: "Test Audio", qiblaDir: "Qibla Direction",
         calculating: "Calculating coordinates...",
@@ -1230,7 +1249,18 @@
       ar: {
         myDay: "يومي", prayerReminders: "مواقيت الصلاة", qiblaNavigator: "محدد القبلة",
         addTaskPlaceholder: "أضف مهمة (اضغط Enter للحفظ)", fetchingLoc: "جاري تحديد الموقع...",
-        locLocked: "تم تحديد الموقع", locDenied: "تم رفض الموقع. سيتم استخدام مكة.",
+        locLocked: "تم تحديد الموقع", locDenied: "الموقع متوقف، لذا مواقيت الصلاة لمكة المكرمة.",
+        useMyCity: "استخدم مدينتي", chooseCity: "اختر مدينتك", cityCairo: "القاهرة", cityAlexandria: "الإسكندرية",
+        cityGiza: "الجيزة", cityMansoura: "المنصورة", cityAswan: "أسوان", cityRiyadh: "الرياض",
+        cityJeddah: "جدة", cityDubai: "دبي", cityAmman: "عمّان", cityIstanbul: "إسطنبول",
+        cityLondon: "لندن", cityParis: "باريس", cityNewYork: "نيويورك", cityBerlin: "برلين",
+        cityToronto: "تورونتو", cityKualaLumpur: "كوالالمبور", cityJakarta: "جاكرتا",
+        cityKarachi: "كراتشي", cityDhaka: "دكا", cityLagos: "لاغوس", cityNairobi: "نيروبي",
+        citySanaa: "صنعاء", cityKhartoum: "الخرطوم", cityDoha: "الدوحة", cityKuwait: "مدينة الكويت",
+        cityTunis: "تونس", cityAlgiers: "الجزائر", cityCasablanca: "الدار البيضاء", cityBaghdad: "بغداد",
+        cityBeirut: "بيروت", cityDamascus: "دمشق", cityMuscat: "مسقط", cityManama: "المنامة",
+        cityMedina: "المدينة المنورة", cityMecca: "مكة المكرمة", cityOther: "أخرى (أدخل الإحداثيات)",
+        coordsPlaceholder: "خط العرض، خط الطول", citySaved: "✅ تم تحديث مواقيت الصلاة",
         selectAzan: "اختر صوت الأذان", makkah: "مكة المكرمة", madinah: "المدينة المنورة",
         alaqsa: "المسجد الأقصى", egypt: "مصر", turkey: "تركيا", testAudio: "اختبار الصوت",
         qiblaDir: "اتجاه القبلة", calculating: "جاري حساب الإحداثيات...",
@@ -1539,7 +1569,7 @@
       'alfatore_tasks', 'alfaz_plans', 'alfaz_custom_lib', 'alfatore_lang', 'alfatore_darkmode',
       'alfaz_tone_adhkar', 'alfaz_tone_task', 'alfaz_quran_bookmark', 'alfaz_quran_audio_pos',
       'alfatore_smartlist', 'alfaz_planner_view', 'alfaz_push_state', 'alfaz_push_player',
-      'alfaz_push_uid', 'alfaz_schema_ver', 'alfaz_azan_sound'
+      'alfaz_push_uid', 'alfaz_schema_ver', 'alfaz_azan_sound', 'alfaz_manual_loc'
     ];
     function exportBackup() {
       const data = {};
@@ -1589,8 +1619,18 @@
           if (BACKUP_KEYS.indexOf(k) === -1) return;   // never write arbitrary keys from a file
           try { localStorage.setItem(k, String(payload.data[k])); } catch (e) {}
         });
+        // Re-apply the restored preferences that live in the DOM right now, before the reload. The
+        // azan choice is one of these: it was being restored into storage and then ignored until the
+        // next page load, so a restore looked like it had silently reverted to Makkah.
+        try {
+          const savedAzan = localStorage.getItem('alfaz_azan_sound');
+          const azSel = document.getElementById('azan-select');
+          if (savedAzan !== null && azSel && azanSources[parseInt(savedAzan, 10)]) azSel.value = String(savedAzan);
+          const manual = savedManualLocation();
+          if (manual) applyLocation(manual.lat, manual.lng, manual.label);
+        } catch (e) {}
         showToast(i18n[currentLang].restoreDone || '✅ Backup restored. Reloading…', 'success');
-        setTimeout(() => { window.location.href = window.location.pathname + '?v=55&t=' + Date.now(); }, 900);
+        setTimeout(() => { window.location.href = window.location.pathname + '?v=56&t=' + Date.now(); }, 900);
       };
       reader.onerror = () => showToast('❌ ' + (i18n[currentLang].restoreInvalid || 'That file is not an ABDO backup.'), 'error');
       reader.readAsText(file);
@@ -1988,6 +2028,9 @@
       document.querySelectorAll('.wkday').forEach((btn, i) => { btn.classList.toggle('active', pendingRecurrence.weekdays.includes(i)); });
     }
     function clearTaskInputs() {
+      // Every save path funnels through here (Enter, the Add button, tap-outside, voice). Stopping
+      // the microphone here covers all of them instead of just the one that was reported.
+      try { stopVoiceInput(); } catch (e) {}
       document.getElementById('task-input').value = '';
       document.getElementById('task-due-date').value = '';
       document.getElementById('task-due-time').value = '';
@@ -2003,12 +2046,18 @@
 
     // ===== VOICE INPUT =====
     let recognition = null;
+    // The build this HTML was loaded from. Compared against version.json (the server's answer) to
+    // show "v55 ≠ v54" instead of a single number nobody can interpret.
+    window.__abdoPageVersion = 'v56';
     let isRecording = false;
     function initVoiceInput() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) { const mb = document.getElementById('mic-btn'); if (mb) mb.style.display='none'; return; }
       recognition = new SR();
-      recognition.continuous = false;
+      // Continuous, interim results, and the interim text is shown live while speaking. This is what
+      // makes a long task feel natural to dictate -- but it also means the recogniser runs until it
+      // is explicitly stopped, which is the bug that shipped: `stopVoiceInput` was never called on
+      // save, so after pressing Add the phone kept the mic open with a red icon.
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
@@ -2039,9 +2088,18 @@
         document.getElementById('mic-icon').className = 'fas fa-microphone text-lg';
       };
     }
+    // Stop dictation and put the UI back. Safe to call when nothing is recording, and safe to call
+    // twice: onend also runs (browser-initiated stops) and both paths are idempotent.
+    function stopVoiceInput() {
+      if (!recognition) return;
+      try { if (isRecording) recognition.stop(); } catch (e) {}
+      isRecording = false;
+      const icon = document.getElementById('mic-icon');
+      if (icon) icon.className = 'fas fa-microphone text-lg';
+    }
     function toggleVoiceInput() {
       if (!recognition) { showToast('🎤 '+i18n[currentLang].voiceNotSupported, 'error'); return; }
-      if (isRecording) { recognition.stop(); return; }
+      if (isRecording) { stopVoiceInput(); return; }
       recognition.lang = currentLang === 'ar' ? 'ar-SA' : 'en-US';
       try {
         recognition.start();
@@ -2085,7 +2143,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=55&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=56&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2644,7 +2702,16 @@
 
     // ===== GEOLOCATION & PRAYER TIMES =====
     function initGeolocation() {
-      if (!navigator.geolocation) return;
+      populateCitySelect();
+      // A saved city is an explicit answer, so it beats asking again. This also means a user who
+      // denied the permission is not stuck with Mecca forever.
+      const manual = savedManualLocation();
+      if (manual) { applyLocation(manual.lat, manual.lng, manual.label); return; }
+      if (!navigator.geolocation) {
+        const el = document.getElementById('location-status');
+        if (el) el.innerHTML = '<i class="fas fa-location-dot"></i> ' + escapeHtml(i18n[currentLang].chooseCity || 'Choose your city');
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
         pos => {
           userLat = pos.coords.latitude; userLng = pos.coords.longitude;
@@ -2661,6 +2728,78 @@
         }
       );
     }
+    // ===== MANUAL LOCATION =====
+    // A denied permission used to mean "silently use Mecca, forever". On a phone in Egypt that is
+    // not a fallback, it is wrong times with a wrong qibla and an azan that plays at the wrong hour --
+    // and the only way out was to grant a permission the user had already refused. These cities are
+    // a deliberate shortlist, not a lookup table: offline, a city with known coordinates beats a
+    // geocoder that needs the network.
+    const MANUAL_CITIES = [
+      { id: 'cairo', lat: 30.0444, lng: 31.2357 }, { id: 'alexandria', lat: 31.2001, lng: 29.9187 },
+      { id: 'giza', lat: 30.0131, lng: 31.2089 }, { id: 'mansoura', lat: 31.0409, lng: 31.3785 },
+      { id: 'aswan', lat: 24.0889, lng: 32.8998 }, { id: 'mecca', lat: 21.4225, lng: 39.8262 },
+      { id: 'medina', lat: 24.4686, lng: 39.6142 }, { id: 'riyadh', lat: 24.7136, lng: 46.6753 },
+      { id: 'jeddah', lat: 21.4858, lng: 39.1925 }, { id: 'dubai', lat: 25.2048, lng: 55.2708 },
+      { id: 'amman', lat: 31.9454, lng: 35.9284 }, { id: 'baghdad', lat: 33.3152, lng: 44.3661 },
+      { id: 'beirut', lat: 33.8938, lng: 35.5018 }, { id: 'damascus', lat: 33.5138, lng: 36.2765 },
+      { id: 'kuwait', lat: 29.3759, lng: 47.9774 }, { id: 'doha', lat: 25.2854, lng: 51.5310 },
+      { id: 'manama', lat: 26.2285, lng: 50.5860 }, { id: 'muscat', lat: 23.5880, lng: 58.3829 },
+      { id: 'sanaa', lat: 15.3694, lng: 44.1910 }, { id: 'khartoum', lat: 15.5007, lng: 32.5599 },
+      { id: 'tunis', lat: 36.8065, lng: 10.1815 }, { id: 'algiers', lat: 36.7538, lng: 3.0588 },
+      { id: 'casablanca', lat: 33.5731, lng: -7.5898 }, { id: 'lagos', lat: 6.5244, lng: 3.3792 },
+      { id: 'nairobi', lat: -1.2921, lng: 36.8219 }, { id: 'istanbul', lat: 41.0082, lng: 28.9784 },
+      { id: 'karachi', lat: 24.8607, lng: 67.0011 }, { id: 'dhaka', lat: 23.8103, lng: 90.4125 },
+      { id: 'kualaLumpur', lat: 3.1390, lng: 101.6869 }, { id: 'jakarta', lat: -6.2088, lng: 106.8456 },
+      { id: 'london', lat: 51.5074, lng: -0.1278 }, { id: 'paris', lat: 48.8566, lng: 2.3522 },
+      { id: 'berlin', lat: 52.5200, lng: 13.4050 }, { id: 'newYork', lat: 40.7128, lng: -74.0060 },
+      { id: 'toronto', lat: 43.6532, lng: -79.3832 }
+    ];
+    const LOC_KEY = 'alfaz_manual_loc';
+    function savedManualLocation() {
+      try {
+        const j = JSON.parse(localStorage.getItem(LOC_KEY) || 'null');
+        if (j && isFinite(j.lat) && isFinite(j.lng)) return j;
+      } catch (e) {}
+      return null;
+    }
+    function saveManualLocation(lat, lng, label) {
+      try { localStorage.setItem(LOC_KEY, JSON.stringify({ lat: lat, lng: lng, label: label || '', at: Date.now() })); } catch (e) {}
+    }
+    // Applying a manual location must behave exactly like a GPS fix: same fetch, same qibla, same
+    // "location locked" state. Two code paths for "where am I" is how they drift apart.
+    function applyLocation(lat, lng, label) {
+      userLat = lat; userLng = lng;
+      const el = document.getElementById('location-status');
+      if (el) {
+        const name = label ? escapeHtml(label) : (lat.toFixed(2) + ', ' + lng.toFixed(2));
+        el.innerHTML = '<i class="fas fa-check-circle text-green-500"></i> ' +
+          escapeHtml(i18n[currentLang].locLocked || 'Location locked') + ': ' + name;
+      }
+      fetchPrayerTimes(lat, lng, { skipCache: true });
+      calculateQibla(lat, lng);
+    }
+    function chooseCity(id) {
+      if (id === '__other') {
+        const raw = prompt(i18n[currentLang].coordsPlaceholder || 'latitude, longitude');
+        if (!raw) return;
+        const m = String(raw).split(/[,;\s]+/).filter(Boolean).map(Number);
+        if (m.length < 2 || !isFinite(m[0]) || !isFinite(m[1]) || Math.abs(m[0]) > 90 || Math.abs(m[1]) > 180) {
+          showToast('❌ ' + (i18n[currentLang].planTitleRequired ? '' : '') + 'latitude, longitude', 'error');
+          return;
+        }
+        saveManualLocation(m[0], m[1], '');
+        applyLocation(m[0], m[1], m[0].toFixed(2) + ', ' + m[1].toFixed(2));
+        showToast(i18n[currentLang].citySaved || '✅ Prayer times updated', 'success');
+        return;
+      }
+      const c = MANUAL_CITIES.find(x => x.id === id);
+      if (!c) return;
+      const label = i18n[currentLang]['city' + id.charAt(0).toUpperCase() + id.slice(1)] || id;
+      saveManualLocation(c.lat, c.lng, label);
+      applyLocation(c.lat, c.lng, label);
+      showToast(i18n[currentLang].citySaved || '✅ Prayer times updated', 'success');
+    }
+
     // ---- prayer times carry the zone they belong to ----
     // Aladhan returns wall-clock times for the *coordinates'* timezone (it derives one from lat/lng
     // unless a timezonestring is passed). The app used to store those times keyed by date only and
@@ -2769,6 +2908,20 @@
           lat: lat, lng: lng, at: Date.now(), deviceZone: prayerSourceZone
         }));
       } catch (e) {}
+    }
+    function populateCitySelect() {
+      const sel = document.getElementById('city-select');
+      if (!sel) return;
+      const cur = savedManualLocation();
+      let html = '<option value="" data-i18n="useMyCity">' + escapeHtml(i18n[currentLang].useMyCity || 'Use my city') + '</option>';
+      MANUAL_CITIES.forEach(c => {
+        const key = 'city' + c.id.charAt(0).toUpperCase() + c.id.slice(1);
+        const label = i18n[currentLang][key] || c.id;
+        const selected = (cur && Math.abs(cur.lat - c.lat) < 0.001 && Math.abs(cur.lng - c.lng) < 0.001) ? ' selected' : '';
+        html += '<option value="' + c.id + '"' + selected + '>' + escapeHtml(label) + '</option>';
+      });
+      html += '<option value="__other">' + escapeHtml(i18n[currentLang].cityOther || 'Other (enter coordinates)') + '</option>';
+      sel.innerHTML = html;
     }
     let lastGeoFix = null;
     function onLocationFix(lat, lng) {

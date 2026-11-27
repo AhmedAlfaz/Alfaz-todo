@@ -85,8 +85,28 @@ def check_version_pair(html, ver):
         return
     if ver and m.group(1) != ver:
         fail(f'version drift: sw.js=v{ver} but index.html refresh query=v{m.group(1)} (bump both, every time)')
+        return
+    # THREE places now carry the version, and a phone was left on the old build because one of them
+    # was ambiguous. version.json is what the app reports as deployed; the page marker is what the
+    # running HTML thinks it is. Both must equal sw.js, or the label lies.
+    vp = os.path.join(REPO, 'version.json')
+    if not os.path.exists(vp):
+        fail('version.json is missing (the update label reads it; without it the label falls back to a guessed cache name)')
     else:
-        NOTE.append(f'version pair consistent: v{m.group(1)}')
+        try:
+            declared = json.load(open(vp, encoding='utf-8')).get('version', '')
+        except Exception as e:
+            declared = ''
+            fail(f'version.json does not parse: {e}')
+        if ver and declared != f'v{ver}':
+            fail(f'version drift: sw.js=v{ver} but version.json={declared!r}')
+    pm = re.search(r"__abdoPageVersion\s*=\s*'v(\d+)'", html)
+    if not pm:
+        fail("index.html: window.__abdoPageVersion marker is missing (the label cannot detect a stale tab without it)")
+    elif ver and pm.group(1) != ver:
+        fail(f'version drift: sw.js=v{ver} but index.html page marker=v{pm.group(1)}')
+    if not FAIL:
+        NOTE.append(f'version consistent: v{ver} in sw.js, version.json, index.html (refresh query + page marker)')
 
 
 def check_declared_assets_exist(html):

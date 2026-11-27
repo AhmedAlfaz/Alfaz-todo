@@ -425,7 +425,14 @@
       if (state === 'on') {
         try { extra = label + '  ·  ' + (ls('alfaz_push_player') ? 'queued' : 'not synced') + '  ·  ' + perm; } catch (e) {}
       }
-      el.textContent = ver + '  ·  ' + extra;
+      // If the server's version and the running page's version disagree, say it out loud: the whole
+      // point of this line is to answer "is my phone on the new build?", and a bare number does not.
+      var running = window.__abdoPageVersion || null;
+      // Only a real server answer can disagree with the page. A cached name is not an answer.
+      var mismatch = running && window.__abdoPushVersion && window.__abdoPushVersion !== running;
+      var cacheNote = (!window.__abdoPushVersion && window.__abdoCacheVersion)
+        ? '  ·  cached ' + window.__abdoCacheVersion : '';
+      el.textContent = ver + (mismatch ? ' ≠ ' + running + ' — tap Update' : '') + cacheNote + '  ·  ' + extra;
       try { el.parentNode.title = 'uid ' + pushUid(); } catch (e) {}
     } catch (e) {
       try { document.getElementById('app-version-num').textContent = 'report failed'; } catch (e2) {}
@@ -462,18 +469,48 @@
     });
   }
 
-  // The version is read from the service worker's own cache name so it can never drift from
-  // what is actually deployed; the label falls back to 'v?' rather than staying blank.
+  // WHERE THE VERSION COMES FROM, AND WHY IT CHANGED
+  //
+  // It used to be read from the service worker's cache name (`alfaz-todo-v54`). That is a guess, and
+  // it produced exactly the wrong answers on a phone: the cache is created during install and the
+  // OLD one is deleted during activate, so between a deploy and its activation the newest cache name
+  // is the previous release -> the label said v54 on a build that was already v55. And when the
+  // `caches` API is unavailable (or the read loses a race), there is no name at all -> 'v?'.
+  //
+  // It now reads version.json, which is network-first in the service worker and never cached. This
+  // answers "am I on the new build?" with the server's answer rather than an inference. The cache
+  // name is kept only as a clearly-labelled fallback for offline starts.
   function readVersion() {
+    var done = false;
+    var fallback = function () {
+      if (done) return;
+      done = true;
+      try {
+        if (!('caches' in window)) return;
+        caches.keys().then(function (ks) {
+          // The cache name is evidence about persistence, not about which build is running -- after
+          // an upgrade both v54 and v55 caches exist, and the newest name can still be the OLDER
+          // release mid-activation. So it is reported separately and never compared to the page.
+          for (var i = 0; i < ks.length; i++) {
+            var m = /^alfaz-todo-v(\d+)$/.exec(ks[i]);
+            if (m) { window.__abdoCacheVersion = 'v' + m[1]; }
+          }
+        }).catch(function () {}).then(function () { reportState(); });
+      } catch (e) { reportState(); }
+    };
     try {
-      if (!('caches' in window)) return;
-      caches.keys().then(function (ks) {
-        for (var i = 0; i < ks.length; i++) {
-          var m = /^alfaz-todo-v(\d+)$/.exec(ks[i]);
-          if (m) { window.__abdoPushVersion = 'v' + m[1]; }
-        }
-      }).catch(function () {}).then(function () { reportState(); });
-    } catch (e) {}
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} fallback(); }, 2500);
+      fetch('version.json', { cache: 'no-store', signal: ctrl.signal })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          clearTimeout(timer);
+          if (done) return;
+          if (j && j.version) { done = true; window.__abdoPushVersion = j.version; reportState(); }
+          else fallback();
+        })
+        .catch(function () { clearTimeout(timer); fallback(); });
+    } catch (e) { fallback(); }
   }
 
   window.addEventListener('load', function () {
