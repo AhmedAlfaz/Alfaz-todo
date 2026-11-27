@@ -20,6 +20,11 @@
 0. **Say the link out loud once: Hostinger is the app.** GitHub Pages is a workshop copy for
    testing on a phone; it is never the install link, and it can never deliver reminders (no PHP).
 0. **Run the checks before pushing** — `python3 tools/gates.py` (includes the time-logic suite). A recurrence or reminder regression is invisible to a syntax check.
+0b. **To preview locally** — `python3 tools/serve.py 8099`, then open `http://localhost:8099/`.
+   Use this, not `python3 -m http.server`: that one ignores `Range` (azan MP3s are 2–6 MB and the
+   player seeks) and lets the browser cache `index.html`/`sw.js`, which hides every change behind a
+   stale shell. `serve.py` also refuses `.git/` and the push config. It is a preview tool only —
+   Apache serves the real site and `.htaccess` enforces the actual access rules.
 1. Upload these (overwrite existing):
    - `index.html`  ← almost always
    - `sw.js`       ← almost always
