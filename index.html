@@ -432,7 +432,7 @@
           </div>
           <div>
             <label for="azan-select" class="block text-sm font-semibold text-gray-700 dark:text-gray-200" data-i18n="selectAzan">Select Azan Sound</label>
-            <select id="azan-select" class="mt-1 block w-48 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:border-blue-500 dark:text-gray-200 cursor-pointer">
+            <select id="azan-select" onchange="setAzanSound(this.value)" class="mt-1 block w-48 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:border-blue-500 dark:text-gray-200 cursor-pointer">
               <option value="0" data-i18n="makkah">Makkah</option>
               <option value="1" data-i18n="madinah">Madinah</option>
               <option value="2" data-i18n="alaqsa">Al-Aqsa</option>
@@ -444,8 +444,6 @@
               <option value="8">Hafiz Ozcan (Turkey)</option>
               <option value="9">Alafasy (Dubai)</option>
               <option value="10">Mansour Al-Zahrani</option>
-              <option value="11">Al-Aqsa (Mujir)</option>
-              <option value="12">Madinah Haram</option>
             </select>
           </div>
         </div>
@@ -1126,7 +1124,7 @@
         cityTunis: "Tunis", cityAlgiers: "Algiers", cityCasablanca: "Casablanca", cityBaghdad: "Baghdad",
         cityBeirut: "Beirut", cityDamascus: "Damascus", cityMuscat: "Muscat", cityManama: "Manama",
         cityMedina: "Medina", cityMecca: "Mecca", cityOther: "Other (enter coordinates)",
-        coordsPlaceholder: "latitude, longitude", citySaved: "✅ Prayer times updated",
+        coordsPlaceholder: "latitude, longitude", citySaved: "✅ Prayer times updated", azanSaved: "Azan saved", azanRemoved: "That azan was removed. Please pick another.",
         selectAzan: "Select Azan Sound", makkah: "Makkah", madinah: "Madinah", alaqsa: "Al-Aqsa",
         egypt: "Egypt", turkey: "Turkey", testAudio: "Test Audio", qiblaDir: "Qibla Direction",
         calculating: "Calculating coordinates...",
@@ -1260,7 +1258,7 @@
         cityTunis: "تونس", cityAlgiers: "الجزائر", cityCasablanca: "الدار البيضاء", cityBaghdad: "بغداد",
         cityBeirut: "بيروت", cityDamascus: "دمشق", cityMuscat: "مسقط", cityManama: "المنامة",
         cityMedina: "المدينة المنورة", cityMecca: "مكة المكرمة", cityOther: "أخرى (أدخل الإحداثيات)",
-        coordsPlaceholder: "خط العرض، خط الطول", citySaved: "✅ تم تحديث مواقيت الصلاة",
+        coordsPlaceholder: "خط العرض، خط الطول", citySaved: "✅ تم تحديث مواقيت الصلاة", azanSaved: "تم حفظ الأذان", azanRemoved: "تمت إزالة هذا الأذان. اختر آخر.",
         selectAzan: "اختر صوت الأذان", makkah: "مكة المكرمة", madinah: "المدينة المنورة",
         alaqsa: "المسجد الأقصى", egypt: "مصر", turkey: "تركيا", testAudio: "اختبار الصوت",
         qiblaDir: "اتجاه القبلة", calculating: "جاري حساب الإحداثيات...",
@@ -1630,7 +1628,7 @@
           if (manual) applyLocation(manual.lat, manual.lng, manual.label);
         } catch (e) {}
         showToast(i18n[currentLang].restoreDone || '✅ Backup restored. Reloading…', 'success');
-        setTimeout(() => { window.location.href = window.location.pathname + '?v=56&t=' + Date.now(); }, 900);
+        setTimeout(() => { window.location.href = window.location.pathname + '?v=57&t=' + Date.now(); }, 900);
       };
       reader.onerror = () => showToast('❌ ' + (i18n[currentLang].restoreInvalid || 'That file is not an ABDO backup.'), 'error');
       reader.readAsText(file);
@@ -1676,21 +1674,43 @@
 
     const prayerNamesAr = { Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
 
+    // The list is stored as an index, so removing an entry remaps everything after it. Two entries
+    // were deleted in v56 because their FILES were byte-identical to others (alaqsa.mp3 ==
+    // azan-al-aqsa-mujir.mp3, madinah.mp3 == azan-madinah-haram.mp3) -- the same recording offered
+    // twice under different names. migrateAzanIndex() below rewrites any saved index that pointed
+    // past those two, so nobody's chosen muezzin silently changes.
+    // A missing file must never fall through to another muezzin. Removing both duplicates in v56 means
+    // an old bookmark to that recording has nothing to play, and silently substituting Makkah would be
+    // the same class of bug as the location fallback: the app quietly doing something else.
+    const AZAN_DELETED = { 'audio/azan-al-aqsa-mujir.mp3': 'Al-Aqsa Mujir' };
     const azanSources = [
-      'audio/makkah.mp3',
-      'audio/madinah.mp3',
-      'audio/alaqsa.mp3',
-      'audio/egypt.mp3',
-      'audio/turkey.mp3',
-      'audio/azan-alafasy.mp3',
-      'audio/azan-alafasy-alt.mp3',
-      'audio/azan-ahmad-nafees.mp3',
-      'audio/azan-hafiz-ozcan.mp3',
-      'audio/azan-alafasy-dubai.mp3',
-      'audio/azan-mansour-zahrani.mp3',
-      'audio/azan-al-aqsa-mujir.mp3',
-      'audio/azan-madinah-haram.mp3'
+      'audio/makkah.mp3',              // 0
+      'audio/madinah.mp3',             // 1
+      'audio/alaqsa.mp3',              // 2
+      'audio/egypt.mp3',               // 3
+      'audio/turkey.mp3',              // 4
+      'audio/azan-alafasy.mp3',        // 5
+      'audio/azan-alafasy-alt.mp3',    // 6
+      'audio/azan-ahmad-nafees.mp3',   // 7
+      'audio/azan-hafiz-ozcan.mp3',    // 8
+      'audio/azan-alafasy-dubai.mp3',  // 9
+      'audio/azan-mansour-zahrani.mp3' // 10
     ];
+    // Old index -> new index for removed entries. 12 (Madinah Haram) was a byte-identical copy of
+    // 1 (Madinah), so it becomes 1 and the user hears the same recording they chose. 11 (Al-Aqsa
+    // Mujir) was also a duplicate, but its surviving twin is 2 (Al-Aqsa) -- remapped to 2 below so
+    // nobody is left pointing at a file that no longer exists.
+    const AZAN_INDEX_MAP = { 11: 2, 12: 1 };
+    function migrateAzanIndex() {
+      const raw = localStorage.getItem('alfaz_azan_sound');
+      if (raw === null) return;
+      const old = parseInt(raw, 10);
+      if (!isFinite(old)) return;
+      let next = AZAN_INDEX_MAP[old];
+      if (next === undefined && old > 12) next = Math.min(old, azanSources.length - 1);
+      if (next === undefined) return;                       // unchanged
+      try { localStorage.setItem('alfaz_azan_sound', String(next)); } catch (e) {}
+    }
 
     // ===== MIGRATION =====
     // v3 -> v4 (2026-11-21): the account/cloud layer was removed, so ids that a database used to
@@ -2048,7 +2068,7 @@
     let recognition = null;
     // The build this HTML was loaded from. Compared against version.json (the server's answer) to
     // show "v55 ≠ v54" instead of a single number nobody can interpret.
-    window.__abdoPageVersion = 'v56';
+    window.__abdoPageVersion = 'v57';
     let isRecording = false;
     function initVoiceInput() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2112,6 +2132,7 @@
     // ===== INIT =====
     window.addEventListener('load', () => {
       migrateTaskSchema();
+      try { migrateAzanIndex(); } catch (e) {}
       document.getElementById('lang-select').value = currentLang;
       try {
         const savedAzan = localStorage.getItem('alfaz_azan_sound');
@@ -2143,7 +2164,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=56&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=57&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -3391,12 +3412,43 @@
       showBrowserNotification('🕌 ' + appDisplayName(currentLang), msg, 'prayer');
     }
 
+    // Choosing a muezzin SAVES immediately. It used to save only as a side effect of startAzanAudio(),
+    // which only runs when Test Audio is pressed -- so picking an azan and leaving the screen kept
+    // nothing, and the dropdown silently lied. `stopAzan()` stops whatever was auditioning when the
+    // selection changes, so a test never bleeds into a real notification later.
+    function setAzanSound(value) {
+      const idx = String(parseInt(value, 10) || 0);
+      const sel = document.getElementById('azan-select');
+      if (sel && sel.value !== idx) sel.value = idx;
+      try { localStorage.setItem('alfaz_azan_sound', idx); } catch (e) {}
+      try { if (document.getElementById('azan-player') && !document.getElementById('azan-player').paused) stopAzan(); } catch (e) {}
+      showToast('✅ ' + (i18n[currentLang].azanSaved || 'Azan saved'), 'success');
+    }
+    function chosenAzanIndex() {
+      // Stored value is the source of truth; the dropdown is just its current view. Reading the DOM
+      // first meant that if the element was absent (or had not been re-populated yet) the index fell
+      // back to 0 and the phone played Makkah no matter what the user had saved.
+      let idx = parseInt(localStorage.getItem('alfaz_azan_sound'), 10);
+      if (!isFinite(idx) || idx < 0 || idx >= azanSources.length) {
+        const sel = document.getElementById('azan-select');
+        idx = sel ? (parseInt(sel.value, 10) || 0) : 0;
+      }
+      return idx;
+    }
     function startAzanAudio() {
       const azPlayer = document.getElementById('azan-player');
       if (!azPlayer) return;
-      const src = azanSources[document.getElementById('azan-select')?.value || 0];
-      // Remember the chosen muezzin: before this, every launch silently went back to Makkah.
-      try { localStorage.setItem('alfaz_azan_sound', String(document.getElementById('azan-select')?.value || 0)); } catch (e) {}
+      const idx = chosenAzanIndex();
+      const sel = document.getElementById('azan-select');
+      if (sel && String(sel.value) !== String(idx)) sel.value = String(idx);
+      const src = azanSources[idx];
+      // A chosen recording that no longer exists must fail loudly, not play a different muezzin.
+      if (src && AZAN_DELETED[src]) {
+        showToast('🎵 ' + (i18n[currentLang].azanRemoved || 'That azan was removed. Please pick another.'), 'error');
+        return;
+      }
+      // Keep storage in step with whatever is about to play, whichever way we got here.
+      try { localStorage.setItem('alfaz_azan_sound', String(idx)); } catch (e) {}
       azPlayer.src = src;
       azPlayer.volume = 1.0;
       azPlayer.muted = false;

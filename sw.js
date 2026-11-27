@@ -6,7 +6,7 @@
 // screen offline. So: required files use addAll (all-or-nothing, install fails -> the old worker
 // keeps serving and we fix the deploy), optional files are best-effort.
 
-const VERSION = 'v56';
+const VERSION = 'v57';
 const CACHE_NAME = 'alfaz-todo-' + VERSION;
 const CORE = ['.', 'index.html', 'sw.js', 'site-config.json', 'version.json'];
 const OPTIONAL = [
