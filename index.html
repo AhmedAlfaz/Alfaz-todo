@@ -156,6 +156,41 @@
     .planner-view-btn.active { background: #fff; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
     .dark .planner-view-btn.active { background: #111827; color: #93c5fd; }
     .plan-done { text-decoration: line-through; opacity: .55; }
+    /* ===== DAY TIMELINE ===== */
+    /* The vertical axis is NOT mirrored in RTL: time runs downward in both languages, and only the
+       label column moves to the inline-start edge. Hence padding-inline-start, never padding-left. */
+    .timeline-scroll { --tl-px: 56px; max-height: 68vh; overflow-y: auto; overscroll-behavior: contain; }
+    @media (min-width: 768px) { .timeline-scroll { --tl-px: 64px; max-height: none; } }
+    .tl-grid { position: relative; padding-inline-start: 58px; min-height: 120px; }
+    @media (min-width: 768px) { .tl-grid { padding-inline-start: 66px; } }
+    .tl-hour { position: absolute; inset-inline: 0; border-block-start: 1px solid #f1f5f9; }
+    .dark .tl-hour { border-block-start-color: #334155; }
+    .tl-hour-label { position: absolute; inset-inline-start: 0; font-size: 10px; font-weight: 700; color: #94a3b8; transform: translateY(-50%); width: 50px; text-align: end; padding-inline-end: 6px; }
+    .dark .tl-hour-label { color: #64748b; }
+    .tl-now { position: absolute; inset-inline: 0; border-block-start: 2px solid #ef4444; z-index: 5; }
+    .tl-now::before { content: ''; position: absolute; inset-inline-start: -4px; top: -5px; width: 8px; height: 8px; border-radius: 9999px; background: #ef4444; }
+    .tl-now-label { position: absolute; inset-inline-start: 0; top: -8px; font-size: 9px; font-weight: 800; color: #ef4444; width: 50px; text-align: end; padding-inline-end: 6px; }
+    .tl-block { position: absolute; z-index: 3; border-radius: 10px; padding: 4px 8px; overflow: hidden; border-inline-start: 3px solid transparent; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08); cursor: pointer; text-align: start; }
+    .dark .tl-block { background: #1f2937; }
+    .tl-block.point { height: 22px; display: flex; align-items: center; }
+    .tl-block .tl-title { font-size: 11px; font-weight: 700; line-height: 1.25; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .dark .tl-block .tl-title { color: #e5e7eb; }
+    .tl-block .tl-time { font-size: 9px; font-weight: 700; color: #6b7280; }
+    .dark .tl-block .tl-time { color: #9ca3af; }
+    .tl-block.tl-task { background: #eff6ff; }
+    .dark .tl-block.tl-task { background: #1e3a5f; }
+    .tl-block.tl-occ { background: #ecfdf5; }
+    .dark .tl-block.tl-occ { background: #064e3b; }
+    .tl-block.tl-plan { background: #f5f3ff; }
+    .dark .tl-block.tl-plan { background: #312e81; }
+    .tl-block.tl-done .tl-title { text-decoration: line-through; opacity: .6; }
+    .tl-prayer { position: absolute; inset-inline: 0; z-index: 2; border-block-start: 1.5px dashed #10b981; pointer-events: none; }
+    .tl-prayer-label { position: absolute; inset-inline-start: 58px; top: -9px; font-size: 9px; font-weight: 800; color: #059669; background: #ecfdf5; padding: 1px 5px; border-radius: 6px; }
+    @media (min-width: 768px) { .tl-prayer-label { inset-inline-start: 66px; } }
+    .dark .tl-prayer-label { color: #34d399; background: #064e3b; }
+    .tl-overflow { position: absolute; z-index: 4; font-size: 9px; font-weight: 800; color: #6b7280; }
+    .tl-chip { padding: 5px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; background: #f9fafb; color: #374151; border: 1px solid #e5e7eb; }
+    .dark .tl-chip { background: #111827; color: #d1d5db; border-color: #374151; }
   </style>
   <!-- ABDO push: inert until push-config.json exists on this origin. -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -518,10 +553,11 @@
         <span class="text-4xl">📅</span>
       </div>
 
-      <!-- View switcher: Month / Week / Year -->
+      <!-- View switcher: Month / Week / Day / Year -->
       <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-3">
         <button type="button" onclick="setPlannerView('month')" id="pv-month" class="planner-view-btn active flex-1" data-i18n="viewMonth">Month</button>
         <button type="button" onclick="setPlannerView('week')" id="pv-week" class="planner-view-btn flex-1" data-i18n="viewWeek">Week</button>
+        <button type="button" onclick="setPlannerView('day')" id="pv-day" class="planner-view-btn flex-1" data-i18n="viewDay">Day</button>
         <button type="button" onclick="setPlannerView('year')" id="pv-year" class="planner-view-btn flex-1" data-i18n="viewYear">Year</button>
       </div>
 
@@ -536,6 +572,24 @@
           <button type="button" onclick="shiftWeek(1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"><i class="fas fa-chevron-right"></i></button>
         </div>
         <div id="planner-week-list" class="pb-4"></div>
+      </div>
+
+      <!-- DAY TIMELINE (step 5 of PLANNER_TIMELINE_PLAN.md) -->
+      <div id="planner-day-panel" class="hidden">
+        <div class="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 mb-3">
+          <button type="button" onclick="shiftTimelineDay(-1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200" data-i18n-aria-label="shiftDayPrev" aria-label="Previous day"><i class="fas fa-chevron-left"></i></button>
+          <div class="text-center min-w-0">
+            <p id="timeline-day-title" class="font-bold text-gray-800 dark:text-white truncate"></p>
+            <p id="timeline-day-hijri" class="text-xs text-emerald-600 dark:text-emerald-400"></p>
+            <button type="button" onclick="goToPlannerToday()" class="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 mt-1" data-i18n="todayBtn">Today</button>
+          </div>
+          <button type="button" onclick="shiftTimelineDay(1)" class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200" data-i18n-aria-label="shiftDayNext" aria-label="Next day"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div id="timeline-anytime" class="mb-3"></div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-3 mb-8">
+          <div id="timeline-day" class="timeline-scroll" role="group" aria-labelledby="timeline-day-title" tabindex="0"></div>
+          <ol id="timeline-sr" class="sr-only" data-i18n-aria-label="timelineAria" aria-label="Day timeline"></ol>
+        </div>
       </div>
 
       <!-- YEAR VIEW -->
@@ -1161,7 +1215,11 @@
         noPlans: "No plans for this day", planTitleRequired: "Title and date are required",
         planTimeRequired: "Set a time for this plan, or remove the reminder",
         chipAll: "All", chipMyPlans: "My Plans", chipOccasions: "Occasions",
-        viewMonth: "Month", viewWeek: "Week", viewYear: "Year",
+        viewMonth: "Month", viewWeek: "Week", viewDay: "Day", viewYear: "Year",
+        timelineAllDay: "All day", timelineAnyTime: "Any time", timelineEmpty: "Nothing on this day",
+        timelineMore: "+{n} more", timelineNow: "now", timelineAria: "Day timeline",
+        shiftDayPrev: "Previous day", shiftDayNext: "Next day",
+        timelineKindTask: "task", timelineKindPlan: "plan", timelineKindOccasion: "occasion", timelineKindPrayer: "prayer",
         planReminder: "📅 Reminder: {task}", planDueNow: "📅 {task} — now", rem15: "15 min before", rem60: "1 hour before", rem1440: "1 day before",
         everyN: "Every", intervalDays: "days", intervalWeeks: "weeks", intervalMonths: "months", intervalYears: "years",
         moveTo: "Move to", hijriLabel: "Hijri",
@@ -1281,7 +1339,11 @@
         noPlans: "لا توجد خطط لهذا اليوم", planTitleRequired: "العنوان والتاريخ مطلوبان",
         planTimeRequired: "حدد وقتاً للخطة، أو أزل التذكير",
         chipAll: "الكل", chipMyPlans: "خططي", chipOccasions: "المناسبات",
-        viewMonth: "شهر", viewWeek: "أسبوع", viewYear: "سنة",
+        viewMonth: "شهر", viewWeek: "أسبوع", viewDay: "يوم", viewYear: "سنة",
+        timelineAllDay: "طوال اليوم", timelineAnyTime: "أي وقت", timelineEmpty: "لا شيء في هذا اليوم",
+        timelineMore: "+{n} أكثر", timelineNow: "الآن", timelineAria: "الجدول الزمني لليوم",
+        shiftDayPrev: "اليوم السابق", shiftDayNext: "اليوم التالي",
+        timelineKindTask: "مهمة", timelineKindPlan: "خطة", timelineKindOccasion: "مناسبة", timelineKindPrayer: "صلاة",
         planReminder: "📅 تذكير: {task}", planDueNow: "📅 {task} — الآن", rem15: "قبل ١٥ دقيقة", rem60: "قبل ساعة", rem1440: "قبل يوم",
         everyN: "كل", intervalDays: "أيام", intervalWeeks: "أسابيع", intervalMonths: "أشهر", intervalYears: "سنوات",
         moveTo: "نقل إلى", hijriLabel: "هجري",
@@ -1528,7 +1590,7 @@
           try { localStorage.setItem(k, String(payload.data[k])); } catch (e) {}
         });
         showToast(i18n[currentLang].restoreDone || '✅ Backup restored. Reloading…', 'success');
-        setTimeout(() => { window.location.href = window.location.pathname + '?v=54&t=' + Date.now(); }, 900);
+        setTimeout(() => { window.location.href = window.location.pathname + '?v=55&t=' + Date.now(); }, 900);
       };
       reader.onerror = () => showToast('❌ ' + (i18n[currentLang].restoreInvalid || 'That file is not an ABDO backup.'), 'error');
       reader.readAsText(file);
@@ -2023,7 +2085,7 @@
 
     function checkForAppUpdate() {
       showToast(i18n[currentLang].checkingUpdateToast || '🔄 Checking for updates & reloading...', 'info');
-      const go = () => { window.location.href = window.location.pathname + '?v=54&t=' + Date.now(); };
+      const go = () => { window.location.href = window.location.pathname + '?v=55&t=' + Date.now(); };
       const wipe = (typeof caches !== 'undefined')
         ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {})
         : Promise.resolve();
@@ -2233,6 +2295,9 @@
       if (Object.keys(prayerTimings).length > 0) { renderPrayerCards(); updateNextPrayer(); }
       if (document.getElementById('calendar-view') && !document.getElementById('calendar-view').classList.contains('hidden')) {
         renderOccasionsCalendar();
+        if (plannerView === 'week') renderPlannerWeek();
+        if (plannerView === 'day') renderTimeline();
+        if (plannerView === 'year') renderPlannerYearGrid();
       }
     }
     function appDisplayName(l) { return (l === 'ar') ? 'عبده' : 'ABDO'; }
@@ -2806,19 +2871,40 @@
 
     // ===== CLOCK & ALARM =====
     let lastCheckedMinute = '';
+    let clockDayIso = null;      // which civil day the UI was last rendered for
     function initClock() {
+      try { clockDayIso = getTodayString(); } catch (e) {}
       setTimeout(() => checkTaskReminders(new Date()), 3000);
       setTimeout(() => checkPlanReminders(new Date()), 3500);
       setInterval(() => {
         const now = new Date();
         document.getElementById('live-clock').innerText = now.toLocaleTimeString(currentLang==='ar'?'ar-EG':'en-US');
         let hhmm = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+        // A tab left open overnight used to keep yesterday's date header, yesterday's "now" line and
+        // a "Today" chip that scrolled to yesterday. Re-render once when the civil day actually turns.
+        const dayNow = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+        if (clockDayIso && dayNow !== clockDayIso) {
+          clockDayIso = dayNow;
+          try {
+            if (plannerView === 'day') { timelineIso = dayNow; renderTimeline(); }
+            renderActiveSmartList();
+            if (typeof renderOccasionsCalendar === 'function') renderOccasionsCalendar();
+          } catch (e) {}
+        }
         if (hhmm !== lastCheckedMinute) {
           lastCheckedMinute = hhmm;
           checkPrayerAzanNow(now);
           checkTaskReminders(now);
           checkPlanReminders(now);
           if (Object.keys(prayerTimings).length>0) updateNextPrayer();
+          // The red "now" rule is recomputed on the minute, not only when the view is opened.
+          if (plannerView === 'day' && document.getElementById('timeline-day') &&
+              !document.getElementById('calendar-view').classList.contains('hidden')) {
+            const line = document.querySelector('#timeline-day .tl-now');
+            const pct = tlNowLinePct(hhmm, timelineWindowRef);
+            if (line && pct >= 0) line.style.top = pct.toFixed(3) + '%';
+            else if (!line && pct >= 0 && typeof renderTimeline === 'function') renderTimeline();
+          }
         }
       }, 1000);
     }
@@ -4690,15 +4776,18 @@
       el.value = '1';
     }
     function setPlannerView(v) {
-      plannerView = ['month', 'week', 'year'].indexOf(v) > -1 ? v : 'month';
+      plannerView = ['month', 'week', 'day', 'year'].indexOf(v) > -1 ? v : 'month';
       try { localStorage.setItem('alfaz_planner_view', plannerView); } catch (e) {}
       document.getElementById('planner-month-panel').classList.toggle('hidden', plannerView !== 'month');
       document.getElementById('planner-week-panel').classList.toggle('hidden', plannerView !== 'week');
+      const dayPanel = document.getElementById('planner-day-panel');
+      if (dayPanel) dayPanel.classList.toggle('hidden', plannerView !== 'day');
       document.getElementById('planner-year-panel').classList.toggle('hidden', plannerView !== 'year');
       document.querySelectorAll('.planner-view-btn').forEach(el => el.classList.remove('active'));
       const btn = document.getElementById('pv-' + plannerView);
       if (btn) btn.classList.add('active');
       if (plannerView === 'week') renderPlannerWeek();
+      if (plannerView === 'day') renderTimeline();
       if (plannerView === 'year') renderPlannerYearGrid();
     }
     function shiftWeek(delta) {
@@ -4715,6 +4804,342 @@
     function isoOf(d) {
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
+    // ===== DAY TIMELINE: PURE TIME PRIMITIVES =====
+    // These four functions carry every decision about where a block sits on the vertical axis, so
+    // they are deliberately free of DOM, storage and Date-object arithmetic. tools/test_planner_time.py
+    // extracts this exact slice and runs it in five timezones; a block that lands at the wrong
+    // minute is a test failure, not something to notice by eye.
+    const TL_MINUTE_H = 56;     // px per hour on phones; md+ overrides in CSS, so this is the base
+    const TL_DAY_START = 4 * 60;   // 04:00 — before Fajr in summer, after most late nights
+    const TL_DAY_END = 23 * 60 + 30;
+    const TL_MIN_BLOCK = 22;    // below this a block is unreadable, so overlap lanes kick in first
+    function tlParseMinutes(hhmm) {
+      // Strict: "9:5", "25:00" and "09:00:00" are not wall-clock times a plan can hold. Returning
+      // null (not 0) is what keeps a typo from silently drawing a block at midnight.
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm == null ? '' : hhmm).trim());
+      if (!m) return null;
+      const h = +m[1], mi = +m[2];
+      if (h > 23 || mi > 59) return null;
+      return h * 60 + mi;
+    }
+    function tlWindow(items) {
+      // Clamp the visible day to its content, then to a sane minimum, then to 04:00–23:30. A day
+      // with one 14:00 plan should not render 20 hours of empty axis on a phone.
+      let lo = null, hi = null;
+      (items || []).forEach(it => {
+        const m = tlParseMinutes(it && it.time);
+        if (m === null || it.allDay) return;
+        lo = lo === null ? m : Math.min(lo, m);
+        hi = hi === null ? m : Math.max(hi, m);
+      });
+      if (lo === null) return { start: TL_DAY_START, end: TL_DAY_END };
+      let start = Math.floor((lo - 60) / 60) * 60;      // one hour of air above the first block
+      let end = Math.ceil((hi + 90) / 60) * 60;         // 90 min below the last: room for a duration
+      if (end - start < 6 * 60) end = start + 6 * 60;
+      start = Math.max(TL_DAY_START, Math.min(start, TL_DAY_END - 60));
+      end = Math.min(TL_DAY_END, Math.max(end, start + 60));
+      return { start: start, end: end };
+    }
+    function tlLayout(items, winOverride) {
+      // Assign each timed item a top/height plus a lane. Within a connected run of overlapping
+      // items, lanes are filled greedily and capped at 2; a third item that overlaps both lanes
+      // is counted in `dropped` so the renderer can show a "+n" chip instead of an unreadable sliver.
+      // `winOverride` is the window buildDayTimeline already chose; recomputing it here was a real
+      // bug: prayer anchors stretched it back out and pushed blocks to a negative top.
+      const win = winOverride || tlWindow(items);
+      const span = Math.max(60, win.end - win.start);
+      const timed = [];
+      (items || []).forEach(it => {
+        const m = tlParseMinutes(it && it.time);
+        if (m === null || (it && it.allDay)) return;
+        if (it && it.anchor) return;                       // a divider, not a block: drawn separately
+        if (m < win.start || m > win.end) return;          // outside the axis: not drawn off-canvas
+        // A point, not a block: an item with no stated duration is drawn as a compact chip, and its
+        // nominal footprint for overlap purposes is that chip height (~22 min at 56 px/h). Guessing
+        // "30 minutes" would draw a block the user never asked for.
+        const dur = Number(it.duration_min) > 0 ? Number(it.duration_min) : 22;
+        timed.push({ it: it, minutes: m, dur: dur, bottom: m + dur });
+      });
+      timed.sort((a, b) => (a.minutes - b.minutes) || String(a.it.key).localeCompare(String(b.it.key)));
+
+      const out = [];
+      let run = [], runEnd = -1;
+      const flush = () => {
+        if (!run.length) return;
+        const lanes = [];      // lanes[k] = end-minute of the item currently occupying lane k
+        run.forEach(n => {
+          let lane = lanes.findIndex(end => end <= n.minutes);
+          if (lane === -1) {
+            if (lanes.length >= 2) { n.overflow = true; out.push(n); return; }
+            lane = lanes.length;
+            lanes.push(0);
+          }
+          lanes[lane] = n.bottom;
+          n.lane = lane;
+          n.runLanes = Math.max(n.runLanes || 1, lanes.length);
+          out.push(n);
+        });
+        // Every block in a run needs the final lane count, which is only known now.
+        const used = lanes.length;
+        run.forEach(n => { if (!n.overflow) n.runLanes = used; });
+        run = []; runEnd = -1;
+      };
+      timed.forEach(n => {
+        if (run.length && n.minutes >= runEnd) flush();
+        run.push(n);
+        runEnd = Math.max(runEnd, n.bottom);
+      });
+      flush();
+
+      const blocks = out.filter(n => !n.overflow).map(n => ({
+        key: n.it.key,
+        topPct: ((n.minutes - win.start) / span) * 100,
+        heightPx: n.it.duration_min ? Math.max(TL_MIN_BLOCK, Math.round((n.dur / 60) * TL_MINUTE_H)) : TL_MIN_BLOCK,
+        point: !n.it.duration_min,
+        lane: n.lane,
+        lanes: Math.max(1, n.runLanes || 1),
+        time: n.it.time,
+        endMin: n.bottom
+      })).sort((a, b) => a.topPct - b.topPct);
+      return {
+        start: win.start, end: win.end, span: span,
+        blocks: blocks,
+        dropped: out.filter(n => n.overflow).length
+      };
+    }
+
+    function tlHeightPx(win) {
+      return Math.max(TL_MIN_BLOCK, Math.round(((win.end - win.start) / 60) * TL_MINUTE_H));
+    }
+    function tlNowLinePct(hhmm, win) {
+      // The "now" rule is drawn only when it falls inside the visible window; -1 means "do not
+      // draw", which is different from 0% (midnight, top of the axis).
+      const m = tlParseMinutes(hhmm);
+      if (m === null || !win) return -1;
+      if (m <= win.start || m >= win.end) return -1;
+      return ((m - win.start) / Math.max(60, win.end - win.start)) * 100;
+    }
+    function buildDayTimeline(opts) {
+      // One flat, sorted list of everything that belongs to a single civil day. Pure: the caller
+      // supplies already-resolved inputs, so this is testable without a DOM or a clock.
+      const o = opts || {};
+      const rows = [];
+      (o.tasks || []).forEach(t => {
+        if (!t || t.done || t.status === 'cancelled') return;
+        if (t.due_date !== o.iso) return;
+        rows.push({
+          key: 'task:' + (t.id || t.text), kind: 'task', time: t.due_time || null,
+          allDay: !t.due_time, title: t.text || '', done: !!t.done,
+          priority: t.priority || 0, duration_min: t.estimate_min || null, ref: t
+        });
+      });
+      (o.plans || []).forEach(p => {
+        rows.push({
+          key: 'plan:' + (p.id || p.title) + ':' + o.iso, kind: 'plan', time: p.time || null,
+          allDay: !p.time, title: p.title || '', done: !!p.done, category: p.category || null,
+          color: p.color, duration_min: p.duration_min || null, ref: p
+        });
+      });
+      (o.occasions || []).forEach(e => {
+        rows.push({
+          key: 'occ:' + (e.id || e.en || e.ar) + ':' + o.iso, kind: 'occasion',
+          time: e.time || null, allDay: true, title: (o.lang === 'ar' ? (e.ar || e.en) : (e.en || e.ar)) || '',
+          type: e.type || 'islamic', ref: e
+        });
+      });
+      (o.prayers || []).forEach(p => {
+        // Prayer anchors are drawn as divider lines, not as blocks: they mark a boundary rather than
+        // occupy a slot, so they must not stretch the window. A full day (04:00-23:30) because Fajr
+        // is at 05:00 is 20 hours of axis holding six items -- anchors still show if they fall in it.
+        rows.push({
+          key: 'prayer:' + p.name + ':' + o.iso, kind: 'prayer', time: p.time,
+          allDay: false, anchor: true, title: p.name, ref: p, duration_min: null
+        });
+      });
+      const timed = rows.filter(r => r.time && tlParseMinutes(r.time) !== null);
+      timed.sort((a, b) => tlParseMinutes(a.time) - tlParseMinutes(b.time) || String(a.key).localeCompare(String(b.key)));
+      const untimed = rows.filter(r => !r.time || tlParseMinutes(r.time) === null)
+        .sort((a, b) => String(a.title).localeCompare(String(b.title)));
+      const sized = timed.filter(r => !r.anchor);      // only blocks the user owns size the window
+      return {
+        iso: o.iso, timed: timed, untimed: untimed, all: timed.concat(untimed),
+        window: tlWindow(sized.length ? sized : timed)
+      };
+    }
+
+    let timelineIso = null;
+    let timelineWindowRef = null;    // last rendered window, so the clock tick can move the now line
+    function timelinePrayersFor(iso) {
+      // Prayer times are fetched per civil day and cached with the zone they belong to. For today we
+      // already hold them in memory; for any other day the cache is the only honest source, and if
+      // it is missing we draw no anchors rather than invent them.
+      const hs = (String(iso).split('-').reverse().join('-'));   // ISO -> DD-MM-YYYY cache key
+      if (iso === getTodayString() && Object.keys(prayerTimings || {}).length) {
+        return ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+          .filter(n => prayerTimings[n]).map(n => ({ name: n, time: prayerTimings[n] }));
+      }
+      let raw = null;
+      try { raw = cacheGetSync('alfatore_prayers_' + hs); } catch (e) {}
+      if (!raw) return [];
+      let parsed = null;
+      try { parsed = JSON.parse(raw); } catch (e) { return []; }
+      const t = prayerTimesInDeviceClock(parsed, hs);
+      return ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+        .filter(n => t && t[n]).map(n => ({ name: n, time: t[n] }));
+    }
+    function openPlanFromTimeline(iso, planId) {
+      // Editing from the day view must not throw the user out of the day view. The plan modal is
+      // the same one the month view uses, so there is one editor, not two.
+      if (typeof openPlanModal === 'function') openPlanModal(iso, planId);
+    }
+    function shiftTimelineDay(delta) {
+      const d = isoToDay(timelineIso || getTodayString());
+      if (d === null) return;
+      timelineIso = dayToIso(d + (parseInt(delta, 10) || 0));
+      renderTimeline();
+    }
+    async function renderTimeline() {
+      const grid = document.getElementById('timeline-day');
+      const sr = document.getElementById('timeline-sr');
+      const anyEl = document.getElementById('timeline-anytime');
+      const titleEl = document.getElementById('timeline-day-title');
+      const hijriEl = document.getElementById('timeline-day-hijri');
+      if (!grid) return;
+      if (!timelineIso) timelineIso = getTodayString();
+      const iso = timelineIso;
+
+      let hijriMap = {};
+      try { hijriMap = await loadHijriMonth(+iso.slice(0, 4), +iso.slice(5, 7) - 1); } catch (e) {}
+      const h = hijriMap[iso];
+
+      if (titleEl) {
+        titleEl.textContent = new Date(iso + 'T00:00:00')
+          .toLocaleDateString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+      }
+      if (hijriEl) hijriEl.textContent = h ? (h.hd + ' ' + h.hName + ' ' + h.hy) : '';
+
+      const evs = plannerFilter === 'plans' ? [] : eventsForIso(iso, hijriMap);
+      // `done` is injected per-render: for a repeating plan it depends on the day, not on the plan.
+      // Freezing done_dates in here would make yesterday's tick reappear tomorrow.
+      const pls = (plannerFilter === 'occasions' ? [] : plansForIso(iso))
+        .filter(p => !p.frozen || isDayDone(p, iso))
+        .map(p => Object.assign({}, p, { done: planDoneOn(p, iso) }));
+      const prayers = plannerFilter === 'occasions' ? [] : timelinePrayersFor(iso);
+      const dayTasks = (tasks || []).filter(t => t && t.due_date === iso && !t.done && t.status !== 'cancelled');
+
+      const model = buildDayTimeline({ iso: iso, tasks: dayTasks, plans: pls, occasions: evs, prayers: prayers, lang: currentLang });
+      const layout = tlLayout(model.timed, model.window);
+      const win = model.window;
+      timelineWindowRef = win;
+      const height = tlHeightPx(win);
+      const nowPct = (iso === getTodayString())
+        ? tlNowLinePct(String(new Date().getHours()).padStart(2, '0') + ':' + String(new Date().getMinutes()).padStart(2, '0'), win)
+        : -1;
+
+      const hourLabel = hh => {
+        const H = +hh.split(':')[0];
+        const d = new Date(2020, 0, 1, H, 0, 0);
+        return d.toLocaleTimeString(currentLang === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', hour12: true });
+      };
+
+      // --- grid: hour rules, prayer anchors, now line, blocks ---
+      let html = '';
+      for (let m = win.start; m <= win.end; m += 60) {
+        const top = ((m - win.start) / win.span) * 100;
+        const hh = String(Math.floor(m / 60)).padStart(2, '0') + ':00';
+        html += '<div class="tl-hour" style="top:' + top.toFixed(3) + '%">' +
+          '<span class="tl-hour-label">' + hourLabel(hh) + '</span></div>';
+      }
+      model.timed.filter(r => r.kind === 'prayer').forEach(r => {
+        const m = tlParseMinutes(r.time);
+        if (m === null || m < win.start || m > win.end) return;
+        const top = ((m - win.start) / win.span) * 100;
+        const nm = currentLang === 'ar' ? (prayerNamesAr[r.title] || r.title) : r.title;
+        html += '<div class="tl-prayer" style="top:' + top.toFixed(3) + '%"><span class="tl-prayer-label">' +
+          escapeHtml(nm) + ' ' + escapeHtml(r.time) + '</span></div>';
+      });
+      if (nowPct >= 0) {
+        html += '<div class="tl-now" style="top:' + nowPct.toFixed(3) + '%"><span class="tl-now-label">' +
+          escapeHtml(i18n[currentLang].timelineNow || 'now') + '</span></div>';
+      }
+
+      const byKey = {};
+      model.all.forEach(r => { byKey[r.key] = r; });
+      layout.blocks.forEach(b => {
+        const r = byKey[b.key];
+        if (!r) return;
+        let cls = 'tl-block tl-' + r.kind, style = 'top:' + b.topPct.toFixed(3) + '%;';
+        style += b.point ? ' height:22px;' : ' height:' + b.heightPx + 'px;';
+        if (b.point) cls += ' point';
+        // 1 lane -> full width. 2 lanes -> two halves with a gutter, expressed with logical
+        // properties so English and Arabic put the halves in mirror positions automatically.
+        if (b.lanes === 2) {
+          style += b.lane === 0 ? ' inset-inline-start:0; width:47%;' : ' inset-inline-end:0; width:51%;';
+        } else {
+          style += ' inset-inline-start:0; width:100%;';
+        }
+        if (r.kind === 'plan') {
+          const cat = planCat(r.ref);
+          style += ' border-inline-start-color:' + (cat && cat.color ? cat.color : '#8b5cf6') + ';';
+        } else if (r.kind === 'task') {
+          style += ' border-inline-start-color:' + (r.priority >= 2 ? '#ef4444' : (r.priority === 1 ? '#f59e0b' : '#3b82f6')) + ';';
+        } else {
+          style += ' border-inline-start-color:#10b981;';
+        }
+        if (r.done) cls += ' tl-done';
+        // Tap to open the real editor. Tasks carry their array index; plans their id. The ref is the
+        // object the model was built from, so nothing is recovered by parsing a string key.
+        let action = '';
+        if (r.kind === 'task') {
+          const idx = tasks.indexOf(r.ref);
+          if (idx > -1) action = 'openEditModal(' + idx + ')';
+        } else if (r.kind === 'plan' && r.ref && r.ref.id) {
+          action = "openPlanFromTimeline('" + iso + "','" + String(r.ref.id).replace(/'/g, "\\'") + "')";
+        }
+        html += '<button type="button" class="' + cls + '" style="' + style + '"' +
+          (action ? ' onclick="' + action + '"' : ' disabled') + '>' +
+          '<span class="tl-time">' + escapeHtml(r.time || '') + (r.done ? ' ✓' : '') + '</span>' +
+          '<span class="tl-title">' + escapeHtml(r.title) + '</span></button>';
+      });
+      if (layout.dropped) {
+        html += '<div class="tl-overflow" style="top:0; inset-inline-end:0">' +
+          escapeHtml((i18n[currentLang].timelineMore || '+{n} more').replace('{n}', layout.dropped)) + '</div>';
+      }
+      grid.setAttribute('aria-label', (i18n[currentLang].timelineAria || 'Day timeline') + ' — ' + (titleEl ? titleEl.textContent : iso));
+      grid.innerHTML = '<div class="tl-grid" style="height:' + height + 'px">' + html + '</div>';
+
+      // --- "any time" strip: untimed items are not hidden, they are just not on the axis ---
+      if (anyEl) {
+        if (!model.untimed.length) {
+          anyEl.innerHTML = '';
+          anyEl.classList.add('hidden');
+        } else {
+          anyEl.classList.remove('hidden');
+          anyEl.innerHTML = '<p class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1.5">' +
+            escapeHtml(i18n[currentLang].timelineAnyTime || 'Any time') + '</p>' +
+            '<div class="flex flex-wrap gap-1.5">' + model.untimed.map(r => {
+              const nm = r.kind === 'prayer' ? (currentLang === 'ar' ? (prayerNamesAr[r.title] || r.title) : r.title) : r.title;
+              const icon = r.kind === 'occasion' ? 'fa-mosque' : (r.kind === 'plan' ? 'fa-calendar-day' : 'fa-check-circle');
+              return '<span class="tl-chip"><i class="fas ' + icon + ' me-1 text-[9px] opacity-70"></i>' + escapeHtml(nm) + '</span>';
+            }).join('') + '</div>';
+        }
+      }
+
+      // --- screen-reader list: the same content in reading order, no CSS positioning involved ---
+      if (sr) {
+        sr.innerHTML = model.timed.concat(model.untimed).map(r => {
+          const nm = r.kind === 'prayer' ? (currentLang === 'ar' ? (prayerNamesAr[r.title] || r.title) : r.title) : r.title;
+          const kind = i18n[currentLang]['timelineKind' + r.kind.charAt(0).toUpperCase() + r.kind.slice(1)] || r.kind;
+          return '<li>' + (r.time ? escapeHtml(r.time) + ' — ' : '') + escapeHtml(nm) + ' (' + escapeHtml(kind) + ')</li>';
+        }).join('');
+      }
+
+      if (!model.all.length) {
+        grid.innerHTML = '<div class="text-center py-10"><i class="fas fa-mug-hot text-3xl text-gray-300 dark:text-gray-600 mb-3"></i>' +
+          '<p class="text-sm text-gray-400 dark:text-gray-500">' + escapeHtml(i18n[currentLang].timelineEmpty || 'Nothing on this day') + '</p></div>';
+      }
+    }
+
     async function renderPlannerWeek() {
       const titleEl = document.getElementById('planner-week-title');
       const hijriEl = document.getElementById('planner-week-hijri');
@@ -4825,6 +5250,7 @@
       if (el) el.classList.add('active');
       renderOccasionsCalendar();
       if (plannerView === 'week') renderPlannerWeek();
+      if (plannerView === 'day') renderTimeline();
       if (plannerView === 'year') renderPlannerYearGrid();
     }
     function togglePlanDone(id, iso) {
@@ -4841,16 +5267,23 @@
         pl.done_dates = store;
         pl.status = '';
       } else {
-        pl.status = pl.status === 'done' ? '' : 'done';
+        const nowDone = pl.status !== 'done';
+        pl.status = nowDone ? 'done' : '';
+        pl.done_date = nowDone ? day : null;
       }
       savePlans();
       renderOccasionsCalendar();
+      if (plannerView === 'day') renderTimeline();
     }
     function planDoneOn(plan, iso) {
       if (!plan) return false;
       if (plan.repeat && plan.repeat !== 'none') return !!(plan.done_dates && plan.done_dates[iso]);
+      // A one-off plan is done on ONE day. Without done_date, ticking yesterday struck through every
+      // future day as well, because status is a property of the plan and not of an occurrence.
+      if (plan.done_date) return plan.done_date === iso;
       return plan.status === 'done';
     }
+    function isDayDone(plan, iso) { return planDoneOn(plan, iso); }
     let editingPlanId = null;
     let planModalIso = null;
     function loadPlans() {
@@ -5000,6 +5433,7 @@
       plannerWeekStart = weekStartFor(d);
       renderOccasionsCalendar();
       if (plannerView === 'week') renderPlannerWeek();
+      if (plannerView === 'day') renderTimeline();
       if (plannerView === 'year') renderPlannerYearGrid();
     }
     function populatePlannerYearSelect() {
@@ -5144,6 +5578,7 @@
       try { if (editingPlanId) localStorage.removeItem(planReminderFiredKey(plan, date)); } catch (e) {}
       closePlanModal();
       renderOccasionsCalendar();
+      if (plannerView === 'day') { if (date) timelineIso = date; renderTimeline(); }
       showToast('✅ ' + (i18n[currentLang].planSaved || 'Plan saved!'), 'success');
     }
     function quickMovePlan(id) {
@@ -5172,6 +5607,7 @@
       userPlans = (userPlans || []).filter(p => p.id !== id);
       savePlans();
       renderOccasionsCalendar();
+      if (plannerView === 'day') renderTimeline();
       showToast('🗑 ' + (i18n[currentLang].planDeleted || 'Plan deleted'), 'info');
     }
     function renderPlannerYearStrip() {
