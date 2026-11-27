@@ -1,0 +1,4 @@
+{
+  "version": "v57",
+  "note": "Written by hand together with sw.js VERSION. The app reads this to answer 'am I on the new build?' instead of guessing from a cache name that may not exist yet."
+}

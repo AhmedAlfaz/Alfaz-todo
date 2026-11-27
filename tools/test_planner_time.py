@@ -199,6 +199,13 @@ ok('repeating plan: tomorrow not done', planDoneOn(rep, '2026-11-22') === false)
 const oneOff = { id: 'o1', title: 'Once', date: '2026-11-21', time: '', note: '', repeat: 'none', status: 'done', created: 0 };
 ok('one-off plan uses status', planDoneOn(oneOff, '2026-11-21') === true);
 ok('a repeating plan still shows on later days (no monthly-skip regression)', planMatchesDate(rep, '2026-12-01') === true);
+// A one-off ticked yesterday must not be struck through on every future day. status alone cannot
+// express that, which is why togglePlanDone now stamps done_date. (Caught by the jsdom render test.)
+const ticked = { id: 'o2', title: 'Once, ticked', date: '2026-11-20', time: '', note: '', repeat: 'none', status: 'done', done_date: '2026-11-20', created: 0 };
+ok('one-off ticked on its own day reads done', planDoneOn(ticked, '2026-11-20') === true);
+ok('one-off ticked yesterday is NOT done tomorrow', planDoneOn(ticked, '2026-11-21') === false, planDoneOn(ticked, '2026-11-21'));
+const legacyDone = { id: 'o3', title: 'Legacy tick', date: '2026-11-20', time: '', note: '', repeat: 'none', status: 'done', created: 0 };
+ok('legacy one-off with no done_date still reads done', planDoneOn(legacyDone, '2026-11-20') === true);
 """
 
 
@@ -241,6 +248,177 @@ ok('v2 cache without a zone passes through unchanged', (prayerTimesInDeviceClock
 """
 
 
+# --- 5. day timeline geometry (step 5) --------------------------------------------------------
+TIMELINE_CASES = r"""
+// ---- tlParseMinutes: strict, and null (not 0) on garbage ----
+ok('9:05 -> 545', tlParseMinutes('9:05') === 545);
+ok('09:05 -> 545', tlParseMinutes('09:05') === 545);
+ok('00:00 -> 0 (midnight is a real time, not "unset")', tlParseMinutes('00:00') === 0);
+ok('23:59 -> 1439', tlParseMinutes('23:59') === 1439);
+ok('9:5 rejected', tlParseMinutes('9:5') === null);
+ok('24:00 rejected', tlParseMinutes('24:00') === null);
+ok('12:60 rejected', tlParseMinutes('12:60') === null);
+ok('09:00:00 rejected', tlParseMinutes('09:00:00') === null);
+ok('empty rejected', tlParseMinutes('') === null);
+ok('null rejected', tlParseMinutes(null) === null);
+ok('undefined rejected', tlParseMinutes(undefined) === null);
+ok('whitespace tolerated', tlParseMinutes(' 08:30 ') === 510);
+
+// ---- tlWindow: clamp to content, then to 04:00-23:30 ----
+(function () {
+  const w1 = tlWindow([{ time: '14:00' }]);
+  ok('one 14:00 plan: an hour of air above', w1.start === 13 * 60, w1.start);
+  ok('one 14:00 plan: at least 6h tall', w1.end - w1.start === 6 * 60, w1.end - w1.start);
+  const w2 = tlWindow([]);
+  ok('empty day uses the full 04:00-23:30 frame', w2.start === 240 && w2.end === 1410, w2.start + '/' + w2.end);
+  ok('empty day is never shorter than the base frame', w2.end - w2.start === 1170, w2.end - w2.start);
+  const w3 = tlWindow([{ time: '05:00' }]);
+  ok('early block is not pushed above 04:00', w3.start === 240, w3.start);
+  const w4 = tlWindow([{ time: '23:00' }]);
+  ok('late block is not pushed past 23:30', w4.end === 1410, w4.end);
+  const w5 = tlWindow([{ time: '09:00' }, { time: '17:00' }]);
+  // 08:00 above, 17:00 + 90 min of air = 18:30, rounded UP to 19:00 so the hour rules are on the hour.
+  ok('window spans first to last + air, rounded to the hour', w5.start === 480 && w5.end === 19 * 60, w5.start + '/' + w5.end);
+  const w6 = tlWindow([{ time: '12:00', allDay: true }]);
+  ok('all-day items do not stretch the window', w6.start === 240 && w6.end === 1410, w6.start + '/' + w6.end);
+  // Prayer anchors mark a boundary, they do not occupy the axis: a 05:05 Fajr must not force a
+  // 20-hour frame around a single 13:00 plan. (Caught by the jsdom render test, fixed in code.)
+  (function () {
+    const m = buildDayTimeline({
+      iso: '2026-11-21',
+      prayers: [{ name: 'Fajr', time: '05:05' }, { name: 'Isha', time: '18:25' }],
+      plans: [{ id: 'p1', title: 'Call', time: '13:00' }]
+    });
+    ok('a single 13:00 plan sizes the window, prayers do not', m.window.start === 12 * 60, m.window.start);
+    ok('window stays compact rather than 04:00-23:30', m.window.end - m.window.start <= 8 * 60, (m.window.end - m.window.start) / 60);
+    ok('the prayers are still in the model, inside the window',
+       m.timed.filter(r => r.kind === 'prayer').length === 2, m.timed.filter(r => r.kind === 'prayer').length);
+    ok('prayers are marked as anchors, not blocks', m.timed.filter(r => r.anchor).length === 2);
+  })();
+  (function () {
+    // A day with nothing but prayers still needs a frame, and it is theirs.
+    const m = buildDayTimeline({ iso: '2026-11-21', prayers: [{ name: 'Fajr', time: '05:05' }, { name: 'Isha', time: '18:25' }] });
+    ok('prayer-only day frames around the prayers', m.window.start === 240 && m.window.end >= 18 * 60 + 25, m.window.start + '/' + m.window.end);
+  })();
+})();
+
+// ---- tlNowLinePct: -1 means "do not draw", and differs from 0% ----
+(function () {
+  const win = { start: 600, end: 960 };   // 10:00-16:00
+  ok('not-yet-now before the window -> -1', tlNowLinePct('09:00', win) === -1);
+  ok('after the window -> -1', tlNowLinePct('17:00', win) === -1);
+  ok('exactly at window start -> -1 (edge, not inside)', tlNowLinePct('10:00', win) === -1);
+  ok('inside: 13:00 of 10-16 is exactly 50%', Math.abs(tlNowLinePct('13:00', win) - 50) < 0.001, tlNowLinePct('13:00', win));
+  ok('midnight-in-window is 0-ish, never -1', tlNowLinePct('00:00', { start: -60, end: 60 }) === 50);
+})();
+
+// ---- tlLayout: lanes, overflow cap, point vs block ----
+(function () {
+  const day = [
+    { key: 'a', time: '09:00', duration_min: 60 },
+    { key: 'b', time: '09:30', duration_min: 60 },   // overlaps a -> lane 1
+    { key: 'c', time: '11:00' },                     // no overlap, own lane 0
+    { key: 'd', time: '12:00' }                      // point
+  ];
+  const l = tlLayout(day);
+  const by = {}; l.blocks.forEach(b => { by[b.key] = b; });
+  ok('all four blocks placed', l.blocks.length === 4, l.blocks.length);
+  ok('a and b disagree on lane', by.a.lane !== by.b.lane, by.a.lane + '/' + by.b.lane);
+  ok('a and b each report a 2-lane run', by.a.lanes === 2 && by.b.lanes === 2, by.a.lanes + '/' + by.b.lanes);
+  ok('c is alone in one lane', by.c.lanes === 1, by.c.lanes);
+  ok('c starts below both a and b', by.c.topPct > by.a.topPct && by.c.topPct > by.b.topPct);
+  ok('untimed duration is a point chip', by.d.point === true);
+  ok('point chip is the minimum height', by.d.heightPx === TL_MIN_BLOCK, by.d.heightPx);
+  ok('a 60-min block is 56px at 56px/hour', by.a.heightPx === 56, by.a.heightPx);
+  ok('nothing dropped in a 2-way collision', l.dropped === 0, l.dropped);
+
+  // three-way collision: two lanes, the third is counted instead of drawn as a sliver
+  const l3 = tlLayout([
+    { key: 'x', time: '09:00', duration_min: 120 },
+    { key: 'y', time: '09:00', duration_min: 120 },
+    { key: 'z', time: '09:00', duration_min: 120 }
+  ]);
+  ok('three-way collision draws two lanes', l3.blocks.length === 2, l3.blocks.length);
+  ok('three-way collision reports one dropped', l3.dropped === 1, l3.dropped);
+
+  // the caller's window wins, and nothing is ever drawn outside it
+  (function () {
+    const items = [
+      { key: 'early', time: '05:00' },
+      { key: 'main', time: '13:00' },
+      { key: 'late', time: '22:00', anchor: true }
+    ];
+    const win = { start: 12 * 60, end: 18 * 60 };
+    const l = tlLayout(items, win);
+    ok('layout honours the supplied window', l.start === 720 && l.end === 1080, l.start + '/' + l.end);
+    ok('an item before the window is not drawn off-axis',
+       l.blocks.every(b => b.topPct >= 0 && b.topPct <= 100),
+       l.blocks.map(b => b.key + '@' + b.topPct.toFixed(1)).join(' '));
+    ok('the anchor is never emitted as a block', !l.blocks.some(b => b.key === 'late'));
+    ok('the in-window item is placed', l.blocks.some(b => b.key === 'main'));
+  })();
+
+  // a block below the minimum height must not become invisible
+  const tiny = tlLayout([{ key: 't', time: '10:00', duration_min: 5 }]);
+  ok('5-minute block still gets the 22px floor', tiny.blocks[0].heightPx === TL_MIN_BLOCK, tiny.blocks[0].heightPx);
+  ok('5-minute block is not a point (it declared a duration)', tiny.blocks[0].point === false);
+
+  // ordering is by time, not input order
+  const unordered = tlLayout([{ key: 'late', time: '18:00' }, { key: 'early', time: '08:00' }]);
+  ok('blocks sorted by time', unordered.blocks[0].key === 'early' && unordered.blocks[1].key === 'late');
+})();
+
+// ---- tlHeightPx ----
+ok('6h window at 56px/h = 336px', tlHeightPx({ start: 600, end: 960 }) === 336, tlHeightPx({ start: 600, end: 960 }));
+
+// ---- buildDayTimeline: assembly, filtering, sorting ----
+(function () {
+  const iso = '2026-11-21';
+  const model = buildDayTimeline({
+    iso: iso, lang: 'en',
+    tasks: [
+      { id: 't1', text: 'Done already', due_date: iso, due_time: '09:00', done: true },
+      { id: 't2', text: 'Wrong day', due_date: '2026-11-22', due_time: '09:00' },
+      { id: 't3', text: 'Cancelled', due_date: iso, status: 'cancelled' },
+      { id: 't4', text: 'Timed task', due_date: iso, due_time: '07:15', priority: 2 },
+      { id: 't5', text: 'No time task', due_date: iso }
+    ],
+    plans: [{ id: 'p1', title: 'Timed plan', time: '13:00' }],
+    occasions: [{ id: 'o1', en: 'Eid', ar: 'عيد' }],
+    prayers: [{ name: 'Fajr', time: '05:12' }, { name: 'Isha', time: '19:40' }]
+  });
+  const titles = model.all.map(r => r.title);
+  ok('completed task excluded', titles.indexOf('Done already') === -1);
+  ok('other-day task excluded', titles.indexOf('Wrong day') === -1);
+  ok('cancelled task excluded', titles.indexOf('Cancelled') === -1);
+  ok('timed task included', titles.indexOf('Timed task') > -1);
+  ok('untimed task included, not hidden', titles.indexOf('No time task') > -1);
+  ok('plan included', titles.indexOf('Timed plan') > -1);
+  ok('occasion included', titles.indexOf('Eid') > -1);
+  ok('two prayers included', model.timed.filter(r => r.kind === 'prayer').length === 2, model.timed.filter(r => r.kind === 'prayer').length);
+  ok('timed list is in clock order', model.timed.map(r => r.time).join(',') === '05:12,07:15,13:00,19:40', model.timed.map(r => r.time).join(','));
+  // The no-time task and the Eid occasion both belong in the "any time" strip: untimed is not
+  // hidden, it is just off the axis.
+  ok('untimed list holds the no-time task', model.untimed.some(r => r.title === 'No time task'), JSON.stringify(model.untimed.map(r => r.title)));
+  ok('untimed list holds the untimed occasion', model.untimed.some(r => r.title === 'Eid'));
+  ok('untimed list does NOT hold a timed item', !model.untimed.some(r => r.title === 'Timed plan'));
+  ok('Fajr is first on the axis', model.timed[0].title === 'Fajr');
+  ok('arabic occasion title when lang=ar', buildDayTimeline({ iso: iso, lang: 'ar', occasions: [{ id: 'o1', en: 'Eid', ar: 'عيد' }] }).all[0].title === 'عيد');
+  ok('a garbage prayer time is treated as untimed, never drawn at midnight',
+    buildDayTimeline({ iso: iso, prayers: [{ name: 'Fajr', time: 'nonsense' }] }).untimed.some(r => r.title === 'Fajr'));
+  ok('every row carries a stable key', model.all.every(r => typeof r.key === 'string' && r.key.length > 2));
+  ok('keys are unique within a day', new Set(model.all.map(r => r.key)).size === model.all.length);
+})();
+
+// ---- the window is derived from the content, never from the clock ----
+(function () {
+  const iso = '2026-11-21';
+  const m = buildDayTimeline({ iso: iso, prayers: [{ name: 'Fajr', time: '05:12' }, { name: 'Isha', time: '19:40' }] });
+  ok('window starts an hour before the earliest item', m.window.start === 4 * 60, m.window.start);
+  ok('window ends after the last item', m.window.end >= 19 * 60 + 40, m.window.end);
+})();
+"""
+
 def build_script(src, cases):
     # isoToDay/dayParts/daysInMonth live just above planMatchesDate (they are its helpers), so the
     # slice starts at isoToDay, not at planMatchesDate.
@@ -250,12 +428,15 @@ def build_script(src, cases):
                 else extract_block(src, 'const REMINDER_CATCHUP_MIN', 'function checkTaskReminders'))
     tz = extract_block(src, 'function prayerTimesToStore', 'function fetchPrayerTimes')
     planner_done = extract_block(src, 'function togglePlanDone', 'let editingPlanId')
+    # The timeline geometry is pure by design, which is what makes it extractable at all.
+    timeline = extract_block(src, 'const TL_MINUTE_H', 'let timelineIso')
     return '\n'.join([
         HARNESS_PRELUDE,
         recurrence,
         reminder,
         tz,
         planner_done,
+        timeline,
         cases,
         'console.log(JSON.stringify(results));',
     ])
@@ -291,11 +472,16 @@ def main():
     run_suite('reminders', REMINDER_CASES, src)
     run_suite('timezone', TZ_CASES, src)
     run_suite('plan-completion', PLAN_DONE_CASES, src)
+    run_suite('day-timeline', TIMELINE_CASES, src)
 
     # DST is a real risk for calendar maths: run the recurrence suite in four awkward zones,
     # including a Southern-Hemisphere one and Lord Howe (+10:30 / +11 with a 30-minute shift).
     for tz in ('Asia/Beirut', 'America/Santiago', 'Australia/Lord_Howe', 'Europe/London'):
         run_suite('recurrence', RECURRENCE_CASES, src, tz=tz)
+
+    # The timeline draws positions from wall-clock strings, so the one thing that must never happen
+    # is a timezone changing where a block lands. Run the geometry in a western zone too.
+    run_suite('day-timeline', TIMELINE_CASES, src, tz='America/New_York')
 
     print('ABDO time-logic tests')
     print('-' * 20)
