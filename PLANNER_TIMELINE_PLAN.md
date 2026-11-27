@@ -3,7 +3,9 @@
 **Status:** v1 was rejected as weak. This is the rewritten version, and it exists to be *torn apart
 by someone who knows more than I do*, not to be approved as-is.
 **Branch:** `arena/56b587ab-alfaz-todo` · **Baseline:** v54, local-only, no server.
-**Status of steps 0–4 and 6: done** (v53 `4c3bd1d`, v54 `2adebdb`) — recurrence, reminders, prayer-time zone, the i18n gate, the cache split and multi-tab safety are shipped and covered by tests. **Open:** step 5 (the timeline itself) and the specialist decisions in §9.
+**Status: steps 0–6 are done** (v53 `4c3bd1d`, v54 `2adebdb`, v55 `090f6f4`). Step 5 — the day timeline
+itself — shipped in v55 with the four decisions in §9 taken as recommended below. What remains is
+§9's optional Phase 4 territory, not a gap in this plan.
 **Also filed as an issue:** https://github.com/AhmedAlfaz/Alfaz-todo/issues/1
 **How to review:** every claim below is either *(M)* measured with a command you can re-run, or
 *(A)* an assertion marked as such. Attack the (A)s first — that is where v1 failed.
@@ -206,13 +208,20 @@ in this investigation.
 | 2 | Cache split (§2.3 A) | removes the only real storage pressure |
 | 3 | Timezone on prayer timings (§3.3) | otherwise the timeline's anchors are wrong when travelling |
 | 4 | Reminder/day-boundary semantics decided (§3.4) | alarm and block must agree |
-| 5 | Timeline: pure `buildDayTimeline()` + day view | the visible feature |
+| 5 | Timeline: pure `buildDayTimeline()` + day view | **done in v55** — see §11 |
 | 6 | `storage` listener + diff rendering (§5) | protects the tab left open |
 | 7 | IndexedDB for user data — **only if** §2 measurements demand it | optional by design now |
 
 ---
 
 ## 9. Questions I am explicitly not deciding alone
+
+> **Taken as recommended in v55** (recorded so the reasoning survives): integer day numbers are
+> canonical and `Date` is used only at the edges; month-end clamps; occurrence identity is
+> `(plan_id, iso)` with a `done_date` stamp for one-offs; **task estimates are points, not blocks**
+> unless `estimate_min` is set. The last one was tested rather than argued: a point chip is 22 px and
+> a fabricated 30-minute block was wrong on every task that had no duration.
+
 
 1. §3.4 (1)–(4) — the time model. This is the one that will decide whether Phase 3 is stable for years.
 2. Task duration on the timeline: point, or default 30 min? (v1 asked the CEO; the honest answer is
@@ -232,3 +241,28 @@ in this investigation.
 - 360 px and 390 px: no horizontal scroll, nothing under the bottom nav, every block ≥ 22 px.
 - Arabic: axis on the inline-start edge, block titles not clipped.
 - A specialist has reviewed §3 and §9 and signed off or rewritten them.
+
+---
+
+## 11. Step 5 as built (v55) — and what it changed in this plan
+
+Shipped: a **Day** chip beside Month/Week/Year; a vertical axis at 56 px/hour on phones and 64 px on
+`md+`; blocks for tasks and plans, dashed dividers for prayer times, the current time when it is
+inside the window, an "Any time" strip for untimed items, and a screen-reader `<ol>` carrying the same
+content in reading order. Window is clamped to the content ±1 h, minimum 6 h, inside 04:00–23:30.
+
+Four things §4 got wrong, found by actually rendering it:
+
+| §4 said | Reality |
+|---|---|
+| "window clamped to the content ±1 h" | Prayer anchors were counted as content, so a single 13:00 plan produced an 18-hour axis. Anchors now mark boundaries and do not size the window. |
+| "overlap lanes" | The layout function recomputed its own window and could emit a block at a **negative** `top` — drawn above the visible axis. It now takes the window as an argument and drops nothing that fits. |
+| "task estimates: point or block?" | Answered by implementation: a point. A block is drawn only when the user supplies `estimate_min` or `duration_min`. |
+| (not considered) | A **one-off** plan ticked on any day was struck through on every future day, because `status` belongs to the plan, not to an occurrence. `done_date` now stamps the day. |
+
+Also fixed while wiring it: the clock now re-renders on a midnight rollover instead of showing
+yesterday's date and now-line forever, and language switching re-renders all three secondary views.
+
+**Still not verified:** the rendered pixels on a real phone. The sandbox has no Chromium; the jsdom
+pass proves structure, positions as percentages, language, and zero uncaught errors, not appearance.
+§10's 360 px / 390 px and Arabic clipping checks remain manual.
